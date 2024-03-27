@@ -18,12 +18,36 @@ for i, file in enumerate(files):
     longitude = data[:, 0]
     latitude = data[:, 1]
     elevation = data[:, 2]
+
+    '''
     for elev in elevation:
         #print(elev)
         if elev > maximum:
             maximum = elev
         if elev < minimum:
             minimum = elev
+    '''
+
+    # Convert spherical coordinates to Cartesian coordinates
+    x = np.outer(np.cos(latitude), np.cos(longitude))
+    y = np.outer(np.cos(latitude), np.sin(longitude))
+    z = np.outer(np.sin(latitude), np.ones_like(longitude))
+
+    # Plot the sphere
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot_surface(x, y, z, color='b', alpha=0.5)
+
+    # Set equal aspect ratio
+    ax.set_box_aspect([1, 1, 1])
+
+    # Set labels
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+
+    plt.show()
+
 
 print(f"min: {minimum}")
 print(f"max: {maximum}")

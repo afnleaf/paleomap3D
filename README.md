@@ -5,14 +5,23 @@ ancient maps, tectonic plates, webapp with a globe
 
 ### problem
 we have 
-longitude
-latitude
+longitude - meridians
+latitude - parallels
 elevation
 in csv files
 
 plot lon and lat
-- 2d
 - 3d
+- 2d
+
+lon and lat are spherical coordinates, 3d rendering works in x, y, z cartesian coordinates
+
+conversion:
+```
+x = cos(latitude) * cos(longitude)
+y = cos(latitude) * sin(longitude)
+z = sin(latitude)
+```
 
 color gradient with elevation
 - find max and min for scale
