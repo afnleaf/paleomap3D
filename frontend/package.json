@@ -1,16 +1,26 @@
 {
   "name": "frontend",
   "module": "index.ts",
+  "devDependencies": {
+    "bun-types": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "bun run --watch src/index.ts",
     "prod": "bun run src/index.ts"
   },
   "type": "module",
-  "devDependencies": {
-    "bun-types": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5.0.0"
+  "dependencies": {
+    "@elysiajs/cors": "^1.0.2",
+    "@elysiajs/html": "^1.0.2",
+    "@elysiajs/static": "^0.7.1",
+    "@pkmn/img": "^0.2.21",
+    "@types/glob": "^8.1.0",
+    "elysia": "latest",
+    "elysia-ip": "^0.0.7",
+    "glob": "7.1.7"
   }
 }

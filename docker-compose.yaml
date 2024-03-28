@@ -5,7 +5,7 @@ services:
       context: ./frontend
     ports:
       - 3001:3001
-    container_name: frontend
+    container_name: frontend-paleo3d
     stdin_open: true
     tty: true
       
