@@ -1,0 +1,52 @@
+body { 
+    margin: 0; 
+}
+canvas { 
+    display: block; 
+}
+#title {
+    position: absolute;
+    top: 10px;
+    width: 100%;
+    text-align: center;
+    z-index: 100;
+    display:block;
+    color: #ededed
+}
+
+#sliderValue {
+    color: #a0127c
+}
+  
+.slider {
+    -webkit-appearance: none;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    height: 25px;
+    outline: none;
+    background: #d3d3d3;
+    opacity: 0.7;
+    -webkit-transition: .2s;
+    transition: opacity .2s;
+}
+
+.slider:hover {
+    opacity: 1;
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 25px;
+    height: 25px;
+    background: #04AA6D;
+    cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+    width: 25px;
+    height: 25px;
+    background: #04AA6D;
+    cursor: pointer;
+}

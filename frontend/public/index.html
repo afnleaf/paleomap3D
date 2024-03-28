@@ -4,15 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>paleomap3D</title>
-    <style>
-        body { margin: 0; }
-        canvas { display: block; }
-    </style>
+    <link rel="stylesheet" type="text/css" href="styles.css">
+    
 </head>
 <body>
     <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
     <!-- <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script> -->
     <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/TrackballControls.js"></script>
     <script src="script.js"></script>
+    <h1 id="title">PaleoMap3D</h1>
+    <input type="range" min="1" max="109" value="54" class="slider" id="myRange">
+    <p id="sliderValue"></p>
 </body>
 </html>
+

@@ -1,5 +1,35 @@
-// get the csv file
-fetch('/csv')
+// Scene setup
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer();
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+let isRendering = true;
+
+function stopRenderer() {
+    isRendering = false;
+}
+
+// Controls
+//const controls = new THREE.OrbitControls(camera, renderer.domElement);
+const controls = new THREE.TrackballControls(camera, renderer.domElement);
+
+controls.enable =  true;
+controls.minDistance = 150;
+controls.maxDistance = 1000;
+//controls.enableDamping = true;
+//controls.dampingFactor = 0.1;
+controls.zoomSpeed = 0.5;
+//ontrols.autoRotate = true;
+//controls.autoRotateSpeed = 0.5;
+controls.screenSpacePanning = true;
+
+// set cam default
+camera.position.set(0, 0, 200);
+controls.update();
+
+// get the default csv file
+fetch(`/csv53`)
     .then(response => {
         if (!response.ok) {
             throw new Error('Failed to fetch CSV file');
@@ -13,18 +43,55 @@ fetch('/csv')
         console.error('Error fetching CSV file:', error);
     });
 
+// event listener for slider
+document.addEventListener("DOMContentLoaded", function() {
+    // Access the slider element
+    const slider = document.getElementById("myRange");
 
-// create a scene out of csv data
-async function createScene(csvData) {
+    // Check if the slider element exists
+    if (slider) {
+        // Add an event listener to handle changes in the slider value
+        slider.addEventListener("input", function() {
+            // Update the value displayed below the slider
+            const sliderValue = document.getElementById("sliderValue");
+            sliderValue.textContent = `Map: ${slider.value}`;
+
+            // get the csv file
+            fetch(`/csv${slider.value - 1}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch CSV file');
+                }
+                return response.text();
+            })
+            .then(data => {
+                createScene(data);
+            })
+            .catch(error => {
+                console.error('Error fetching CSV file:', error);
+            });
+        });
+    } else {
+        console.error("Slider element not found");
+    }
+});
+
+
+function parse(csvData) {
     // data to be parsed
     let vertices = [];
     let elevations = [];
 
     const R = 100;
     // process the data
-    const lines = csvData.split("\n");
+    let lines = csvData.split("\n");
+    // have to check for carriage return in some of the files
+    // will standardize later
+    if(lines.length <= 1) {
+        lines = csvData.split("\r");
+    }
     console.log(`${lines.length}`);
-    prevline = "";
+    //prevline = "";
     for (const [index, line] of lines.entries()) {
         // conditions to avoid
         if (index === 0) continue;
@@ -65,29 +132,17 @@ async function createScene(csvData) {
         // take less points
         //if(index === 1000) break;
     }
-    //console.log("test")
+    //console.log("test end")
     //console.log(vertices);
     //console.log(elevations);
 
-    // Scene setup
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
-    // Controls
-    //const controls = new THREE.OrbitControls(camera, renderer.domElement);
-    const controls = new THREE.TrackballControls(camera, renderer.domElement);
+    return { vertices, elevations };
+}
 
-    controls.enable =  true;
-    controls.minDistance = 150;
-    controls.maxDistance = 1000;
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.1;
-    controls.zoomSpeed = 0.5;
-    //ontrols.autoRotate = true;
-    //controls.autoRotateSpeed = 0.5;
-    controls.screenSpacePanning = true;
+
+// create a scene out of csv data
+async function createScene(csvData) {
+    let { vertices, elevations } = parse(csvData);
 
 
     // Create buffer geometry for points
@@ -136,15 +191,12 @@ async function createScene(csvData) {
     const points = new THREE.Points(geometry, material);
     scene.add(points);
 
-    // set cam default
-    camera.position.set(0, 0, 200);
-    controls.update();
-
-    // Render loop
-    function animate() {
-        requestAnimationFrame(animate);
-        controls.update();
-        renderer.render(scene, camera);
-    }
-    animate();
 }
+
+function animate() {
+    if (!isRendering) return;
+    requestAnimationFrame(animate);
+    controls.update();
+    renderer.render(scene, camera);
+}
+animate();
