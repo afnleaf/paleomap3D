@@ -4,18 +4,37 @@ body {
 canvas { 
     display: block; 
 }
+
 #title {
     position: absolute;
     top: 10px;
     width: 100%;
     text-align: center;
     z-index: 100;
-    display:block;
-    color: #ededed
+    display: block;
+    color: #ededed;
 }
 
-#sliderValue {
-    color: #a0127c
+#instructions {
+    position: absolute;
+    bottom: 15px;
+    right: 10px;
+    text-align: right;
+    z-index: 100;
+    display: block;
+    color: #ededed;
+}
+
+#links {
+    position: absolute;
+    padding: 0;
+    bottom: 15px;
+    left: 10px;
+    text-align: left;
+    z-index: 100;
+    display: block;
+    color: #ededed;
+    list-style-type: none;
 }
   
 .slider {
@@ -50,3 +69,23 @@ canvas {
     background: #04AA6D;
     cursor: pointer;
 }
+
+/* unvisited link */
+a:link {
+    color: #ededed;
+  }
+  
+  /* visited link */
+  a:visited {
+    color: #ededed;
+  }
+  
+  /* mouse over link */
+  a:hover {
+    color: hotpink;
+  }
+  
+  /* selected link */
+  a:active {
+    color: #ededed;
+  }
