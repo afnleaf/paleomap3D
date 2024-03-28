@@ -76,7 +76,19 @@ async function createScene(csvData) {
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
     // Controls
-    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    //const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    const controls = new THREE.TrackballControls(camera, renderer.domElement);
+
+    controls.enable =  true;
+    controls.minDistance = 150;
+    controls.maxDistance = 1000;
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.1;
+    controls.zoomSpeed = 0.5;
+    //ontrols.autoRotate = true;
+    //controls.autoRotateSpeed = 0.5;
+    controls.screenSpacePanning = true;
+
 
     // Create buffer geometry for points
     const geometry = new THREE.BufferGeometry();
@@ -87,22 +99,32 @@ async function createScene(csvData) {
     // colour the point with material
     const material = new THREE.PointsMaterial({
         size: 4,
-        vertexColors: THREE.VertexColors
+        vertexColors: THREE.VertexColors,
+        dithering: true,
+        side: THREE.FrontSide
     });
 
     // assign elevation color to the points
-    const threshold = 0;
+    const seaLevel = 0;
     
     for (let i = 0; i < elevations.length; i++) {
         const elevation = elevations[i];
         let color;
         // set color based on sea level
-        if (elevation < threshold) {
+        if (elevation >= -11000 && elevation < -3000) {
+            // blue sea level
+            color = new THREE.Color(0x1f2d47);
+        } 
+        else if (elevation >= -5000 && elevation <= seaLevel)
             // blue sea level
             color = new THREE.Color(0x2a3c63);
-        } else {
+
+        else if (elevation > seaLevel && elevation < 500) {
             // forest green
             color = new THREE.Color(0x347a2a);
+        }   
+        else {
+            color = new THREE.Color(0x615446);
         }
         // Set the color for each vertex
         geometry.attributes.color.setXYZ(i, color.r, color.g, color.b);
@@ -115,7 +137,7 @@ async function createScene(csvData) {
     scene.add(points);
 
     // set cam default
-    camera.position.set(0, 0, 150);
+    camera.position.set(0, 0, 200);
     controls.update();
 
     // Render loop

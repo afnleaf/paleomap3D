@@ -14,4 +14,4 @@ RUN bun install
 COPY . .
 
 # some scripts
-CMD [ "bun", "run", "prod"]
+CMD [ "bun", "run", "dev"]
