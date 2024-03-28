@@ -3,7 +3,7 @@ import { html } from '@elysiajs/html'
 import { cors } from '@elysiajs/cors'
 import Glob from 'glob';
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3333;
 
 const app = new Elysia();
 app.use(cors());
