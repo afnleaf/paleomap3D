@@ -1,41 +1,40 @@
 # PaleoMap3D
-
-ancient maps, tectonic plates, webapp with a globe
-
+Three.js webapp that renders the globe with colour coded elevation data.  Go back in time and see what the earth used to look like! 🌎🌍🌏
 
 ### problem
-we have 
-longitude - meridians
-latitude - parallels
-elevation
-in csv files
+In csv files, we have:
+- longitude (meridians)
+- latitude (parallels)
+- elevation
 
-plot lon and lat
-- 3d
+Longitude and Latitude are spherical coordinates, rendering works in cartesian coordinates. 
+- [x] 3d
 - 2d
 
-lon and lat are spherical coordinates, 3d rendering works in x, y, z cartesian coordinates
-
-conversion:
+3D conversion:
 ```
 x = cos(latitude) * cos(longitude)
 y = cos(latitude) * sin(longitude)
 z = sin(latitude)
 ```
 
-color gradient with elevation
-- find max and min for scale
+2D conversion:
+```
+? ToDo
+```
 
-long with python
-min: -11000.0
-max: 10500.0
+Color gradient with elevation.
+- find max and min for scale.
+- min: -11000.0
+- max: 10500.0
 
-109 maps with name and how long ago
-- how to find this information?
-
-
+109 maps with name of era and how long ago in millions of years.
 
 ### Credits
+CSV Files used fall under the, Creative Commons Attribution 4.0. Credit to:
 
-Creative commons
-data maps 109, lon, lat, ele
+Scotese, C.R., 2002,  http://www.scotese.com, (PALEOMAP website).
+
+You can download them here -> https://zenodo.org/records/5460860
+
+Read the full report on the data here -> https://www.earthbyte.org/webdav/ftp/Data_Collections/Scotese_Wright_2018_PaleoDEM/Scotese_Wright2018_PALEOMAP_PaleoDEMs.pdf

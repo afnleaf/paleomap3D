@@ -1,5 +1,4 @@
 csv_files
-*.txt
 old.py
 /frontend/node_modules
 /node_modules
