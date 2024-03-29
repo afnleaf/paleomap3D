@@ -1,7 +1,7 @@
 # PaleoMap3D
 Three.js webapp that renders the globe with colour coded elevation data.  Go back in time and see what the earth used to look like! 🌎🌍🌏
 
-### problem
+## problem
 In csv files, we have:
 - longitude (meridians)
 - latitude (parallels)
@@ -30,7 +30,9 @@ Color gradient with elevation.
 
 109 maps with name of era and how long ago in millions of years.
 
-### Credits
+----
+
+## Credits
 CSV Files used fall under the, Creative Commons Attribution 4.0. Credit to:
 
 Scotese, C.R., 2002,  http://www.scotese.com, (PALEOMAP website).
