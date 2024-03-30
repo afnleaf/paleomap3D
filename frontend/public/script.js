@@ -5,6 +5,7 @@ import mapNames from './maps.js';
 const w = window.innerWidth;
 const h = window.innerHeight;
 const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.autoClear = false;
 renderer.setSize(w, h);
 document.body.appendChild(renderer.domElement);
 
@@ -21,6 +22,16 @@ camera.up.set(-0.6433751963742183, 0.595381764123396, 0.4812368560696019);
 
 // global scene
 const scene = new THREE.Scene();
+
+// space background
+const loader = new THREE.CubeTextureLoader();
+// had to adjust sun position from "bottom"
+const textureCube = loader.load( [
+    "front.png", "back.png",
+	"top.png", "bottom.png",
+    "right.png", "left.png"
+] );
+scene.background = textureCube;
 
 // global controls
 const controls = new THREE.TrackballControls(camera, renderer.domElement);

@@ -14,6 +14,17 @@ app.get("/", () => Bun.file("./public/index.html"));
 app.get("/styles.css", () => Bun.file("./public/styles.css"))
 app.get("/script.js", () => Bun.file("./public/script.js"));
 app.get("/maps.js", () => Bun.file("./public/maps.js"));
+// favicons
+app.get("/favicon-32x32.png", () => Bun.file("./public/images/favicon-32x32.png"))
+app.get("/favicon-16x16.png", () => Bun.file("./public/images/favicon-16x16.png"))
+app.get("/favicon.ico", () => Bun.file("./public/images/favicon.ico"))
+// spacebox texture
+app.get("/back.png", () => Bun.file("./public/images/back.png"))
+app.get("/bottom.png", () => Bun.file("./public/images/bottom.png"))
+app.get("/front.png", () => Bun.file("./public/images/front.png"))
+app.get("/left.png", () => Bun.file("./public/images/left.png"))
+app.get("/right.png", () => Bun.file("./public/images/right.png"))
+app.get("/top.png", () => Bun.file("./public/images/top.png"))
 
 // get the file names of the csv files and push them to an array
 let filePaths = [];
