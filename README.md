@@ -13,9 +13,10 @@ Longitude and Latitude are spherical coordinates, rendering works in cartesian c
 
 3D conversion:
 ```
-x = cos(latitude) * cos(longitude)
-y = cos(latitude) * sin(longitude)
-z = sin(latitude)
+R = radius
+x = R * cos(latitude) * cos(longitude)
+y = R * cos(latitude) * sin(longitude)
+z = R * sin(latitude)
 ```
 
 2D conversion:
@@ -33,9 +34,10 @@ Color gradient with elevation.
 ----
 
 ## Credits
-CSV Files used fall under the, Creative Commons Attribution 4.0. Credit to:
+CSV files used fall under the, Creative Commons Attribution 4.0 license. Credit to:
 
-Scotese, C.R., 2002,  http://www.scotese.com, (PALEOMAP website).
+"Plate tectonic maps and Continental drift animations by C. R. Scotese,
+PALEOMAP Project (www.scotese.com)"
 
 You can download them here -> https://zenodo.org/records/5460860
 

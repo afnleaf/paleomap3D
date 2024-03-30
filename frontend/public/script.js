@@ -1,147 +1,39 @@
-const mapNames = [
-    "Present-day (Holocene, 0 Ma)",
-    "Early Pliocene (Zanclean, 4.47 Ma)",
-    "Middle/Late Miocene (Serravallian&Tortonian, 10.5 Ma)",
-    "Middle Miocene (Langhian, 14.9 Ma)",
-    "Early Miocene (Aquitanian&Burdigalian, 19.5 Ma)",
-    "Late Oligocene (Chattian, 25.6 Ma)",
-    "Early Oligocene (Rupelian, 31 Ma)",
-    "Late Eocene (Priabonian, 35.9 Ma)",
-    "late Middle Eocene (Bartonian, 39.5 Ma)",
-    "Early Middle Eocene (Lutetian, 44.5 Ma)",
-    "Early Eocene (Ypresian, 51.9 Ma)",
-    "Paleocene/Eocene Boundary (PETM, 56 Ma)",
-    "Paleocene (Danian & Thanetian, 61 Ma)",
-    "KT Boundary (Latest Maastrichtian, 66 Ma)",
-    "Late Cretaceous (Maastrichtian, 69 Ma)",
-    "Late Cretaceous (Late Campanian, 75 Ma)",
-    "Late Cretaceous (Early Campanian, 80.8 Ma)",
-    "Late Cretaceous (Santonian&Coniacian, 86.7 Ma)",
-    "Mid-Cretaceous (Turonian , 91.9 Ma)",
-    "Mid-Cretaceous (Cenomanian, 97.2 Ma)",
-    "Early Cretaceous (Late Albian, 102.6 Ma)",
-    "Early Cretaceous (Middle Albian, 107 Ma)",
-    "Early Cretaceous (Early Albian, 111 Ma)",
-    "Early Cretaceous (Late Aptian, 115.8 Ma)",
-    "Early Cretaceous (Early Aptian, 121.8 Ma)",
-    "Early Cretaceous (Barremian, 127.2 Ma)",
-    "Early Cretaceous (Hauterivian, 131.2 Ma)",
-    "Early Cretaceous (Valanginian, 136.4 Ma)",
-    "Early Cretaceous (Berriasian, 142.4 Ma)",
-    "Jurassic/Cretaceous Boundary (145 Ma)",
-    "Late Jurassic (Tithonian, 148.6 Ma)",
-    "Late Jurassic (Kimmeridgian, 154.7 Ma)",
-    "Late Jurassic (Oxfordian, 160.4 Ma)",
-    "Middle Jurassic (Callovian, 164.8 Ma)",
-    "Middle Jurassic (Bajocian&Bathonian, 168.2)",
-    "Middle Jurassic (Aalenian, 172.2 Ma)",
-    "Early Jurassic (Toarcian, 178.4 Ma)",
-    "Early Jurassic (Pliensbachian, 186.8 Ma)",
-    "Early Jurassic (Sinemurian/Pliensbachian, 190.8 Ma)",
-    "Early Jurassic (Hettangian&Sinemurian, 196 Ma)",
-    "Late Triassic (Rhaetian/Hettangian, 201.3 Ma)",
-    "Late Triassic (Rhaetian, 204.9 Ma)",
-    "Late Triassic (Late Norian, 213.2 Ma)",
-    "Late Triassic (Mid Norian, 217.8 Ma)",
-    "Late Triassic (Early Norian, 222.4 Ma)",
-    "Late Triassic (Carnian/Norian 227 Ma)",
-    "Late Triassic (Carnian, 232 Ma)",
-    "Late Triassic (Early Carnian, 233.6)",
-    "Middle Triassic (Ladinian, 239.5 Ma)",
-    "Middle Triassic (Anisian, 244.6 Ma)",
-    "Permo-Triassic Boundary (252 Ma)",
-    "Late Permian (Lopingian, 256 Ma)",
-    "Late Middle Permian (Capitanian, 262.5 Ma)",
-    "Middle Permian (Wordian/Capitanian Boundary 265.1 Ma)",
-    "Middle Permian (Roadian&Wordian, 268.7 Ma)",
-    "Early Permian (Late Kungurian, 275 Ma)",
-    "Early Permian (Early Kungurian, 280 Ma)",
-    "Early Permian (Artinskian, 286.8 Ma)",
-    "Early Permian (Sakmarian, 292.6 Ma)",
-    "Early Permian (Asselian, 297 Ma)",
-    "Late Pennsylvanian (Gzhelian, 301.3 Ma)",
-    "Late Pennsylvanian (Kasimovian, 305.4 Ma)",
-    "Middle Pennsylvanian (Moscovian, 311.1 Ma)",
-    "Early/Middle Carboniferous (Baskirian/Moscovian boundary, 314.6 Ma)",
-    "Early Pennsylvanian (Bashkirian, 319.2 Ma)",
-    "Late Mississippian (Serpukhovian, 327 Ma)",
-    "Late Mississippian (Visean/Serpukhovian boundary, 330.9 Ma)",
-    "Middle Mississippian (Late Visean, 333 Ma)",
-    "Middle Mississippian (Middle Visean, 338.8Ma)",
-    "Middle Mississippian (Early Visean, 344 Ma)",
-    "Early Mississippian (Late Tournaisian, 349 Ma)",
-    "Early Mississippian (Early Tournaisian, 354Ma)",
-    "Devono-Carboniferous Boundary (358.9 Ma)",
-    "Late Devonian (Middle Famennian, 365.6 Ma)",
-    "Late Devonian (Early Famennian, 370 Ma)",
-    "Late Devonian (Late Frasnian, 375 Ma)",
-    "Late Devonian (Early Frasnian, 380 Ma)",
-    "Middle Devonian (Givetian, 385.2 Ma)",
-    "Middle Devonian (Eifelian, 390.5 Ma)",
-    "Early Devonian (Late Emsian, 395 Ma)",
-    "Early Devonian (Middle Emsian, 400 Ma)",
-    "Early Devonian (Early Emsian, 405 Ma)",
-    "Early Devonian (Pragian, 409.2 Ma)",
-    "Early Devonian (Lochkovian, 415 Ma)",
-    "Late Silurian (Pridoli, 421.1 Ma)",
-    "Late Silurian (Ludlow, 425.2 Ma)",
-    "Middle Silurian (Wenlock, 430.4 Ma)",
-    "Early Silurian (Late Llandovery, 436 Ma)",
-    "Early Silurian (Early Llandovery, 441.2 Ma)",
-    "Late Ordovician (Hirnantian, 444.5 Ma)",
-    "Late Ordovician (Katian, 449.1 Ma)",
-    "Late Ordovician (Sandbian, 455.7 Ma)",
-    "Middle Ordovician (Late Darwillian,460 Ma)",
-    "Middle Ordovician (Early Darwillian,465 Ma)",
-    "Early Ordovician (Floian/Dapingianboundary, 470 Ma)",
-    "Early Ordovician (Late Early Floian, 475 Ma)",
-    "Early Ordovician (Tremadoc, 481.6 Ma)",
-    "Cambro-Ordovician Boundary (485.4 Ma)",
-    "Late Cambrian (Jiangshanian, 491.8 Ma)",
-    "Late Cambrian (Pabian, 495.5 Ma)",
-    "Late Middle Cambrian (Guzhangian, 498.8 Ma)",
-    "Late Middle Cambrian (Early Epoch 3, 505 Ma)",
-    "Early Middle Cambrian (Late Epoch 2, 510 Ma)",
-    "Early Middle Cambrian (Middle Epoch 2, 515 Ma)",
-    "Early/Middle Cambrian boundary (520 Ma)",
-    "Early Cambrian (Late Terreneuvian, 525 Ma)",
-    "Early Cambrian (Middle Terreneuvian, 530 Ma)",
-    "Early Cambrian (Early Terreneuvian, 535 Ma)",
-    "Cambrian/Precambrian boundary (541 Ma)"
-  ];
+// now I can import from the server whatever I need, just add the route
+import mapNames from './maps.js';
 
-// Scene setup
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer();
-renderer.setSize(window.innerWidth, window.innerHeight);
+// global render
+const w = window.innerWidth;
+const h = window.innerHeight;
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(w, h);
 document.body.appendChild(renderer.domElement);
-let isRendering = true;
 
-function stopRenderer() {
-    isRendering = false;
-}
+// global cam
+const fov = 75;
+const aspect = w / h;
+const near = 0.1;
+const far = 1000;
+const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+// set cam default
+camera.position.set(2.1947505764760233, -1.8200564599467817, 1.7229850186341116);
+camera.rotation.set(0.8127890828467345, 0.7192327649925704, 0.5026356479842529);
+camera.up.set(-0.6433751963742183, 0.595381764123396, 0.4812368560696019);
 
-// Controls
-//const controls = new THREE.OrbitControls(camera, renderer.domElement);
+// global scene
+const scene = new THREE.Scene();
+
+// global controls
 const controls = new THREE.TrackballControls(camera, renderer.domElement);
 
-controls.enable =  true;
-controls.minDistance = 150;
-controls.maxDistance = 1000;
+controls.enable = true;
+controls.minDistance = 0;
+controls.maxDistance = 100;
 //controls.enableDamping = true;
 //controls.dampingFactor = 0.1;
 controls.staticMoving = true;
-controls.zoomSpeed = 0.5;
-//controls.autoRotate = true;
-//controls.autoRotateSpeed = 0.5;
-controls.screenSpacePanning = true;
+controls.zoomSpeed = 0.9;
 
-// set cam default
-camera.position.set(100, 200, 200);
-controls.update();
-
-// get the default csv file
+// create the default scene
 fetch(`/csv0`)
     .then(response => {
         if (!response.ok) {
@@ -156,24 +48,16 @@ fetch(`/csv0`)
         console.error('Error fetching CSV file:', error);
     });
 
-// event listener for slider
+// event listeners 
 document.addEventListener("DOMContentLoaded", function() {
-    // Access the slider element
+    // access the slider element to create new scenes
     const slider = document.getElementById("myRange");
-
-    // Check if the slider element exists
     if (slider) {
-        // Add an event listener to handle changes in the slider value
         slider.addEventListener("input", function() {
-            // Update the value displayed below the slider
-            //const sliderValue = document.getElementById("sliderValue");
-            //sliderValue.textContent = `Map: ${Math.abs(slider.value)}`;
-
+            // index to get with using absolute value
             const index = Math.abs(slider.value);
-
-            const mapTitle = document.getElementById("title");
-            mapTitle.textContent = `${mapNames[index]}`;
-            //console.log(maps[index].stratigraphic_age);
+            const mapTitleElement = document.getElementById("title");
+            mapTitleElement.innerHTML = mapNames[index].replace(/\n/g, "<br>");
 
             // get the csv file
             fetch(`/csv${index}`)
@@ -184,6 +68,9 @@ document.addEventListener("DOMContentLoaded", function() {
                 return response.text();
             })
             .then(data => {
+                // free old scene
+                unloadScene();
+                // allocate new scene
                 createScene(data);
             })
             .catch(error => {
@@ -193,24 +80,46 @@ document.addEventListener("DOMContentLoaded", function() {
     } else {
         console.error("Slider element not found");
     }
+
+    // to update scene as user adjusts it
+    window.addEventListener("resize", () => {
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        controls.update();
+        renderer.setSize(w, h);
+        render();
+    });
+
+    /*
+    // for future random reset points
+    controls.addEventListener( "change", () => { 
+        console.log( controls.object );  
+        console.log( controls.object.position ); 
+        console.log( controls.object.rotation ); 
+        console.log( controls.object.up ); 
+    });
+    */
 });
 
 
+// parse csv file
+// how to keep in memory?
 function parse(csvData) {
     // data to be parsed
     let vertices = [];
     let elevations = [];
 
-    const R = 100;
+    const R = 1;
     // process the data
     let lines = csvData.split("\n");
     // have to check for carriage return in some of the files
-    // will standardize later
+    // will Basicize later (sidenote: ???)
     if(lines.length <= 1) {
         lines = csvData.split("\r");
     }
     //console.log(`${lines.length}`);
-    //prevline = "";
     for (const [index, line] of lines.entries()) {
         // conditions to avoid
         if (index === 0) continue;
@@ -236,18 +145,15 @@ function parse(csvData) {
         */
         
         // covert to cartesian coords
-        rlo = longitude * (Math.PI / 180);
-        rla = latitude * (Math.PI / 180);
+        const rlo = longitude * (Math.PI / 180);
+        const rla = latitude * (Math.PI / 180);
         const x = R * Math.cos(rla) * Math.cos(rlo)
         const y = R * Math.cos(rla) * Math.sin(rlo)
         const z = R * Math.sin(rla)
 
-        //const vertex = new THREE.Vector3(x, y, z);
-        //vertices.push(vertex);
         vertices.push(x, y, z);
         elevations.push(elevation);
 
-        //prevline = line
         // take less points
         //if(index === 1000) break;
     }
@@ -258,24 +164,32 @@ function parse(csvData) {
     return { vertices, elevations };
 }
 
-
 // create a scene out of csv data
 async function createScene(csvData) {
     let { vertices, elevations } = parse(csvData);
+    //await renderTools();
+    await renderOuterEarth(vertices, elevations);
+    await renderInnerEarth();
+}
 
+// render visual helpers
+async function renderTools() {
+    const axesHelper = new THREE.AxesHelper( 5 );
+    scene.add( axesHelper );
+}
 
-    // Create buffer geometry for points
+// render the earth using
+async function renderOuterEarth(vertices, elevations) {
+    // create buffer geometry for points
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(new Array(vertices.length).fill(0), 3)); 
 
-    //console.log(geometry)
     // colour the point with material
     const material = new THREE.PointsMaterial({
-        size: 4,
+        size: 0.04,
         vertexColors: THREE.VertexColors,
         dithering: true,
-        side: THREE.FrontSide
     });
 
     // assign elevation color to the points
@@ -284,8 +198,9 @@ async function createScene(csvData) {
         const elevation = elevations[i];
         let color;
         // set color based on elevation
-        if (elevation >= -11000 && elevation < -6000)
-            color = new THREE.Color(0x32292f);
+        if (elevation >= -11000 && elevation < -6000)    
+        //color = new THREE.Color(0x32292f);
+        color = new THREE.Color(0x080e30);
         else if (elevation >= -6000 && elevation < -3000)
             color = new THREE.Color(0x1f2d47);
         else if (elevation >= -3000 && elevation < -150)
@@ -293,7 +208,6 @@ async function createScene(csvData) {
         else if (elevation >= -150 && elevation <= seaLevel)
             color = new THREE.Color(0x344b75);
         else if (elevation > seaLevel && elevation < 100)
-            //color = new THREE.Color(0x2d7548);
             color = new THREE.Color(0x347a2a);
         else if (elevation >= 100 && elevation < 400)
             color = new THREE.Color(0x00530b);
@@ -317,10 +231,66 @@ async function createScene(csvData) {
     scene.add(points);
 }
 
-function animate() {
-    if (!isRendering) return;
+// render da deep core
+async function renderInnerEarth() {
+    let geo;
+    let mat;
+
+    geo = new THREE.IcosahedronGeometry(0.375, 2);
+    mat = new THREE.MeshBasicMaterial({ 
+        color: 0xffff00,
+    });
+    const innercore = new THREE.Mesh(geo, mat);
+    scene.add(innercore);
+
+    // outer core
+    geo = new THREE.IcosahedronGeometry(0.625, 2);
+    mat = new THREE.MeshBasicMaterial({ 
+        color: 0xf69f31,
+    });
+    const outercore = new THREE.Mesh(geo, mat);
+    scene.add(outercore);
+
+    // mantle
+    geo = new THREE.IcosahedronGeometry(0.925, 2);
+    mat = new THREE.MeshBasicMaterial({ 
+        color: 0xe76c2f,
+    });
+    const mantle = new THREE.Mesh(geo, mat);
+    scene.add(mantle);
+
+    // crust
+    geo = new THREE.IcosahedronGeometry(0.9875, 2);
+    mat = new THREE.MeshBasicMaterial({ 
+        color: 0x75381a,
+    });
+    const crust = new THREE.Mesh(geo, mat);
+    scene.add(crust);
+}
+
+// unload all objects from the scene
+function unloadScene() {
+    while(scene.children.length > 0){ 
+        // free material
+        scene.children[0].material.dispose();
+        // free geometry
+        scene.children[0].geometry.dispose();
+        scene.remove(scene.children[0]); 
+    }
+    renderer.dispose();
+}
+
+
+// animate the scene lel
+function animate(t = 0) {
     requestAnimationFrame(animate);
     controls.update();
-    renderer.render(scene, camera);
+    render()
 }
+
+// render the scene with the rendering renderer
+function render() {
+    renderer.render(scene, camera)
+}
+
 animate();
