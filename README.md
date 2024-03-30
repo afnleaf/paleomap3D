@@ -34,11 +34,11 @@ PALEOMAP Project (www.scotese.com)"
 
 "PaleoDEMS_long_lat_elev_csv_v2.zip" by C. R. Scotese, PALEOMAP Project (http://www.scotese.com/), retrieved from https://zenodo.org/records/5460860, used under Creative Commons Attribution 4.0 International License (http://creativecommons.org/licenses/by/4.0/)
 
-You can download them here -> https://zenodo.org/records/5460860
+You can download them [here](https://zenodo.org/records/5460860)
 
-Read the full report on the data here -> https://www.earthbyte.org/webdav/ftp/Data_Collections/Scotese_Wright_2018_PaleoDEM/Scotese_Wright2018_PALEOMAP_PaleoDEMs.pdf
+Read the full report on the data [here](https://www.earthbyte.org/webdav/ftp/Data_Collections/Scotese_Wright_2018_PaleoDEM/Scotese_Wright2018_PALEOMAP_PaleoDEMs.pdf)
 
-Skybox (Spacebox) generated here -> https://tools.wwwtyro.net/space-3d/index.html#animationSpeed=0.40999401408739444&fov=75.43504464834814&nebulae=false&pointStars=true&resolution=1024&seed=aqywua8jycc&stars=true&sun=true
+Skybox (Spacebox) generated [here](https://tools.wwwtyro.net/space-3d/index.html#animationSpeed=0.40999401408739444&fov=75.43504464834814&nebulae=false&pointStars=true&resolution=1024&seed=aqywua8jycc&stars=true&sun=true)
 
 
 
