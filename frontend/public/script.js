@@ -179,6 +179,7 @@ function parse(csvData) {
 async function createScene(csvData) {
     let { vertices, elevations } = parse(csvData);
     //await renderTools();
+    await renderZenithPoles();
     await renderOuterEarth(vertices, elevations);
     await renderInnerEarth();
 }
@@ -186,7 +187,31 @@ async function createScene(csvData) {
 // render visual helpers
 async function renderTools() {
     const axesHelper = new THREE.AxesHelper( 5 );
+    console.log(axesHelper)
     scene.add( axesHelper );
+}
+
+// render north and south poles aka the zenith axis
+async function renderZenithPoles() {
+    const northGeo = new THREE.BufferGeometry();
+    const northVertices = new Float32Array([
+        0, 0, 0,  // Start of the line (origin)
+        0, 0, 1.2  // End of the line (along the z-axis)
+    ]);
+    northGeo.setAttribute('position', new THREE.BufferAttribute(northVertices, 3));
+    const northMat = new THREE.LineBasicMaterial({ color: 0x0000ff });
+    const north = new THREE.Line(northGeo, northMat);
+    scene.add(north);
+
+    const southGeo = new THREE.BufferGeometry();
+    const southVertices = new Float32Array([
+        0, 0, -1.2,  // Start of the line (origin)
+        0, 0, 0,  // End of the line (along the z-axis)
+    ]);
+    southGeo.setAttribute('position', new THREE.BufferAttribute(southVertices, 3));
+    const southMat = new THREE.LineBasicMaterial({ color: 0xff0000 });
+    const south = new THREE.Line(southGeo, southMat);
+    scene.add(south);
 }
 
 // render the earth using

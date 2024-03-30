@@ -24,6 +24,11 @@ Color gradient with elevation.
 
 109 maps with name of era and how long ago in millions of years.
 
+- Some maps are missing a thousand or so points
+- CSV files are large ~1mb
+- netcdf format exist, how do we parse it?
+- binary files > csv files?
+
 ----
 
 ## Credits
