@@ -16,18 +16,17 @@ app.get("/script.js", () => Bun.file("./public/script.js"));
 app.get("/maps.js", () => Bun.file("./public/maps.js"));
 
 // get the file names of the csv files and push them to an array
-let fileNames = [];
+let filePaths = [];
 const csvPath = "./public/csv_files";
 const csvFiles = Glob.sync(`${csvPath}/*.csv`);
 console.log(csvFiles.length);
 for (const fileName of csvFiles) {
-    fileNames.push(fileName);
+    filePaths.push(fileName);
 }
 
 // iterate over the csv files and create http routes for the app
-fileNames.forEach((filename, index) => {
+filePaths.forEach((filePath, index) => {
     const routePath = `/csv${index}`;
-    const filePath = `./public/${filename}`;
     console.log(`route: ${routePath} for ${filePath}`);
     app.get(routePath, () => Bun.file(filePath));
 });
