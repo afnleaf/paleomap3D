@@ -17,7 +17,7 @@ app.get("/maps.js", () => Bun.file("./public/maps.js"));
 
 // get the file names of the csv files and push them to an array
 let fileNames = [];
-const csvPath = "csv_files";
+const csvPath = "./public/csv_files";
 const csvFiles = Glob.sync(`${csvPath}/*.csv`);
 console.log(csvFiles.length);
 for (const fileName of csvFiles) {
