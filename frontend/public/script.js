@@ -35,7 +35,6 @@ scene.background = textureCube;
 
 // global controls
 const controls = new THREE.TrackballControls(camera, renderer.domElement);
-
 controls.enable = true;
 controls.minDistance = 0;
 controls.maxDistance = 100;
@@ -45,37 +44,19 @@ controls.staticMoving = true;
 controls.zoomSpeed = 0.9;
 
 // create the default scene
-/*
-fetch(`/csv0`)
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Failed to fetch CSV file');
-        }
-        return response.text();
-    })
-    .then(data => {
-        createScene(data);
-    })
-    .catch(error => {
-        console.error('Error fetching CSV file:', error);
-    });
-*/
-
-fetch(`/bin`)
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Failed to fetch binary file');
-        }
-        return response.arrayBuffer();
-    })
-    .then(data => {
-        createScene(data);
-    })
-    .catch(error => {
-        console.error('Error fetching binary file:', error);
-    });
-
-
+fetch(`/bin0`)
+.then(response => {
+    if (!response.ok) {
+        throw new Error('Failed to fetch binary file');
+    }
+    return response.arrayBuffer();
+})
+.then(data => {
+    createScene(data);
+})
+.catch(error => {
+    console.error('Error fetching binary file:', error);
+});
 
 // event listeners 
 document.addEventListener("DOMContentLoaded", function() {
@@ -88,13 +69,13 @@ document.addEventListener("DOMContentLoaded", function() {
             const mapTitleElement = document.getElementById("title");
             mapTitleElement.innerHTML = mapNames[index].replace(/\n/g, "<br>");
 
-            // get the csv file
-            fetch(`/csv${index}`)
+            // get the binary file
+            fetch(`/bin${index}`)
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('Failed to fetch CSV file');
+                    throw new Error('Failed to fetch bin file');
                 }
-                return response.text();
+                return response.arrayBuffer();
             })
             .then(data => {
                 // free old scene
@@ -132,87 +113,6 @@ document.addEventListener("DOMContentLoaded", function() {
     */
 });
 
-
-// parse csv file
-// how to keep in memory?
-function parseCSV(csvData) {
-    // data to be parsed
-    let vertices = [];
-    let elevations = [];
-
-    const R = 1;
-    // process the data
-    let lines = csvData.split("\n");
-    // have to check for carriage return in some of the files
-    // will Basicize later (sidenote: ???)
-    if(lines.length <= 1) {
-        lines = csvData.split("\r");
-    }
-    //console.log(`${lines.length}`);
-    for (const [index, line] of lines.entries()) {
-        // conditions to avoid
-        if (index === 0) continue;
-        if (line === "") continue;
-
-        const [lo, la, el] = line.split(",");
-        const longitude = parseFloat(lo);
-        const latitude = parseFloat(la);
-        const elevation = parseFloat(el);
-        
-        /*
-        if (isNaN(longitude) || isNaN(latitude) || isNaN(elevation)) {
-            console.log('One of the values is NaN');
-            console.log(line);
-            console.log(prevline);
-            console.log(index)
-            console.log(longitude);
-            console.log(latitude);
-            console.log(elevation);
-        } else {
-            console.log('All values are valid numbers');
-        }
-        */
-        
-        // covert to cartesian coords
-        const rlo = longitude * (Math.PI / 180);
-        const rla = latitude * (Math.PI / 180);
-        const x = R * Math.cos(rla) * Math.cos(rlo)
-        const y = R * Math.cos(rla) * Math.sin(rlo)
-        const z = R * Math.sin(rla)
-
-        vertices.push(x, y, z);
-        elevations.push(elevation);
-
-        // take less points
-        //if(index === 1000) break;
-    }
-    //console.log("test end")
-    //console.log(vertices);
-    //console.log(elevations);
-
-    return { vertices, elevations };
-}
-
-function reverseBytesInUint32Array(array) {
-    for (let i = 0; i < array.length; i++) {
-        // Convert the Uint32 number to a Uint8Array
-        const uint8Array = new Uint8Array(Uint32Array.BYTES_PER_ELEMENT);
-        const view = new DataView(uint8Array.buffer);
-        view.setUint32(0, array[i], false); // false for little-endian
-
-        // Reverse the order of bytes in the Uint8Array
-        const reversedBytes = new Uint8Array(uint8Array.length);
-        for (let j = 0; j < uint8Array.length; j++) {
-            reversedBytes[j] = uint8Array[uint8Array.length - j - 1];
-        }
-
-        // Convert the reversed bytes back to a Uint32 number
-        array[i] = new DataView(reversedBytes.buffer).getUint32(0, false); // false for little-endian
-    }
-}
-//reverseBytesInUint32Array(line);
-
-
 /*
 lat:01011010, lon:010110100, z:111000010011001
 lat:01011010, lon:010110100, z:111000010011001, b:01011010010110100111000010011001
@@ -227,12 +127,14 @@ lat:01011010, lon:010110100, z:111000010011001, b:010110100101101001110000100110
 
 01011010 010110100111000010011001
 */
+// parse custom binary files
+// get big endian data view
 function parseBin(data) {
     // data that we use to build earth
     let vertices = [];
     let elevations = [];
     const R = 1;
-    // so that we can read our data easily
+    // so that we can read our data properly
     let dataView = new DataView(data);
     //console.log(dataView.buffer.byteLength);
     //let j = 0;
@@ -270,10 +172,6 @@ function parseBin(data) {
 
     return { vertices, elevations };
 }
-
-
-
-
 
 // create a scene out of the given data
 async function createScene(data) {
@@ -315,7 +213,7 @@ async function renderZenithPoles() {
     scene.add(south);
 }
 
-// render the earth using
+// render the earth using points from bin file
 async function renderOuterEarth(vertices, elevations) {
     // create buffer geometry for points
     const geometry = new THREE.BufferGeometry();
@@ -373,6 +271,7 @@ async function renderInnerEarth() {
     let geo;
     let mat;
 
+    // inner core
     geo = new THREE.IcosahedronGeometry(0.375, 2);
     mat = new THREE.MeshBasicMaterial({ 
         color: 0xffff00,
@@ -417,17 +316,16 @@ function unloadScene() {
     renderer.dispose();
 }
 
+// render the scene with the rendering renderer
+function render() {
+    renderer.render(scene, camera)
+}
 
 // animate the scene lel
 function animate(t = 0) {
     requestAnimationFrame(animate);
     controls.update();
     render()
-}
-
-// render the scene with the rendering renderer
-function render() {
-    renderer.render(scene, camera)
 }
 
 animate();

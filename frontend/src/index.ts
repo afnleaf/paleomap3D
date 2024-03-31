@@ -26,26 +26,33 @@ app.get("/left.png", () => Bun.file("./public/images/left.png"))
 app.get("/right.png", () => Bun.file("./public/images/right.png"))
 app.get("/top.png", () => Bun.file("./public/images/top.png"))
 
-// testing new binary files
-app.get("/bin", () => Bun.file("./public/data_bin/binary_data.bin"))
-
-
-
-// get the file names of the csv files and push them to an array
-let filePaths = [];
-const csvPath = "./public/csv_files";
-const csvFiles = Glob.sync(`${csvPath}/*.csv`);
-console.log(csvFiles.length);
-for (const fileName of csvFiles) {
-    filePaths.push(fileName);
-}
+// get the file names of the bin files
+const binPath = "./public/data_bin";
+const binFiles = Glob.sync(`${binPath}/*.bin`);
+// sort files numerically ascending based on first digit sequence of filename
+// otherwise they go by alphabetical
+const sortedBinFiles = binFiles.sort((a, b) => {
+    const regex = /(\d+)/g;
+    let numA: number | undefined;
+    let numB: number | undefined;
+    if (a != null && b != null) {
+        numA = parseInt(a.match(regex)![0]);
+        numB = parseInt(b.match(regex)![0]);
+    }
+    if (numA != null && numB != null) {
+        return numA - numB;
+    } else {
+        return 0;
+    }
+});
 
 // iterate over the csv files and create http routes for the app
-filePaths.forEach((filePath, index) => {
-    const routePath = `/csv${index}`;
-    console.log(`route: ${routePath} for ${filePath}`);
-    app.get(routePath, () => Bun.file(filePath));
+sortedBinFiles.forEach((binFilePath, index) => {
+    const routePath = `/bin${index}`;
+    console.log(`route: ${routePath} for ${binFilePath}`);
+    app.get(routePath, () => Bun.file(binFilePath));
 });
+
 
 // port
 app.listen(PORT);
