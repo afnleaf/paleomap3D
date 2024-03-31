@@ -1,4 +1,5 @@
 import os
+import re
 import pandas as pd
 import xarray as xr
 
@@ -9,13 +10,28 @@ write_dir = "data_bin"
 def main():
     dir_path = "frontend/netcdf_1"
     files = os.listdir(dir_path)
-    j = 1
-    for i, file in enumerate(files):
+    netcdf_files = []
+    for file in files:
         if file.endswith(".nc"):
+            netcdf_files.append(file)  
+
+    netcdf_files = sorted(netcdf_files, key=sort_ascending)
+    j = 1
+    for i, file in enumerate(netcdf_files):
+        if file.endswith(".nc"):
+            print(j)
             file_path = dir_path + "/" + file
             create_binary_file(file_path, j)
-            print(j, " ", file_path)
             j += 1
+
+# to sort the Map__ number in ascending order with the .5s
+def sort_ascending(file_name):
+    match = re.search(r'\d+(\.\d+)?', file_name)
+    if match:
+        num = match.group(0)
+        return float(num)
+    else:
+        return
 
 
 # parse then write the binary file based on the file_path
@@ -29,7 +45,7 @@ def create_binary_file(file_path, map_num):
 def parse_nc_file(file_path):
     data = xr.open_dataset(file_path)
     df = data["z"].to_dataframe()
-    print(df)
+    #print(df)
     binary_data = ""
     for index, row in df.iterrows():
         lat = int(round(index[0], 1))
