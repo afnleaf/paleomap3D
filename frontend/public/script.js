@@ -65,7 +65,17 @@ document.addEventListener("DOMContentLoaded", function() {
     if (slider) {
         slider.addEventListener("input", function() {
             // index to get with using absolute value
-            const index = Math.abs(slider.value);
+            // some conditions for improved slider visuals
+            let index;
+            if(slider.value > 0) {
+                return;
+            } else if(slider.value < -108) {
+                return;
+            } else {
+                index = Math.abs(slider.value)
+            }
+
+            // change map title
             const mapTitleElement = document.getElementById("title");
             mapTitleElement.innerHTML = mapNames[index].replace(/\n/g, "<br>");
 
