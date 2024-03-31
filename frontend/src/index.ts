@@ -26,6 +26,11 @@ app.get("/left.png", () => Bun.file("./public/images/left.png"))
 app.get("/right.png", () => Bun.file("./public/images/right.png"))
 app.get("/top.png", () => Bun.file("./public/images/top.png"))
 
+// testing new binary files
+app.get("/bin", () => Bun.file("./public/data_bin/binary_data.bin"))
+
+
+
 // get the file names of the csv files and push them to an array
 let filePaths = [];
 const csvPath = "./public/csv_files";

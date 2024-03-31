@@ -45,6 +45,7 @@ controls.staticMoving = true;
 controls.zoomSpeed = 0.9;
 
 // create the default scene
+/*
 fetch(`/csv0`)
     .then(response => {
         if (!response.ok) {
@@ -58,6 +59,23 @@ fetch(`/csv0`)
     .catch(error => {
         console.error('Error fetching CSV file:', error);
     });
+*/
+
+fetch(`/bin`)
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to fetch binary file');
+        }
+        return response.arrayBuffer();
+    })
+    .then(data => {
+        createScene(data);
+    })
+    .catch(error => {
+        console.error('Error fetching binary file:', error);
+    });
+
+
 
 // event listeners 
 document.addEventListener("DOMContentLoaded", function() {
@@ -117,7 +135,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // parse csv file
 // how to keep in memory?
-function parse(csvData) {
+function parseCSV(csvData) {
     // data to be parsed
     let vertices = [];
     let elevations = [];
@@ -175,9 +193,92 @@ function parse(csvData) {
     return { vertices, elevations };
 }
 
-// create a scene out of csv data
-async function createScene(csvData) {
-    let { vertices, elevations } = parse(csvData);
+function reverseBytesInUint32Array(array) {
+    for (let i = 0; i < array.length; i++) {
+        // Convert the Uint32 number to a Uint8Array
+        const uint8Array = new Uint8Array(Uint32Array.BYTES_PER_ELEMENT);
+        const view = new DataView(uint8Array.buffer);
+        view.setUint32(0, array[i], false); // false for little-endian
+
+        // Reverse the order of bytes in the Uint8Array
+        const reversedBytes = new Uint8Array(uint8Array.length);
+        for (let j = 0; j < uint8Array.length; j++) {
+            reversedBytes[j] = uint8Array[uint8Array.length - j - 1];
+        }
+
+        // Convert the reversed bytes back to a Uint32 number
+        array[i] = new DataView(reversedBytes.buffer).getUint32(0, false); // false for little-endian
+    }
+}
+//reverseBytesInUint32Array(line);
+
+
+/*
+lat:01011010, lon:010110100, z:111000010011001
+lat:01011010, lon:010110100, z:111000010011001, b:01011010010110100111000010011001
+01011010 010110100 111000010011001
+
+10011001 01110000 01011010 01011010
+10011001 01110000 01011010 01011010
+10011001 01110000 01011010 01011010
+        
+01011010 01011010 01110000 10011001
+01011010 01011010 01110000 10011001
+
+01011010 010110100111000010011001
+*/
+function parseBin(data) {
+    // data that we use to build earth
+    let vertices = [];
+    let elevations = [];
+    const R = 1;
+    // so that we can read our data easily
+    let dataView = new DataView(data);
+    //console.log(dataView.buffer.byteLength);
+    //let j = 0;
+    const bufferSize = dataView.buffer.byteLength;
+    for (let i = 0; i + 4 <= bufferSize; i += 4) {
+        const nibble = dataView.getUint32(i, false);
+        // extract the bits out by position
+        const lat = (nibble >>> 24) & 0xFF;
+        const lon = (nibble >>> 15) & 0x1FF;
+        const ele = nibble & 0x7FFF;
+        // convert the bits to signed integers
+        const la = (lat & 0x80 ? lat | 0xFFFFFF00 : lat) | 0;
+        const lo = (lon & 0x100 ? lon | 0xFFFFFE00 : lon) | 0;
+        const el = (ele & 0x4000 ? ele | 0xFFFF8000 : ele) | 0;
+        // get float
+        const latitude = parseFloat(la);
+        const longitude = parseFloat(lo);
+        const elevation = parseFloat(el);
+
+        //console.log(`${j}: lat:${lat.toString(2).padStart(8, '0')}, lon:${lon.toString(2).padStart(9, '0')}, z:${z.toString(2).padStart(15, '0')}`);
+        //console.log(`${j}: lat:${latitude}, lon:${longitude}, z:${elevation}`);
+        //console.log(`${j}: lat:${la}, lon:${lo}, z:${el}`);
+
+        const rlo = longitude * (Math.PI / 180);
+        const rla = latitude * (Math.PI / 180);
+        const x = R * Math.cos(rla) * Math.cos(rlo)
+        const y = R * Math.cos(rla) * Math.sin(rlo)
+        const z = R * Math.sin(rla)
+
+        vertices.push(x, y, z);
+        elevations.push(elevation);
+
+        //j++;
+    }
+
+    return { vertices, elevations };
+}
+
+
+
+
+
+// create a scene out of the given data
+async function createScene(data) {
+    //let { vertices, elevations } = parseCSV(data);
+    let { vertices, elevations } = parseBin(data);
     //await renderTools();
     await renderZenithPoles();
     await renderOuterEarth(vertices, elevations);

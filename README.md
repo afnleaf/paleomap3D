@@ -47,3 +47,39 @@ Skybox (Spacebox) generated [here](https://tools.wwwtyro.net/space-3d/index.html
 
 
 
+### Custom files
+```
+we need to know the coordinates position because are missing?
+
+netcdf_1
+
+Dimensions:  (lon: 361, lat: 181) = 65,341 points
+
+Coordinates:
+    - * lon      (lon) float64 3kB -180.0 -179.0 -178.0 -177.0 ... 178.0 179.0 180.0
+    - * lat      (lat) float64 1kB -90.0 -89.0 -88.0 -87.0 ... 87.0 88.0 89.0 90.0
+
+why does this need to be float64 in the file? We can represent
+
+-180 to 180 as 9 bit signed integer, 512 range
+-90 to 90 as 8 bit signed integer, 256 range
+
+elevation
+
+Data variables:
+    - z        (lat, lon) float32 261kB ...
+
+Why does this need to be float32? we go from min -11000.0m to max 10500.0m
+
+21500 range, 15 bit should be enough 2^15 = 32,768
+
+add it all together
+
+9 + 8 + 15 = 32 for one coordinate + elevation 4 bytes
+4 * 65,341 = 261,364 bytes = 261.364 kB
+
+same as the (uncompressed .nc) files
+
+.nc files just have the overhead of requiring to be parsed and decompressed or w/e
+```
+
