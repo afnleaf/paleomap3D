@@ -118,18 +118,18 @@ a:active {
     color: #ededed;
 }
 .legend-scale ul li {
-    font-size: 80%;
+    font-size: 70%;
     list-style: none;
     margin-left: 0;
-    line-height: 18px;
+    line-height: 15px;
     margin-bottom: 2px;
     color: #ededed;
 }
 ul.legend-labels li span {
     display: block;
     float: left;
-    height: 16px;
-    width: 30px;
+    height: 12px;
+    width: 12px;
     margin-right: 5px;
     margin-left: 0;
     border: 1px solid #999;

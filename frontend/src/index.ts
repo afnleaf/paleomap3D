@@ -5,12 +5,20 @@ import Glob from 'glob';
 
 const PORT = process.env.PORT || 3333;
 
+// for logging purposes
+let num_visitors = 0;
+
 const app = new Elysia();
 app.use(cors());
 app.use(html());
 
+// get routes
 // homepage
-app.get("/", () => Bun.file("./public/index.html"));
+app.get("/", () => {
+    num_visitors += 1;
+    console.log(`omg a visitor ${num_visitors}`);
+    return Bun.file("./public/index.html")   
+});
 app.get("/styles.css", () => Bun.file("./public/styles.css"))
 app.get("/script.js", () => Bun.file("./public/script.js"));
 app.get("/maps.js", () => Bun.file("./public/maps.js"));
