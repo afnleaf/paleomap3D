@@ -1,7 +1,7 @@
 # PaleoMap3D
 Three.js webapp that renders the globe with colour coded elevation data.  Go back in time and see what the earth used to look like! 🌎🌍🌏
 
-## problem
+## Problem
 In csv files, we have:
 - longitude (meridians)
 - latitude (parallels)
@@ -26,30 +26,14 @@ Color gradient with elevation.
 
 - Some maps are missing a thousand or so points
 - CSV files are large ~1mb
-- netcdf format exist, how do we parse it?
-- binary files > csv files?
+- netcdf format exist, how do we parse it? yes
+- binary files > csv files? yes
 
-----
-
-## Credits
-CSV files used fall under the, Creative Commons Attribution 4.0 license. Credit to:
-
-"Plate tectonic maps and Continental drift animations by C. R. Scotese,
-PALEOMAP Project (www.scotese.com)"
-
-"PaleoDEMS_long_lat_elev_csv_v2.zip" by C. R. Scotese, PALEOMAP Project (http://www.scotese.com/), retrieved from https://zenodo.org/records/5460860, used under Creative Commons Attribution 4.0 International License (http://creativecommons.org/licenses/by/4.0/)
-
-You can download them [here](https://zenodo.org/records/5460860)
-
-Read the full report on the data [here](https://www.earthbyte.org/webdav/ftp/Data_Collections/Scotese_Wright_2018_PaleoDEM/Scotese_Wright2018_PALEOMAP_PaleoDEMs.pdf)
-
-Skybox (Spacebox) generated [here](https://tools.wwwtyro.net/space-3d/index.html#animationSpeed=0.40999401408739444&fov=75.43504464834814&nebulae=false&pointStars=true&resolution=1024&seed=aqywua8jycc&stars=true&sun=true)
-
-
+Succesfully ported to custom binary file format.
 
 ### Custom files
 ```
-we need to know the coordinates position because are missing?
+We need to know the coordinates position because some are missing? Otherwise we could just pack elevation with a pre aligned parser for each lat and lon.
 
 netcdf_1
 
@@ -80,6 +64,23 @@ add it all together
 
 same as the (uncompressed .nc) files
 
-.nc files just have the overhead of requiring to be parsed and decompressed or w/e
+.nc files have the overhead of requiring to be parsed and decompressed or w/e. The custom binary parser we have designed is extremely small.
 ```
 
+----
+
+## Credits
+Netcdf files used fall under the, Creative Commons Attribution 4.0 license. Modification: the files were parsed using the parsenc.py script, this created the binary files in `frontend/public/data_bin/` which are what is being sent over the network and being parsed by the js script running in the client's browser.
+
+Credit to:
+
+"Plate tectonic maps and Continental drift animations by C. R. Scotese,
+PALEOMAP Project (www.scotese.com)"
+
+"Scotese_Wright_2018_Maps_1-88_1degX1deg_PaleoDEMS_nc.zip" by C. R. Scotese, PALEOMAP Project (http://www.scotese.com/), retrieved from https://zenodo.org/records/5460860, used under Creative Commons Attribution 4.0 International License (http://creativecommons.org/licenses/by/4.0/)
+
+You can download them [here](https://zenodo.org/records/5460860)
+
+Read the full report on the data [here](https://www.earthbyte.org/webdav/ftp/Data_Collections/Scotese_Wright_2018_PaleoDEM/Scotese_Wright2018_PALEOMAP_PaleoDEMs.pdf)
+
+Skybox (Spacebox) generated [here](https://tools.wwwtyro.net/space-3d/index.html#animationSpeed=0.40999401408739444&fov=75.43504464834814&nebulae=false&pointStars=true&resolution=1024&seed=aqywua8jycc&stars=true&sun=true)

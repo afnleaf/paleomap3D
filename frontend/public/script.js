@@ -43,20 +43,8 @@ controls.maxDistance = 100;
 controls.staticMoving = true;
 controls.zoomSpeed = 0.9;
 
-// create the default scene
-fetch(`/bin0`)
-.then(response => {
-    if (!response.ok) {
-        throw new Error('Failed to fetch binary file');
-    }
-    return response.arrayBuffer();
-})
-.then(data => {
-    createScene(data);
-})
-.catch(error => {
-    console.error('Error fetching binary file:', error);
-});
+// create default scene
+fetchBinaryFile(0);
 
 // event listeners 
 document.addEventListener("DOMContentLoaded", function() {
@@ -79,23 +67,8 @@ document.addEventListener("DOMContentLoaded", function() {
             const mapTitleElement = document.getElementById("title");
             mapTitleElement.innerHTML = mapNames[index].replace(/\n/g, "<br>");
 
-            // get the binary file
-            fetch(`/bin${index}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to fetch bin file');
-                }
-                return response.arrayBuffer();
-            })
-            .then(data => {
-                // free old scene
-                unloadScene();
-                // allocate new scene
-                createScene(data);
-            })
-            .catch(error => {
-                console.error('Error fetching CSV file:', error);
-            });
+            // get binary file from server and create new scene
+            fetchBinaryFile(index);
         });
     } else {
         console.error("Slider element not found");
@@ -122,6 +95,45 @@ document.addEventListener("DOMContentLoaded", function() {
     });
     */
 });
+
+// go for the route where the map at index is located
+// how to make this entire process more efficient?
+function fetchBinaryFile(index) {
+    // get the binary file
+    fetch(`/bin${index}`)
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to fetch bin file');
+        }
+        return response.arrayBuffer();
+    })
+    .then(data => {
+        // free old scene
+        unloadScene();
+        // allocate new scene
+        createScene(data);
+    })
+    .catch(error => {
+        console.error('Error fetching bin file:', error);
+    });
+}
+
+// create the default scene
+/*
+fetch(`/bin0`)
+.then(response => {
+    if (!response.ok) {
+        throw new Error('Failed to fetch binary file');
+    }
+    return response.arrayBuffer();
+})
+.then(data => {
+    createScene(data);
+})
+.catch(error => {
+    console.error('Error fetching binary file:', error);
+});
+*/
 
 /*
 lat:01011010, lon:010110100, z:111000010011001
