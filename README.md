@@ -1,5 +1,5 @@
 # PaleoMap3D
-Three.js webapp that renders the globe with colour coded elevation data.  Go back in time and see what the earth used to look like! 🌎🌍🌏
+Three.js webapp that renders the globe with colour coded elevation data. Go back in time and see what the earth used to look like! 🌎🌍🌏
 
 ## Problem
 In csv files, we have:
@@ -33,7 +33,8 @@ Succesfully ported to custom binary file format.
 
 ### Custom files
 ```
-We need to know the coordinates position because some are missing? Otherwise we could just pack elevation with a pre aligned parser for each lat and lon.
+We need to know the coordinates position because some are missing? 
+Otherwise we could just pack elevation with a pre aligned parser for each lat and lon.
 
 netcdf_1
 
@@ -64,7 +65,8 @@ add it all together
 
 same as the (uncompressed .nc) files
 
-.nc files have the overhead of requiring to be parsed and decompressed or w/e. The custom binary parser we have designed is extremely small.
+.nc files have the overhead of requiring to be parsed and decompressed or w/e. 
+The custom binary parser we have designed is extremely small.
 ```
 
 ----
