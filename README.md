@@ -72,7 +72,7 @@ The custom binary parser we have designed is extremely small.
 ----
 
 ## Credits
-Netcdf files used fall under the, Creative Commons Attribution 4.0 license. Modification: the files were parsed using the parsenc.py script, this created the binary files in `frontend/public/data_bin/` which are what is being sent over the network and being parsed by the js script running in the client's browser.
+The netcdf files used, fall under the Creative Commons Attribution 4.0 license. Modification: the files were parsed using the parsenc.py script, this created the binary files in `frontend/public/data_bin/` which are what is being sent over the network and being parsed by the js script running in the client's browser.
 
 Credit to:
 

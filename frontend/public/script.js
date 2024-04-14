@@ -168,9 +168,9 @@ function parseBin(data) {
         const lon = (nibble >>> 15) & 0x1FF;
         const ele = nibble & 0x7FFF;
         // convert the bits to signed integers
-        const la = (lat & 0x80 ? lat | 0xFFFFFF00 : lat) | 0;
-        const lo = (lon & 0x100 ? lon | 0xFFFFFE00 : lon) | 0;
-        const el = (ele & 0x4000 ? ele | 0xFFFF8000 : ele) | 0;
+        const la = (lat & 0x80 ? lat | 0xFFFFFF00 : lat);
+        const lo = (lon & 0x100 ? lon | 0xFFFFFE00 : lon);
+        const el = (ele & 0x4000 ? ele | 0xFFFF8000 : ele);
         // get float
         const latitude = parseFloat(la);
         const longitude = parseFloat(lo);
@@ -180,8 +180,10 @@ function parseBin(data) {
         //console.log(`${j}: lat:${latitude}, lon:${longitude}, z:${elevation}`);
         //console.log(`${j}: lat:${la}, lon:${lo}, z:${el}`);
 
+        // convert to radians
         const rlo = longitude * (Math.PI / 180);
         const rla = latitude * (Math.PI / 180);
+        // get x, y, z coordinates, scaled with radius
         const x = R * Math.cos(rla) * Math.cos(rlo)
         const y = R * Math.cos(rla) * Math.sin(rlo)
         const z = R * Math.sin(rla)

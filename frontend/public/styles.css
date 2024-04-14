@@ -172,7 +172,6 @@ input[type="range"]:active::-webkit-slider-thumb{
     top: 10px;
     left: 10px;
 }
-  
 .legend-title {
     text-align: left;
     margin-bottom: 5px;
