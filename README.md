@@ -94,7 +94,6 @@ just elevation and infer correctness of latitude and longitude while transcoding
 not that big of a difference idk, thats still such a big file
 
 12.97 * 109 = 1,413, a gig and a half of data...
-
 ```
 
 
