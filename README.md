@@ -69,6 +69,35 @@ same as the (uncompressed .nc) files
 The custom binary parser we have designed is extremely small.
 ```
 
+### 0.1 degree custom file
+```
+latitude: 1801
+longitude: 3601
+elevation
+
+1801 * 3601 = 6,485,401
+
+2 float, 32/16 bits or 2 11 bit ints
+15 bit integer for topgraphy or make it clean 16
+
+11 + 11 + 15 = 37, no, then 38 also no, would have to put
+16 + 16 + 16 is clean
+or 
+just elevation and infer correctness of latitude and longitude while transcoding the nc files into custom, then hard code that behavior into the client side parser.
+
+16 * 6,485,401 = 103,766,416 bits
+16 bits = 2 bytes
+2 * 6,485,401 = 12,970,802 bytes / 1000 / 1000 = 12.97 MB
+
+15 * 6,485,401 = 97,281,015 8 / 1000 / 1000 = 12.16 MB
+
+not that big of a difference idk, thats still such a big file
+
+12.97 * 109 = 1,413, a gig and a half of data...
+
+```
+
+
 ----
 
 ## Credits
