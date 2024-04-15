@@ -1,6 +1,14 @@
 // now I can import from the server whatever I need, just add the route
 import mapNames from './maps.js';
 
+// create all the positions for 0.1
+let latlon = [];
+for (let i = 90.0; i >= -90.0; i -= 0.1 ) {
+    for (let j = -180.0; j <= 180.0; j += 0.1) {
+        latlon.push([i, j])
+    }
+}
+
 // global render
 const w = window.innerWidth;
 const h = window.innerHeight;
@@ -19,6 +27,8 @@ const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
 camera.position.set(2.1947505764760233, -1.8200564599467817, 1.7229850186341116);
 camera.rotation.set(0.8127890828467345, 0.7192327649925704, 0.5026356479842529);
 camera.up.set(-0.6433751963742183, 0.595381764123396, 0.4812368560696019);
+
+
 
 // global scene
 const scene = new THREE.Scene();
@@ -197,10 +207,50 @@ function parseBin(data) {
     return { vertices, elevations };
 }
 
+function parseBin6(data) {
+    // data that we use to build earth
+    let vertices = [];
+    let elevations = [];
+    const R = 1;
+    // so that we can read our data properly
+    let dataView = new DataView(data);
+    //console.log(dataView.buffer.byteLength);
+    const bufferSize = dataView.buffer.byteLength;
+
+    let j = 0;
+    for (let i = 0; i + 2 <= bufferSize; i += 2) {
+        let word = dataView.getUint16(i, false);
+        // Check if the highest bit is 1 (indicating a negative number)
+        if (word & 0x8000) {
+            // Perform Two's complement conversion for negative numbers
+            word = -((~word & 0xFFFF) + 1);
+        }
+        const latitude = parseFloat(latlon[j][0]);
+        const longitude = parseFloat(latlon[j][1]);
+        const elevation = parseFloat(word);
+
+        // convert to radians
+        const rlo = longitude * (Math.PI / 180);
+        const rla = latitude * (Math.PI / 180);
+        // get x, y, z coordinates, scaled with radius
+        const x = R * Math.cos(rla) * Math.cos(rlo)
+        const y = R * Math.cos(rla) * Math.sin(rlo)
+        const z = R * Math.sin(rla)
+
+        vertices.push(x, y, z);
+        elevations.push(elevation);
+
+        j++;
+    }
+
+    return { vertices, elevations };
+}
+
 // create a scene out of the given data
 async function createScene(data) {
     //let { vertices, elevations } = parseCSV(data);
-    let { vertices, elevations } = parseBin(data);
+    //let { vertices, elevations } = parseBin(data);
+    let { vertices, elevations } = parseBin6(data);
     //await renderTools();
     await renderZenithPoles();
     await renderOuterEarth(vertices, elevations);

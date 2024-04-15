@@ -35,7 +35,8 @@ app.get("/right.png", () => Bun.file("./public/images/right.png"))
 app.get("/top.png", () => Bun.file("./public/images/top.png"))
 
 // get the file names of the bin files
-const binPath = "./public/data_bin";
+//const binPath = "./public/data_bin";
+const binPath = "./public/data_bin6";
 const binFiles = Glob.sync(`${binPath}/*.bin`);
 // sort files numerically ascending based on first digit sequence of filename
 // otherwise they go by alphabetical

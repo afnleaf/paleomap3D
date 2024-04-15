@@ -52,14 +52,14 @@ def parse_nc_file(file_path):
         #lat = int(round(index[0], 1))            
         lat = index[0]
         lon = index[1]
-        ele = row['z']
+        ele = int(row['z'])
 
         #la = signed_binary(lat, 8)
         #lo = signed_binary(lon, 9)
         el = signed_binary(ele, 16)
 
         binary_string = el
-        print(f"lat:{lat}, lon:{lon}, z:{ele}, b:{binary_string}")
+        #print(f"lat:{lat}\t lon:{lon}\t z:{ele}\t b:{binary_string}")
         binary_data += binary_string    
     
     print(f"R:{file_path} successful.")
@@ -87,7 +87,7 @@ def write_binary_file(binary_data, map_num):
 # turn an integer n into n_bit encoded integer
 # big endian style (i think)
 def signed_binary(n, n_bits):
-    if n < 0:
+    if n < 0.0:
         binary_string = bin(abs(n))[2:]
         binary_string = binary_string.zfill(n_bits)
         inverted_string = ''.join('1' if bit == '0' else '0' for bit in binary_string)
