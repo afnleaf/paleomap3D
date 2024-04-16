@@ -68,5 +68,5 @@ app.listen(PORT);
 
 // hello
 console.log(
-    `Frontend is running at ${app.server?.hostname}:${app.server?.port}`
+    `Frontend is running at  https://${app.server?.hostname}:${app.server?.port}`
 );
