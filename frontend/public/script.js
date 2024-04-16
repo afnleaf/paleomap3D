@@ -296,7 +296,8 @@ async function renderOuterEarth(vertices, elevations) {
 
     // colour the point with material
     const material = new THREE.PointsMaterial({
-        size: 0.04,
+        //size: 0.04,
+        size: 0.004,
         vertexColors: THREE.VertexColors,
         dithering: true,
     });
@@ -307,7 +308,7 @@ async function renderOuterEarth(vertices, elevations) {
         const elevation = elevations[i];
         let color;
         // set color based on elevation
-        if (elevation >= -11000 && elevation < -6000)    
+        if (elevation >= -12000 && elevation < -6000)    
         //color = new THREE.Color(0x32292f);
         color = new THREE.Color(0x080e30);
         else if (elevation >= -6000 && elevation < -3000)
