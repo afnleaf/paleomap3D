@@ -302,7 +302,7 @@ async function renderOuterEarth(vertices, elevations) {
         dithering: true,
     });
 
-    // assign elevation color to the points
+    // assign elevation color to the pointsE
     const seaLevel = 0;
     for (let i = 0; i < elevations.length; i++) {
         const elevation = elevations[i];
