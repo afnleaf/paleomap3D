@@ -53,13 +53,46 @@ controls.maxDistance = 100;
 controls.staticMoving = true;
 controls.zoomSpeed = 0.9;
 
+
+// for swapping between map sizes
+let mapMode = false;
+let mapSize = "small";
+let pointSize = 0.04;
+
 // create default scene
-fetchBinaryFile(0);
+fetchBinaryFile(0, mapSize);
 
 // event listeners 
 document.addEventListener("DOMContentLoaded", function() {
+    // toggle for map size
+    // Get the checkbox element
+    const checkbox = document.querySelector('input[type="checkbox"]');
     // access the slider element to create new scenes
     const slider = document.getElementById("myRange");
+
+    // Add an event listener to detect changes in the checkbox state
+    checkbox.addEventListener('change', function() {
+        // Check if the checkbox is checked
+        if (this.checked) {
+            // Checkbox is checked, do something
+            //console.log('Checkbox is checked');
+            mapMode = true;
+            mapSize = "large";
+            pointSize = 0.004;
+        } else {
+            // Checkbox is unchecked, do something else
+            //console.log('Checkbox is unchecked');
+            mapMode = false;
+            mapSize = "small";
+            pointSize = 0.04;
+        }
+
+        // get binary file from server and create new scene
+        fetchBinaryFile(Math.abs(slider.value), mapSize);
+    });
+
+
+    
     if (slider) {
         slider.addEventListener("input", function() {
             // index to get with using absolute value
@@ -78,7 +111,7 @@ document.addEventListener("DOMContentLoaded", function() {
             mapTitleElement.innerHTML = mapNames[index].replace(/\n/g, "<br>");
 
             // get binary file from server and create new scene
-            fetchBinaryFile(index);
+            fetchBinaryFile(index, mapSize);
         });
     } else {
         console.error("Slider element not found");
@@ -108,9 +141,9 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // go for the route where the map at index is located
 // how to make this entire process more efficient?
-function fetchBinaryFile(index) {
+function fetchBinaryFile(index, size) {
     // get the binary file
-    fetch(`/bin${index}`)
+    fetch(`/${size}${index}`)
     .then(response => {
         if (!response.ok) {
             throw new Error('Failed to fetch bin file');
@@ -248,9 +281,12 @@ function parseBin6(data) {
 
 // create a scene out of the given data
 async function createScene(data) {
-    //let { vertices, elevations } = parseCSV(data);
-    //let { vertices, elevations } = parseBin(data);
-    let { vertices, elevations } = parseBin6(data);
+    let vertices, elevations;
+    if(mapMode) {
+        ({ vertices, elevations } = parseBin6(data));
+    } else {
+        ({ vertices, elevations } = parseBin(data));
+    }
     //await renderTools();
     await renderZenithPoles();
     await renderOuterEarth(vertices, elevations);
@@ -297,7 +333,7 @@ async function renderOuterEarth(vertices, elevations) {
     // colour the point with material
     const material = new THREE.PointsMaterial({
         //size: 0.04,
-        size: 0.004,
+        size: pointSize,
         vertexColors: THREE.VertexColors,
         dithering: true,
     });

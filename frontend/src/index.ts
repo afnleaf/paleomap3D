@@ -35,12 +35,57 @@ app.get("/right.png", () => Bun.file("./public/images/right.png"))
 app.get("/top.png", () => Bun.file("./public/images/top.png"))
 
 // get the file names of the bin files
-//const binPath = "./public/data_bin";
-const binPath = "./public/data_bin6";
-const binFiles = Glob.sync(`${binPath}/*.bin`);
+const binPathSmall = "./public/data_bin_small";
+const binPathLarge = "./public/data_bin_large";
+const binFilesSmall = Glob.sync(`${binPathSmall}/*.bin`);
+const binFilesLarge = Glob.sync(`${binPathLarge}/*.bin`);
+
 // sort files numerically ascending based on first digit sequence of filename
 // otherwise they go by alphabetical
-const sortedBinFiles = binFiles.sort((a, b) => {
+function sortBinFiles(binFiles: string[]): string[] {
+    return binFiles.sort((a, b) => {
+        const regex = /(\d+)/g;
+        let numA: number | undefined;
+        let numB: number | undefined;
+        if (a != null && b != null) {
+            numA = parseInt(a.match(regex)![0]);
+            numB = parseInt(b.match(regex)![0]);
+        }
+        if (numA != null && numB != null) {
+            return numA - numB;
+        } else {
+            return 0;
+        }
+    });
+}
+
+const sortedBinFilesSmall = sortBinFiles(binFilesSmall);
+const sortedBinFilesLarge = sortBinFiles(binFilesLarge);
+
+// iterate over the binary files and create http routes for the app
+sortedBinFilesSmall.forEach((binFilePath, index) => {
+    const routePath = `/small${index}`;
+    console.log(`route: ${routePath} for ${binFilePath}`);
+    app.get(routePath, () => Bun.file(binFilePath));
+});
+
+sortedBinFilesLarge.forEach((binFilePath, index) => {
+    const routePath = `/large${index}`;
+    console.log(`route: ${routePath} for ${binFilePath}`);
+    app.get(routePath, () => Bun.file(binFilePath));
+});
+
+// port
+app.listen(PORT);
+
+// hello
+console.log(
+    `Frontend is running at  http://${app.server?.hostname}:${app.server?.port}`
+);
+
+
+/*
+const sortedBinFilesSmall = binFilesSmall.sort((a, b) => {
     const regex = /(\d+)/g;
     let numA: number | undefined;
     let numB: number | undefined;
@@ -54,19 +99,4 @@ const sortedBinFiles = binFiles.sort((a, b) => {
         return 0;
     }
 });
-
-// iterate over the csv files and create http routes for the app
-sortedBinFiles.forEach((binFilePath, index) => {
-    const routePath = `/bin${index}`;
-    console.log(`route: ${routePath} for ${binFilePath}`);
-    app.get(routePath, () => Bun.file(binFilePath));
-});
-
-
-// port
-app.listen(PORT);
-
-// hello
-console.log(
-    `Frontend is running at  https://${app.server?.hostname}:${app.server?.port}`
-);
+*/

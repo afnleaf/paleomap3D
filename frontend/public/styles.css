@@ -205,3 +205,12 @@ ul.legend-labels li span {
     border: 1px solid #999;
     color: #ededed;
 }
+
+.switch {
+    background-color: #ffffff;
+    z-index: 100;
+    position: fixed;
+    display: block;
+    top: 10px;
+    left: 150px;
+}

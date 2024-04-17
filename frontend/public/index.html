@@ -8,14 +8,12 @@
     
 </head>
 <body>
+    <!-- scripts -->
     <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/TrackballControls.js"></script>
     <script type="module" src="script.js"></script>
+    <!-- content -->
     <p id="title">Present-day<br>(Holocene, 0 Ma)</p>
-    <p id="instructions">move the slider backwards or forwards in time.</p>
-    <div id="links">
-        <p><a href="https://twitter.com/afnckingleaf">twitter</a> | <a href="https://github.com/afnleaf/paleomap3D">repo</a> | <a href="https://github.com/afnleaf/paleomap3D?tab=readme-ov-file#credits">credits</a></p>
-    </div>
     <div class='legend'>
         <div class='legend-title'>Elevation</div>
         <div class='legend-scale'>
@@ -33,6 +31,13 @@
           </ul>
         </div>
     </div>
+    <p id="instructions">move the slider backwards or forwards in time.</p>
+    <div id="links">
+        <p><a href="https://twitter.com/afnckingleaf">twitter</a> | <a href="https://github.com/afnleaf/paleomap3D">repo</a> | <a href="https://github.com/afnleaf/paleomap3D?tab=readme-ov-file#credits">credits</a></p>
+    </div>
+    <label class="switch">
+      <input type="checkbox">
+    </label>
     <input type="range" min="-109" max="1" value="0" class="slider" id="myRange">
 </body>
 </html>
