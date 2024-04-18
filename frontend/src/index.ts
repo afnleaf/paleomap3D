@@ -1,7 +1,7 @@
-import { Elysia } from 'elysia'
-import { html } from '@elysiajs/html'
-import { cors } from '@elysiajs/cors'
-import { compression } from 'elysia-compression'
+import { Elysia } from 'elysia';
+import { html } from '@elysiajs/html';
+import { cors } from '@elysiajs/cors';
+import { compression } from 'elysia-compression';
 import Glob from 'glob';
 
 const PORT = process.env.PORT || 3333;
@@ -9,11 +9,14 @@ const PORT = process.env.PORT || 3333;
 // for logging purposes
 let num_visitors = 0;
 
+// create new app with some tools
 const app = new Elysia();
 app.use(cors());
 app.use(html());
+// compression gzip
+app.use(compression());
 
-// get routes
+// create get routes
 // homepage
 app.get("/", () => {
     num_visitors += 1;
@@ -76,8 +79,7 @@ sortedBinFilesLarge.forEach((binFilePath, index) => {
     app.get(routePath, () => Bun.file(binFilePath));
 });
 
-// compression gzip
-app.use(compression());
+
 // port
 app.listen(PORT);
 
@@ -85,21 +87,3 @@ app.listen(PORT);
 console.log(
     `Frontend is running at  http://${app.server?.hostname}:${app.server?.port}`
 );
-
-
-/*
-const sortedBinFilesSmall = binFilesSmall.sort((a, b) => {
-    const regex = /(\d+)/g;
-    let numA: number | undefined;
-    let numB: number | undefined;
-    if (a != null && b != null) {
-        numA = parseInt(a.match(regex)![0]);
-        numB = parseInt(b.match(regex)![0]);
-    }
-    if (numA != null && numB != null) {
-        return numA - numB;
-    } else {
-        return 0;
-    }
-});
-*/

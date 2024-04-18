@@ -17,7 +17,6 @@
     "@elysiajs/cors": "^1.0.2",
     "@elysiajs/html": "^1.0.2",
     "@elysiajs/static": "^0.7.1",
-    "@pkmn/img": "^0.2.21",
     "@types/glob": "^8.1.0",
     "elysia": "latest",
     "elysia-compression": "^0.0.7",
