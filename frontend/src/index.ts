@@ -1,6 +1,7 @@
 import { Elysia } from 'elysia'
 import { html } from '@elysiajs/html'
 import { cors } from '@elysiajs/cors'
+import { compression } from 'elysia-compression'
 import Glob from 'glob';
 
 const PORT = process.env.PORT || 3333;
@@ -75,6 +76,8 @@ sortedBinFilesLarge.forEach((binFilePath, index) => {
     app.get(routePath, () => Bun.file(binFilePath));
 });
 
+// compression gzip
+app.use(compression());
 // port
 app.listen(PORT);
 
