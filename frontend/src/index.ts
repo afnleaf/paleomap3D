@@ -1,4 +1,6 @@
 import { Elysia } from 'elysia';
+import zlib from 'zlib';
+import { gzipSync } from 'zlib';
 import { html } from '@elysiajs/html';
 import { cors } from '@elysiajs/cors';
 import { compression } from 'elysia-compression';
@@ -7,7 +9,7 @@ import Glob from 'glob';
 const PORT = process.env.PORT || 3333;
 
 // for logging purposes
-let num_visitors = 0;
+let num_visitors: number = 0;
 
 // create new app with some tools
 const app = new Elysia();
@@ -24,6 +26,7 @@ app.get("/", () => {
     console.log(`omg a visitor ${num_visitors}`);
     return Bun.file("./public/index.html");
 });
+
 /*
 Bun.serve({
     fetch(req) {   
@@ -38,10 +41,63 @@ Bun.serve({
   })
 */
 //.headers.get("Content-Type")
-app.get("/styles.css", () => new Response(Bun.file("./public/styles.css")).headers.get("Content-Type"));
+//app.get("/styles.css", () => new Response(Bun.file("./public/styles.css")).headers.get("Content-Type"));
+//app.get("/styles.css", () => Bun.file("./public/styles.css"));
 
+/*
+// testing compression
+app.get("/styles.css", async () => {
+    try {
+        // why is this green?
+        const fileContents = Bun.file("./public/styles.css");
+        const uint8Array = new Uint8Array(await fileContents.arrayBuffer());
+        const compressed = gzipSync(uint8Array);
+        return new Response(compressed, {
+            headers: {
+                'Content-Type': 'text/css',
+                'Content-Encoding': 'gzip',
+            },
+        });
+    } catch (error) {
+        console.error('Error compressing styles.css:', error);
+        return new Response('Internal Server Error', { status: 500 });
+    }
+});
+*/
 
-app.get("/styles.css", () => Bun.file("./public/styles.css"));
+app.get("/styles.css", async () => {
+    try {
+        // Read file contents
+        const fileContents = await Bun.file("./public/styles.css");
+        
+        // Convert BunFile to Uint8Array
+        const arrayBuffer = await fileContents.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
+
+        // Compress file contents asynchronously
+        const compressed: Uint8Array = await new Promise((resolve, reject) => {
+            zlib.gzip(uint8Array, (error, result) => {
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(result as Uint8Array);
+                }
+            });
+        });
+
+        // Send compressed content with appropriate headers
+        return new Response(compressed, {
+            headers: {
+                'Content-Type': 'text/css', // Update content type if it's CSS
+                'Content-Encoding': 'gzip',
+            },
+        });
+    } catch (error) {
+        console.error('Error compressing styles.css:', error);
+        return new Response('Internal Server Error', { status: 500 });
+    }
+});
+
 app.get("/script.js", () => Bun.file("./public/script.js"));
 app.get("/maps.js", () => Bun.file("./public/maps.js"));
 // favicons
