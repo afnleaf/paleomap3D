@@ -57,8 +57,8 @@ app.get("/right.png", () => Bun.file("./public/images/right.png"));
 app.get("/top.png", () => Bun.file("./public/images/top.png"));
 
 // get the file names of the bin files
-const binPathSmall = "./public/data_bin_small";
-const binPathLarge = "./public/data_bin_large";
+const binPathSmall = "/app/data_bin/small";
+const binPathLarge = "/app/data_bin/large";
 const binFilesSmall = Glob.sync(`${binPathSmall}/*.bin`);
 const binFilesLarge = Glob.sync(`${binPathLarge}/*.bin`);
 

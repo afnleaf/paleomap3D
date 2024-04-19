@@ -8,4 +8,5 @@ services:
     container_name: frontend-paleo3d
     stdin_open: true
     tty: true
-      
+    volumes:
+      - ./data_bin:/app/data_bin

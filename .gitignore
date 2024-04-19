@@ -9,6 +9,6 @@ bun.lockb
 netcdf_1
 netcdf_6
 maps.json
-/data_bin_small
-/data_bin_large
+/data_bin
+/data_raw
 *.bin
