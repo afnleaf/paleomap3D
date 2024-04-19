@@ -50,6 +50,8 @@ let mapSize = "small";
 let pointSize = 0.04;
 // array of inferred positions for parsing 0.1
 let latlon = [];
+// variable to keep track of the fetch queue
+let fetchBinaryFileQueue = Promise.resolve();
 
 // create default scene
 // not sure if the then is doing what I need it to
@@ -140,23 +142,33 @@ document.addEventListener("DOMContentLoaded", function() {
 // go for the route where the map at index is located
 // how to make this entire process more efficient?
 async function fetchBinaryFile(index, size) {
-    // get the binary file
-    fetch(`/${size}${index}`)
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Failed to fetch bin file');
-        }
-        return response.arrayBuffer();
-    })
-    .then(data => {
-        // free old scene
-        unloadScene();
-        // allocate new scene
-        createScene(data);
-    })
-    .catch(error => {
-        console.error('Error fetching bin file:', error);
+    // promise for the fetch request
+    const fetchBinaryFilePromise = new Promise((resolve, reject) =>{
+        // get the binary file
+        fetch(`/${size}${index}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to fetch bin file');
+            }
+            return response.arrayBuffer();
+        })
+        .then(data => {
+            // free old scene
+            unloadScene();
+            // allocate new scene
+            createScene(data);
+            // complete upon scene render
+            resolve();
+        })
+        .catch(error => {
+            console.error('Error fetching bin file:', error);
+            // reject on error
+            reject(error);
+        });
     });
+
+    // add the promise to the fetch queue
+    fetchBinaryFileQueue = fetchBinaryFileQueue.then(() => fetchBinaryFilePromise);
 }
 
 function getMapIndex(value) {
