@@ -1,14 +1,6 @@
 // now I can import from the server whatever I need, just add the route
 import mapNames from './maps.js';
 
-// create all the positions for 0.1
-let latlon = [];
-for (let i = 90.0; i >= -90.0; i -= 0.1 ) {
-    for (let j = -180.0; j <= 180.0; j += 0.1) {
-        latlon.push([i, j])
-    }
-}
-
 // global render
 const w = window.innerWidth;
 const h = window.innerHeight;
@@ -27,8 +19,6 @@ const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
 camera.position.set(2.1947505764760233, -1.8200564599467817, 1.7229850186341116);
 camera.rotation.set(0.8127890828467345, 0.7192327649925704, 0.5026356479842529);
 camera.up.set(-0.6433751963742183, 0.595381764123396, 0.4812368560696019);
-
-
 
 // global scene
 const scene = new THREE.Scene();
@@ -58,9 +48,23 @@ controls.zoomSpeed = 0.9;
 let mapMode = false;
 let mapSize = "small";
 let pointSize = 0.04;
+// array of inferred positions for parsing 0.1
+let latlon = [];
 
 // create default scene
-fetchBinaryFile(0, mapSize);
+// not sure if the then is doing what I need it to
+fetchBinaryFile(0, mapSize)
+.then(() => {
+    // create all the positions for 0.1
+    for (let i = 90.0; i >= -90.0; i -= 0.1 ) {
+        for (let j = -180.0; j <= 180.0; j += 0.1) {
+            latlon.push([i, j])
+        }
+    }
+})
+.catch(error => {
+    console.error('Error fetching binary file:', error);
+});
 
 // event listeners 
 document.addEventListener("DOMContentLoaded", function() {
@@ -70,51 +74,45 @@ document.addEventListener("DOMContentLoaded", function() {
     // access the slider element to create new scenes
     const slider = document.getElementById("myRange");
 
-    // Add an event listener to detect changes in the checkbox state
-    checkbox.addEventListener('change', function() {
-        // Check if the checkbox is checked
-        if (this.checked) {
-            // Checkbox is checked, do something
-            //console.log('Checkbox is checked');
-            mapMode = true;
-            mapSize = "large";
-            pointSize = 0.004;
-        } else {
-            // Checkbox is unchecked, do something else
-            //console.log('Checkbox is unchecked');
-            mapMode = false;
-            mapSize = "small";
-            pointSize = 0.04;
-        }
+    if(checkbox && slider) {
+        // Add an event listener to detect changes in the checkbox state
+        checkbox.addEventListener('change', function() {
+            // Check if the checkbox is checked
+            if (this.checked) {
+                // Checkbox is checked, do something
+                //console.log('Checkbox is checked');
+                mapMode = true;
+                mapSize = "large";
+                pointSize = 0.004;
+            } else {
+                // Checkbox is unchecked, do something else
+                //console.log('Checkbox is unchecked');
+                mapMode = false;
+                mapSize = "small";
+                pointSize = 0.04;
+            }
+            let index = getMapIndex(slider.value);
+            if(index != null) {
+                // get binary file from server and create new scene
+                fetchBinaryFile(Math.abs(slider.value), mapSize);
+            }
+        });
 
-        // get binary file from server and create new scene
-        fetchBinaryFile(Math.abs(slider.value), mapSize);
-    });
-
-
-    
-    if (slider) {
         slider.addEventListener("input", function() {
             // index to get with using absolute value
             // some conditions for improved slider visuals
-            let index;
-            if(slider.value > 0) {
-                return;
-            } else if(slider.value < -108) {
-                return;
-            } else {
-                index = Math.abs(slider.value)
+            let index = getMapIndex(slider.value);
+            if(index != null) {
+                // change map title
+                const mapTitleElement = document.getElementById("title");
+                mapTitleElement.innerHTML = mapNames[index].replace(/\n/g, "<br>");
+
+                // get binary file from server and create new scene
+                fetchBinaryFile(index, mapSize);
             }
-
-            // change map title
-            const mapTitleElement = document.getElementById("title");
-            mapTitleElement.innerHTML = mapNames[index].replace(/\n/g, "<br>");
-
-            // get binary file from server and create new scene
-            fetchBinaryFile(index, mapSize);
         });
     } else {
-        console.error("Slider element not found");
+        console.error("Input elements not found");
     }
 
     // to update scene as user adjusts it
@@ -141,7 +139,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // go for the route where the map at index is located
 // how to make this entire process more efficient?
-function fetchBinaryFile(index, size) {
+async function fetchBinaryFile(index, size) {
     // get the binary file
     fetch(`/${size}${index}`)
     .then(response => {
@@ -160,6 +158,15 @@ function fetchBinaryFile(index, size) {
         console.error('Error fetching bin file:', error);
     });
 }
+
+function getMapIndex(value) {
+    if(value <= 0 && value >= -108){
+        return Math.abs(value)
+    } else {
+        return null;
+    }
+}
+    
 
 // create the default scene
 /*

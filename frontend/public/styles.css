@@ -25,20 +25,21 @@ canvas {
     right: 10px;
     text-align: right;
     z-index: 100;
-    display: block;
+    display: flex;
     color: #ededed;
 }
 
 #links {
     position: absolute;
     padding: 0;
+    margin: 0;
     bottom: 15px;
-    left: 10px;
+    left: -15px;
     text-align: left;
     z-index: 100;
-    display: block;
+    display: flex;
     color: #ededed;
-    list-style-type: none;
+    list-style: none;
 }
 
 /* unvisited link */
@@ -172,6 +173,7 @@ input[type="range"]:active::-webkit-slider-thumb{
     top: 10px;
     left: 10px;
 }
+
 .legend-title {
     text-align: left;
     margin-bottom: 5px;
@@ -207,10 +209,12 @@ ul.legend-labels li span {
 }
 
 .switch {
-    background-color: #ffffff;
     z-index: 100;
-    position: fixed;
-    display: block;
-    top: 10px;
-    left: 150px;
+    position: absolute;
+    display: flex;
+    left: 100px;
+    font-weight: bold;
+    font-size: 90%;
+    margin-bottom: 5px;
+    color: #ededed;
 }
