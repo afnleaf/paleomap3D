@@ -1,10 +1,10 @@
+// node modules
 import { Elysia } from "elysia";
-//import { gzipSync } from "zlib";
 import { html } from "@elysiajs/html";
 import { cors } from "@elysiajs/cors";
 import { compression } from "elysia-compression";
 import Glob from "glob";
-// tools
+// src modules
 import compressor from "./compressor.ts";
 
 const PORT = process.env.PORT || 3333;
@@ -17,11 +17,11 @@ const app = new Elysia();
 app.use(cors());
 app.use(html());
 // compression gzip
-// doesnt work with () => Bun.file()?
+// doesn't work with () => Bun.file()?
 // does it work with compressor?
 app.use(compression());
 
-// create get routes
+// create get routes, pass all the file paths through compressor
 // homepage
 app.get("/", () => {
     num_visitors += 1;
