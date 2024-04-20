@@ -33,6 +33,8 @@ const textureCube = loader.load( [
 ] );
 scene.background = textureCube;
 
+render();
+
 // global controls
 const controls = new THREE.TrackballControls(camera, renderer.domElement);
 controls.enable = true;
@@ -43,7 +45,9 @@ controls.maxDistance = 100;
 controls.staticMoving = true;
 controls.zoomSpeed = 0.9;
 
-
+let firstLoad = true;
+// assign elevation color to the points
+const seaLevel = 0;
 // for swapping between map sizes
 let mapMode = false;
 let mapSize = "small";
@@ -54,19 +58,7 @@ let latlon = [];
 let fetchBinaryFileQueue = Promise.resolve();
 
 // create default scene
-// not sure if the then is doing what I need it to
-fetchBinaryFile(0, mapSize)
-.then(() => {
-    // create all the positions for 0.1
-    for (let i = 90.0; i >= -90.0; i -= 0.1 ) {
-        for (let j = -180.0; j <= 180.0; j += 0.1) {
-            latlon.push([i, j])
-        }
-    }
-})
-.catch(error => {
-    console.error('Error fetching binary file:', error);
-});
+fetchBinaryFile(0, mapSize);
 
 // event listeners 
 document.addEventListener("DOMContentLoaded", function() {
@@ -81,6 +73,16 @@ document.addEventListener("DOMContentLoaded", function() {
         checkbox.addEventListener('change', function() {
             // Check if the checkbox is checked
             if (this.checked) {
+                // only do this on first load
+                // had to put it here because of white screen staying too long
+                if(firstLoad) {
+                    for (let i = 90.0; i >= -90.0; i -= 0.1 ) {
+                        for (let j = -180.0; j <= 180.0; j += 0.1) {
+                            latlon.push([i, j])
+                        }
+                    }
+                    firstLoad = false;
+                }
                 // Checkbox is checked, do something
                 //console.log('Checkbox is checked');
                 mapMode = true;
@@ -357,34 +359,14 @@ async function renderOuterEarth(vertices, elevations) {
         dithering: true,
     });
 
-    // assign elevation color to the pointsE
-    const seaLevel = 0;
     for (let i = 0; i < elevations.length; i++) {
         const elevation = elevations[i];
         let color;
-        // set color based on elevation
-        if (elevation >= -12000 && elevation < -6000)    
-        //color = new THREE.Color(0x32292f);
-        color = new THREE.Color(0x080e30);
-        else if (elevation >= -6000 && elevation < -3000)
-            color = new THREE.Color(0x1f2d47);
-        else if (elevation >= -3000 && elevation < -150)
-            color = new THREE.Color(0x2a3c63);
-        else if (elevation >= -150 && elevation <= seaLevel)
-            color = new THREE.Color(0x344b75);
-        else if (elevation > seaLevel && elevation < 100)
-            color = new THREE.Color(0x347a2a);
-        else if (elevation >= 100 && elevation < 400)
-            color = new THREE.Color(0x00530b);
-        else if (elevation >= 400 && elevation < 1000)
-            color = new THREE.Color(0x3d3704);
-        else if (elevation >= 1000 && elevation < 2000)
-            color = new THREE.Color(0x805411);
-        else if (elevation >= 2000 && elevation < 3200)
-            color = new THREE.Color(0x977944);
-        else
-            color = new THREE.Color(0xadacac);
-
+        if(mapMode) {
+            color = getColorLarge(elevation);
+        } else {
+            color = getColorSmall(elevation);
+        }
         // set the color for each vertex
         geometry.attributes.color.setXYZ(i, color.r, color.g, color.b);
     }
@@ -434,6 +416,64 @@ async function renderInnerEarth() {
     scene.add(crust);
 }
 
+// a function that represents our elevation color gradient
+function getColorSmall(elevation) {
+    let color;
+    // set color based on elevation
+    if (elevation >= -12000 && elevation < -6000)    
+        //color = new THREE.Color(0x32292f);
+        color = new THREE.Color(0x080e30);
+    else if (elevation >= -6000 && elevation < -3000)
+        color = new THREE.Color(0x1f2d47);
+    else if (elevation >= -3000 && elevation < -150)
+        color = new THREE.Color(0x2a3c63);
+    else if (elevation >= -150 && elevation <= seaLevel)
+        color = new THREE.Color(0x344b75);
+    else if (elevation > seaLevel && elevation < 100)
+        color = new THREE.Color(0x347a2a);
+    else if (elevation >= 100 && elevation < 400)
+        color = new THREE.Color(0x00530b);
+    else if (elevation >= 400 && elevation < 1000)
+        color = new THREE.Color(0x3d3704);
+    else if (elevation >= 1000 && elevation < 2000)
+        color = new THREE.Color(0x805411);
+    else if (elevation >= 2000 && elevation < 3200)
+        color = new THREE.Color(0x977944);
+    else
+        color = new THREE.Color(0xadacac);
+
+    return color;
+}
+
+// a function that represents our elevation color gradient for the higher resolution map
+function getColorLarge(elevation) {
+    let color;
+    // set color based on elevation
+    if (elevation >= -12000 && elevation < -6000)    
+    //color = new THREE.Color(0x32292f);
+    color = new THREE.Color(0x080e30);
+    else if (elevation >= -6000 && elevation < -3000)
+        color = new THREE.Color(0x1f2d47);
+    else if (elevation >= -3000 && elevation < -150)
+        color = new THREE.Color(0x2a3c63);
+    else if (elevation >= -150 && elevation <= seaLevel)
+        color = new THREE.Color(0x344b75);
+    else if (elevation > seaLevel && elevation < 100)
+        color = new THREE.Color(0x347a2a);
+    else if (elevation >= 100 && elevation < 400)
+        color = new THREE.Color(0x00530b);
+    else if (elevation >= 400 && elevation < 1000)
+        color = new THREE.Color(0x3d3704);
+    else if (elevation >= 1000 && elevation < 2000)
+        color = new THREE.Color(0x805411);
+    else if (elevation >= 2000 && elevation < 3200)
+        color = new THREE.Color(0x977944);
+    else
+        color = new THREE.Color(0xadacac);
+
+    return color;
+}
+
 // unload all objects from the scene
 function unloadScene() {
     while(scene.children.length > 0){ 
@@ -455,7 +495,8 @@ function render() {
 function animate(t = 0) {
     requestAnimationFrame(animate);
     controls.update();
-    render()
+    render();
 }
 
 animate();
+
