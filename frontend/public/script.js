@@ -102,7 +102,7 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         });
 
-        slider.addEventListener("input", function() {
+        function handleMapChange() {
             // index to get with using absolute value
             // some conditions for improved slider visuals
             let index = getMapIndex(slider.value);
@@ -113,6 +113,21 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 // get binary file from server and create new scene
                 fetchBinaryFile(index, mapSize);
+            }
+        }
+
+        slider.addEventListener("input", function() {
+            handleMapChange();
+        });
+
+        // for keypresses
+        document.addEventListener("keydown", function(event) {
+            if (event.key === "ArrowRight") {
+                slider.value = parseInt(slider.value) + 1;
+                handleMapChange();
+            } else if (event.key === "ArrowLeft") {
+                slider.value = parseInt(slider.value) - 1;
+                handleMapChange();
             }
         });
     } else {
@@ -130,6 +145,8 @@ document.addEventListener("DOMContentLoaded", function() {
         render();
     });
 
+    
+
     /*
     // for future random reset points
     controls.addEventListener( "change", () => { 
@@ -140,6 +157,8 @@ document.addEventListener("DOMContentLoaded", function() {
     });
     */
 });
+
+
 
 // go for the route where the map at index is located
 // how to make this entire process more efficient?
