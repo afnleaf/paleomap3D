@@ -60,6 +60,15 @@ let fetchBinaryFileQueue = Promise.resolve();
 // create default scene
 fetchBinaryFile(0, mapSize);
 
+// infer vertices for the 0.1
+function generateVertices() {
+    for (let i = 90.0; i >= -90.0; i -= 0.1 ) {
+        for (let j = -180.0; j <= 180.0; j += 0.1) {
+            latlon.push([i, j])
+        }
+    }
+}
+
 // event listeners 
 document.addEventListener("DOMContentLoaded", function() {
     // toggle for map size
@@ -69,18 +78,28 @@ document.addEventListener("DOMContentLoaded", function() {
     const slider = document.getElementById("myRange");
 
     if(checkbox && slider) {
+        // get the map at slider index
+        function handleMapChange() {
+            // index to get with using absolute value
+            // some conditions for improved slider visuals
+            let index = getMapIndex(slider.value);
+            if(index != null) {
+                // change map title
+                const mapTitleElement = document.getElementById("title");
+                mapTitleElement.innerHTML = mapNames[index].replace(/\n/g, "<br>");
+                // get binary file from server and create new scene
+                fetchBinaryFile(index, mapSize);
+            }
+        }
+
         // Add an event listener to detect changes in the checkbox state
         checkbox.addEventListener('change', function() {
-            // Check if the checkbox is checked
+            // check if the checkbox is checked
             if (this.checked) {
                 // only do this on first load
                 // had to put it here because of white screen staying too long
                 if(firstLoad) {
-                    for (let i = 90.0; i >= -90.0; i -= 0.1 ) {
-                        for (let j = -180.0; j <= 180.0; j += 0.1) {
-                            latlon.push([i, j])
-                        }
-                    }
+                    generateVertices();
                     firstLoad = false;
                 }
                 // Checkbox is checked, do something
@@ -95,32 +114,15 @@ document.addEventListener("DOMContentLoaded", function() {
                 mapSize = "small";
                 pointSize = 0.04;
             }
-            let index = getMapIndex(slider.value);
-            if(index != null) {
-                // get binary file from server and create new scene
-                fetchBinaryFile(Math.abs(slider.value), mapSize);
-            }
+            handleMapChange();
         });
 
-        function handleMapChange() {
-            // index to get with using absolute value
-            // some conditions for improved slider visuals
-            let index = getMapIndex(slider.value);
-            if(index != null) {
-                // change map title
-                const mapTitleElement = document.getElementById("title");
-                mapTitleElement.innerHTML = mapNames[index].replace(/\n/g, "<br>");
-
-                // get binary file from server and create new scene
-                fetchBinaryFile(index, mapSize);
-            }
-        }
-
+        // if the slider is used
         slider.addEventListener("input", function() {
             handleMapChange();
         });
 
-        // for keypresses
+        // for keypresses to change the slider value
         document.addEventListener("keydown", function(event) {
             if (event.key === "ArrowRight") {
                 slider.value = parseInt(slider.value) + 1;
@@ -144,8 +146,6 @@ document.addEventListener("DOMContentLoaded", function() {
         renderer.setSize(w, h);
         render();
     });
-
-    
 
     /*
     // for future random reset points
