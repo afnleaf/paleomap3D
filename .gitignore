@@ -12,3 +12,4 @@ maps.json
 /data_bin
 /data_raw
 *.bin
+/pyscripts/textures_*
