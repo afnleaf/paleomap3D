@@ -43,7 +43,7 @@ def create_image(file_path, map_num):
     df = data["z"].to_dataframe()
     #print(df)
     # create new image
-    width, height = 4109, 2000
+    width, height = 5123, 2500
     img = Image.new('RGB', (width, height), (255, 255, 255))
     draw = ImageDraw.Draw(img)
     # loop through dataframe

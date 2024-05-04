@@ -52,9 +52,15 @@ const binPathLarge = "/app/data_bin/large";
 const binFilesSmall = Glob.sync(`${binPathSmall}/*.bin`);
 const binFilesLarge = Glob.sync(`${binPathLarge}/*.bin`);
 
+// get the file names of the texture files
+const texturePathSmall = "/app/data_texture/textures_small";
+const texturePathLarge = "/app/data_texture/textures_large";
+const textureSmall = Glob.sync(`${texturePathSmall}/*.png`);
+const textureLarge = Glob.sync(`${texturePathLarge}/*.png`);
+
 // sort files numerically ascending based on first digit sequence of filename
 // otherwise they go by alphabetical
-function sortBinFiles(binFiles: string[]): string[] {
+function sortFiles(binFiles: string[]): string[] {
     return binFiles.sort((a, b) => {
         const regex = /(\d+)/g;
         let numA: number | undefined;
@@ -71,8 +77,13 @@ function sortBinFiles(binFiles: string[]): string[] {
     });
 }
 
-const sortedBinFilesSmall = sortBinFiles(binFilesSmall);
-const sortedBinFilesLarge = sortBinFiles(binFilesLarge);
+// sort bin files
+const sortedBinFilesSmall = sortFiles(binFilesSmall);
+const sortedBinFilesLarge = sortFiles(binFilesLarge);
+
+// sort texture files
+const sortedTextureSmall = sortFiles(textureSmall);
+const sortedTextureLarge = sortFiles(textureLarge);
 
 // iterate over the binary files and create http routes for the app
 sortedBinFilesSmall.forEach((binFilePath, index) => {
@@ -85,6 +96,18 @@ sortedBinFilesLarge.forEach((binFilePath, index) => {
     const routePath = `/large${index}`;
     console.log(`route: ${routePath} for ${binFilePath}`);
     app.get(routePath, () => compressor(binFilePath));
+});
+
+sortedTextureSmall.forEach((texturePath, index) => {
+    const routePath = `/stexture${index}`;
+    console.log(`route: ${routePath} for ${texturePath}`);
+    app.get(routePath, () => compressor(texturePath));
+});
+
+sortedTextureLarge.forEach((texturePath, index) => {
+    const routePath = `/ltexture${index}`;
+    console.log(`route: ${routePath} for ${texturePath}`);
+    app.get(routePath, () => compressor(texturePath));
 });
 
 

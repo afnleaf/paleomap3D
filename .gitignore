@@ -11,5 +11,6 @@ netcdf_6
 maps.json
 /data_bin
 /data_raw
+/data_texture
 *.bin
 /pyscripts/textures_*
