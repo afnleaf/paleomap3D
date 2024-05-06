@@ -24,15 +24,13 @@ app.use(compression());
 // create get routes, pass all the file paths through compressor
 // homepage
 app.get("/", () => {
+    // half bake visitor logging
     num_visitors += 1;
     console.log(`omg a visitor ${num_visitors}`);
     return compressor("./public/index.html");
 });
-
 app.get("/styles.css", () => compressor("./public/styles.css"));
 app.get("/script.js", () => compressor("./public/script.js"));
-
-
 app.get("/maps.js", () => compressor("./public/maps.js"));
 // favicons
 app.get("/favicon-32x32.png", () => compressor("./public/images/favicon-32x32.png"));
@@ -98,6 +96,7 @@ sortedBinFilesLarge.forEach((binFilePath, index) => {
     app.get(routePath, () => compressor(binFilePath));
 });
 
+// iterate over the texture files and create http routes for the app
 sortedTextureSmall.forEach((texturePath, index) => {
     const routePath = `/stexture${index}`;
     console.log(`route: ${routePath} for ${texturePath}`);
