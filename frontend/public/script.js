@@ -301,6 +301,7 @@ window.addEventListener("resize", () => {
 // handle renderer breaking
 renderer.domElement.addEventListener('webglcontextlost', (event) => {
     event.preventDefault();
+    handleMapChange();
     console.log("ded");
 }, false);
 renderer.domElement.addEventListener('webglcontextrestored', (event) => {
