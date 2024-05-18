@@ -54,6 +54,9 @@ let mapSize = "small";
 
 // variable to keep track of the fetch queue
 let fetchFileQueue = Promise.resolve();
+// handle map change (debouncing)
+let isFetching = false;
+let pendingIndex = null;
 
 // create default scene
 await fetchTextureFile(0, mapSize)
@@ -68,9 +71,14 @@ await fetchTextureFile(0, mapSize)
 
 // get the map at slider index
 async function handleMapChange() {
+    if(isFetching) {
+        pendingIndex = getMapIndex(slider.value);
+        return;
+    }
+    isFetching = true;
     // index to get with using absolute value
     // some conditions for improved slider visuals
-    let index = getMapIndex(slider.value);
+    let index = getMapIndex(slider.value); 
     if(index != null) {
         // change map title
         const mapTitleElement = document.getElementById("title");
@@ -79,6 +87,12 @@ async function handleMapChange() {
         await fetchTextureFile(index, mapSize);
         // free old map for memory optimization
         unloadPreviousMap();
+    }
+    isFetching = false;
+    if (pendingIndex !== null) {
+        const nextIndex = pendingIndex;
+        pendingIndex = null;
+        handleMapChange(nextIndex);
     }
 }
 
@@ -99,6 +113,9 @@ async function fetchTextureFile(index, size) {
         // load the texture file from path
         const textureURL = `/${size}texture${index}`;
         textureLoader.load(textureURL, (texture) => {
+            texture.minFilter = THREE.LinearFilter; // Reduce memory usage
+            texture.magFilter = THREE.LinearFilter;
+            texture.generateMipmaps = false;
             createSceneFromTexture(texture);
             resolve();
         }, undefined, reject);
@@ -200,6 +217,8 @@ function unloadPreviousMap() {
         return;
     }
     scene.remove(scene.children[n-2]);
+    //texture.dispose();
+    //geometry.dispose();
 }
 
 // render the scene with the rendering renderer
@@ -217,6 +236,7 @@ function animate() {
 animate();
 
 // event listeners at the bottom because of async issues
+// dom content loaded before scripts tag in index.html
 
 // toggle for map size
 // Get the checkbox element
@@ -224,7 +244,11 @@ const checkbox = document.querySelector("input[type='checkbox']");
 // access the slider element to create new scenes
 const slider = document.getElementById("myRange");
 
-if(checkbox && slider) {
+// for keydown
+let isKeyPressed = false;
+let delay = 100;
+
+if(checkbox) {
     // add an event listener to detect changes in the checkbox state
     checkbox.addEventListener("change", (event) => {
         // check if the checkbox is checked
@@ -235,7 +259,9 @@ if(checkbox && slider) {
         }
         handleMapChange();
     });
+}
 
+if(slider) {
     // if the slider is used
     slider.addEventListener("input", () => {
         handleMapChange();
@@ -243,16 +269,22 @@ if(checkbox && slider) {
 
     // for keypresses to change the slider value
     document.addEventListener("keydown", (event) => {
-        if (event.key === "ArrowRight") {
-            slider.value = parseInt(slider.value) + 1;
-            handleMapChange();
-        } else if (event.key === "ArrowLeft") {
-            slider.value = parseInt(slider.value) - 1;
-            handleMapChange();
+        if(!isKeyPressed) {
+            isKeyPressed = true;
+            // check which key
+            if (event.key === "ArrowRight") {
+                slider.value = parseInt(slider.value) + 1;
+                handleMapChange();
+            } else if (event.key === "ArrowLeft") {
+                slider.value = parseInt(slider.value) - 1;
+                handleMapChange();
+            }
+            // delay
+            setTimeout(() => {
+                isKeyPressed = false;
+            }, delay);
         }
-    });
-} else {
-    console.error("Input elements not found");
+    });    
 }
 
 // to update scene as user adjusts it
@@ -265,3 +297,12 @@ window.addEventListener("resize", () => {
     renderer.setSize(w, h);
     render();
 });
+
+// handle renderer breaking
+renderer.domElement.addEventListener('webglcontextlost', (event) => {
+    event.preventDefault();
+    console.log("ded");
+}, false);
+renderer.domElement.addEventListener('webglcontextrestored', (event) => {
+    console.log("back up?");
+}, false);
