@@ -4,6 +4,7 @@ import math
 import pandas as pd
 import xarray as xr
 from PIL import Image, ImageDraw
+from multiprocessing import Pool
 
 #write_dir = "textures_small"
 #dir_path = "../data_raw/netcdf_1"
@@ -12,13 +13,11 @@ dir_path = "../data_raw/netcdf_6"
 
 # run our stuff
 def main():
+    # get sorted files
     files = os.listdir(dir_path)
-    netcdf_files = []
-    for file in files:
-        if file.endswith(".nc"):
-            netcdf_files.append(file)  
-
+    netcdf_files = [file for file in files if file.endswith(".nc")]
     netcdf_files = sorted(netcdf_files, key=sort_ascending)
+    # process each file
     j = 1
     for i, file in enumerate(netcdf_files):
         if file.endswith(".nc"):
@@ -26,6 +25,7 @@ def main():
             file_path = dir_path + "/" + file
             create_image(file_path, j)
             j += 1
+
 
 # to sort the Map__ number in ascending order with the .5s
 def sort_ascending(file_name):
