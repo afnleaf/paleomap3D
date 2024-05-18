@@ -11,3 +11,4 @@ services:
     volumes:
       - ./data_bin:/app/data_bin
       - ./data_texture:/app/data_texture
+    restart: unless-stopped
