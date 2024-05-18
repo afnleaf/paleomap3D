@@ -1,5 +1,5 @@
 // now I can import from the server whatever I need, just add the route
-import mapNames from './maps.js';
+import mapNames from "./maps.js";
 
 // global render
 const w = window.innerWidth;
@@ -24,14 +24,18 @@ camera.up.set(-0.6433751963742183, 0.595381764123396, 0.4812368560696019);
 const scene = new THREE.Scene();
 
 // space background
-const loader = new THREE.CubeTextureLoader();
+const cubeLoader = new THREE.CubeTextureLoader();
 // had to adjust sun position from "bottom"
-const textureCube = loader.load( [
+const textureCube = cubeLoader.load( [
     "front.png", "back.png",
 	"top.png", "bottom.png",
     "right.png", "left.png"
 ] );
 scene.background = textureCube;
+
+// do this once
+const textureLoader = new THREE.TextureLoader();
+const icogeo = new THREE.IcosahedronGeometry(1, 16);
 
 render();
 
@@ -55,10 +59,12 @@ let pointSize = 0.04;
 // array of inferred positions for parsing 0.1
 let latlon = [];
 // variable to keep track of the fetch queue
-let fetchBinaryFileQueue = Promise.resolve();
+let fetchFileQueue = Promise.resolve();
 
 // create default scene
-fetchBinaryFile(0, mapSize);
+//fetchBinaryFile(0, mapSize);
+//fetchTextureFile(0, mapSize);
+createSceneFromTexture(0, mapSize);
 
 // infer vertices for the 0.1
 function generateVertices() {
@@ -69,47 +75,50 @@ function generateVertices() {
     }
 }
 
+
 // event listeners 
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", () => {
+    // get the map at slider index
+    async function handleMapChange() {
+        // index to get with using absolute value
+        // some conditions for improved slider visuals
+        let index = getMapIndex(slider.value);
+        if(index != null) {
+            // change map title
+            const mapTitleElement = document.getElementById("title");
+            mapTitleElement.innerHTML = mapNames[index].replace(/\n/g, "<br>");
+            // get binary file from server and create new scene
+            //fetchBinaryFile(index, mapSize);
+            //fetchTextureFile(index, mapSize);
+            await createSceneFromTexture(index, mapSize);
+        }
+    }
+
     // toggle for map size
     // Get the checkbox element
-    const checkbox = document.querySelector('input[type="checkbox"]');
+    const checkbox = document.querySelector("input[type='checkbox']");
     // access the slider element to create new scenes
     const slider = document.getElementById("myRange");
 
     if(checkbox && slider) {
-        // get the map at slider index
-        function handleMapChange() {
-            // index to get with using absolute value
-            // some conditions for improved slider visuals
-            let index = getMapIndex(slider.value);
-            if(index != null) {
-                // change map title
-                const mapTitleElement = document.getElementById("title");
-                mapTitleElement.innerHTML = mapNames[index].replace(/\n/g, "<br>");
-                // get binary file from server and create new scene
-                fetchBinaryFile(index, mapSize);
-            }
-        }
-
-        // Add an event listener to detect changes in the checkbox state
-        checkbox.addEventListener('change', function() {
+        // add an event listener to detect changes in the checkbox state
+        checkbox.addEventListener("change", (event) =>{
             // check if the checkbox is checked
-            if (this.checked) {
+            if (event.target.checked) {
                 // only do this on first load
                 // had to put it here because of white screen staying too long
                 if(firstLoad) {
                     generateVertices();
                     firstLoad = false;
                 }
-                // Checkbox is checked, do something
-                //console.log('Checkbox is checked');
+                // checkbox is checked, do something
+                //console.log("Checkbox is checked");
                 mapMode = true;
                 mapSize = "large";
                 pointSize = 0.004;
             } else {
-                // Checkbox is unchecked, do something else
-                //console.log('Checkbox is unchecked');
+                // checkbox is unchecked, do something else
+                //console.log("Checkbox is unchecked");
                 mapMode = false;
                 mapSize = "small";
                 pointSize = 0.04;
@@ -118,12 +127,12 @@ document.addEventListener("DOMContentLoaded", function() {
         });
 
         // if the slider is used
-        slider.addEventListener("input", function() {
+        slider.addEventListener("input", () => {
             handleMapChange();
         });
 
         // for keypresses to change the slider value
-        document.addEventListener("keydown", function(event) {
+        document.addEventListener("keydown", (event) => {
             if (event.key === "ArrowRight") {
                 slider.value = parseInt(slider.value) + 1;
                 handleMapChange();
@@ -146,18 +155,15 @@ document.addEventListener("DOMContentLoaded", function() {
         renderer.setSize(w, h);
         render();
     });
-
-    /*
+    
     // for future random reset points
-    controls.addEventListener( "change", () => { 
-        console.log( controls.object );  
-        console.log( controls.object.position ); 
-        console.log( controls.object.rotation ); 
-        console.log( controls.object.up ); 
-    });
-    */
+    //controls.addEventListener( "change", () => { 
+    //    console.log( controls.object );  
+    //    console.log( controls.object.position ); 
+    //    console.log( controls.object.rotation ); 
+    //    console.log( controls.object.up ); 
+    //});
 });
-
 
 
 // go for the route where the map at index is located
@@ -169,7 +175,7 @@ async function fetchBinaryFile(index, size) {
         fetch(`/${size}${index}`)
         .then(response => {
             if (!response.ok) {
-                throw new Error('Failed to fetch bin file');
+                throw new Error("Failed to fetch bin file");
             }
             return response.arrayBuffer();
         })
@@ -177,19 +183,55 @@ async function fetchBinaryFile(index, size) {
             // free old scene
             unloadScene();
             // allocate new scene
-            createScene(data);
+            createSceneFromBin(data);
             // complete upon scene render
             resolve();
         })
         .catch(error => {
-            console.error('Error fetching bin file:', error);
+            console.error("Error fetching bin file:", error);
             // reject on error
             reject(error);
         });
     });
 
     // add the promise to the fetch queue
-    fetchBinaryFileQueue = fetchBinaryFileQueue.then(() => fetchBinaryFilePromise);
+    fetchFileQueue = fetchFileQueue.then(() => fetchBinaryFilePromise);
+    return fetchBinaryFilePromise;
+}
+
+// go for the route where the map at index is located
+// how to make this entire process more efficient?
+async function fetchTextureFile(index, size) {
+    // promise for the fetch request
+    const fetchTextureFilePromise = new Promise((resolve, reject) =>{
+        // get the binary file
+        fetch(`/${size}texture${index}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Failed to fetch texture file");
+            }
+            return response.blob();
+        })
+        .then(data => {
+            // convert to object url
+            const texture = URL.createObjectURL(data);
+            // free old scene
+            //unloadScene();
+            // allocate new scene
+            createSceneFromTexture(texture);
+            // complete upon scene render
+            resolve();
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            // reject on error
+            reject(error);
+        });
+    });
+
+    // add the promise to the fetch queue
+    fetchFileQueue = fetchFileQueue.then(() => fetchTextureFilePromise);
+    return fetchTextureFilePromise;
 }
 
 function getMapIndex(value) {
@@ -206,7 +248,7 @@ function getMapIndex(value) {
 fetch(`/bin0`)
 .then(response => {
     if (!response.ok) {
-        throw new Error('Failed to fetch binary file');
+        throw new Error("Failed to fetch binary file");
     }
     return response.arrayBuffer();
 })
@@ -214,7 +256,7 @@ fetch(`/bin0`)
     createScene(data);
 })
 .catch(error => {
-    console.error('Error fetching binary file:', error);
+    console.error("Error fetching binary file:", error);
 });
 */
 
@@ -259,7 +301,7 @@ function parseBin(data) {
         const longitude = parseFloat(lo);
         const elevation = parseFloat(el);
 
-        //console.log(`${j}: lat:${lat.toString(2).padStart(8, '0')}, lon:${lon.toString(2).padStart(9, '0')}, z:${z.toString(2).padStart(15, '0')}`);
+        //console.log(`${j}: lat:${lat.toString(2).padStart(8, "0")}, lon:${lon.toString(2).padStart(9, "0")}, z:${z.toString(2).padStart(15, "0")}`);
         //console.log(`${j}: lat:${latitude}, lon:${longitude}, z:${elevation}`);
         //console.log(`${j}: lat:${la}, lon:${lo}, z:${el}`);
 
@@ -295,7 +337,7 @@ function parseBin6(data) {
         let word = dataView.getUint16(i, false);
         // Check if the highest bit is 1 (indicating a negative number)
         if (word & 0x8000) {
-            // Perform Two's complement conversion for negative numbers
+            // Perform Two"s complement conversion for negative numbers
             word = -((~word & 0xFFFF) + 1);
         }
         const latitude = parseFloat(latlon[j][0]);
@@ -320,7 +362,7 @@ function parseBin6(data) {
 }
 
 // create a scene out of the given data
-async function createScene(data) {
+async function createSceneFromBin(data) {
     let vertices, elevations;
     if(mapMode) {
         ({ vertices, elevations } = parseBin6(data));
@@ -329,7 +371,15 @@ async function createScene(data) {
     }
     //await renderTools();
     await renderZenithPoles();
-    await renderOuterEarth(vertices, elevations);
+    await renderOuterEarthFromBin(vertices, elevations);
+    await renderInnerEarth();
+}
+
+async function createSceneFromTexture(index, size) {
+    const texturePath = `/${size}texture${index}`;
+    //await renderTools();
+    await renderZenithPoles();
+    await renderOuterEarthFromTexture(texturePath);
     await renderInnerEarth();
 }
 
@@ -347,7 +397,7 @@ async function renderZenithPoles() {
         0, 0, 0,  // Start of the line (origin)
         0, 0, 1.2  // End of the line (along the z-axis)
     ]);
-    northGeo.setAttribute('position', new THREE.BufferAttribute(northVertices, 3));
+    northGeo.setAttribute("position", new THREE.BufferAttribute(northVertices, 3));
     const northMat = new THREE.LineBasicMaterial({ color: 0x0000ff });
     const north = new THREE.Line(northGeo, northMat);
     scene.add(north);
@@ -357,18 +407,18 @@ async function renderZenithPoles() {
         0, 0, -1.2,  // Start of the line (origin)
         0, 0, 0,  // End of the line (along the z-axis)
     ]);
-    southGeo.setAttribute('position', new THREE.BufferAttribute(southVertices, 3));
+    southGeo.setAttribute("position", new THREE.BufferAttribute(southVertices, 3));
     const southMat = new THREE.LineBasicMaterial({ color: 0xff0000 });
     const south = new THREE.Line(southGeo, southMat);
     scene.add(south);
 }
 
 // render the earth using points from bin file
-async function renderOuterEarth(vertices, elevations) {
+async function renderOuterEarthFromBin(vertices, elevations) {
     // create buffer geometry for points
     const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-    geometry.setAttribute('color', new THREE.Float32BufferAttribute(new Array(vertices.length).fill(0), 3)); 
+    geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+    geometry.setAttribute("color", new THREE.Float32BufferAttribute(new Array(vertices.length).fill(0), 3)); 
 
     // colour the point with material
     const material = new THREE.PointsMaterial({
@@ -397,7 +447,23 @@ async function renderOuterEarth(vertices, elevations) {
     scene.add(points);
 }
 
+// render the earth by mapping a texture to the previously created icosahedron
+async function renderOuterEarthFromTexture(textureURL) {
+    return new Promise((resolve, reject) => {
+        textureLoader.load(textureURL, (texture) => {
+            const mat = new THREE.MeshBasicMaterial({
+                map: texture
+            });
+            const earth = new THREE.Mesh(icogeo, mat);
+            earth.rotation.x = Math.PI / 2;
+            scene.add(earth);
+            resolve();
+        }, undefined, reject);
+    });
+}
+
 // render da deep core
+// this can be moved outside
 async function renderInnerEarth() {
     let geo;
     let mat;
@@ -518,4 +584,3 @@ function animate(t = 0) {
 }
 
 animate();
-

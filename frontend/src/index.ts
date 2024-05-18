@@ -98,13 +98,13 @@ sortedBinFilesLarge.forEach((binFilePath, index) => {
 
 // iterate over the texture files and create http routes for the app
 sortedTextureSmall.forEach((texturePath, index) => {
-    const routePath = `/stexture${index}`;
+    const routePath = `/smalltexture${index}`;
     console.log(`route: ${routePath} for ${texturePath}`);
     app.get(routePath, () => compressor(texturePath));
 });
 
 sortedTextureLarge.forEach((texturePath, index) => {
-    const routePath = `/ltexture${index}`;
+    const routePath = `/largetexture${index}`;
     console.log(`route: ${routePath} for ${texturePath}`);
     app.get(routePath, () => compressor(texturePath));
 });
