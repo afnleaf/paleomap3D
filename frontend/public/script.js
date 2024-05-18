@@ -52,8 +52,11 @@ controls.zoomSpeed = 0.9;
 // for swapping between map sizes
 let mapSize = "small";
 
+// variable to keep track of the fetch queue
+let fetchFileQueue = Promise.resolve();
+
 // create default scene
-await createSceneFromTexture(0, mapSize)
+await fetchTextureFile(0, mapSize)
     .then(() => {
         // do this once
         renderZenithPoles();
@@ -73,7 +76,7 @@ async function handleMapChange() {
         const mapTitleElement = document.getElementById("title");
         mapTitleElement.innerHTML = mapNames[index].replace(/\n/g, "<br>");
         // allocate new scene
-        await createSceneFromTexture(index, mapSize);
+        await fetchTextureFile(index, mapSize);
         // free old map for memory optimization
         unloadPreviousMap();
     }
@@ -88,11 +91,27 @@ function getMapIndex(value) {
     }
 }
 
+// go for the route where the map at index is located
+// how to make this entire process more efficient?
+async function fetchTextureFile(index, size) {
+    // promise for the fetch request
+    const fetchTextureFilePromise = new Promise((resolve, reject) => {
+        // load the texture file from path
+        const textureURL = `/${size}texture${index}`;
+        textureLoader.load(textureURL, (texture) => {
+            createSceneFromTexture(texture);
+            resolve();
+        }, undefined, reject);
+    });
+    // add the promise to the fetch queue
+    fetchFileQueue = fetchFileQueue.then(() => fetchTextureFilePromise);
+    return fetchTextureFilePromise;
+}
+
 // make path then build earth mesh
-async function createSceneFromTexture(index, size) {
-    const texturePath = `/${size}texture${index}`;
+async function createSceneFromTexture(texture) {
     //await renderTools();
-    await renderOuterEarthFromTexture(texturePath);
+    await renderOuterEarthFromTexture(texture);
 }
 
 // render visual helpers
@@ -103,26 +122,22 @@ async function renderTools() {
 }
 
 // render the earth by mapping a texture to the previously created icosahedron
-async function renderOuterEarthFromTexture(textureURL) {
-    return new Promise((resolve, reject) => {
-        textureLoader.load(textureURL, (texture) => {
-            const mat = new THREE.MeshBasicMaterial({
-                map: texture
-            });
-            const earth = new THREE.Mesh(icogeo, mat);
-            earth.rotation.x = Math.PI / 2;
-            scene.add(earth);
-            resolve();
-        }, undefined, reject);
+//async function renderOuterEarthFromTexture(textureURL) {
+async function renderOuterEarthFromTexture(texture) {
+    const mat = new THREE.MeshBasicMaterial({
+        map: texture
     });
+    const earth = new THREE.Mesh(icogeo, mat);
+    earth.rotation.x = Math.PI / 2;
+    scene.add(earth);
 }
 
 // render north and south poles aka the zenith axis
 async function renderZenithPoles() {
     const northGeo = new THREE.BufferGeometry();
     const northVertices = new Float32Array([
-        0, 0, 0,  // Start of the line (origin)
-        0, 0, 1.2  // End of the line (along the z-axis)
+        0, 0, 0,    // start of the line (origin)
+        0, 0, 1.2   // end of the line (along the z-axis)
     ]);
     northGeo.setAttribute("position", new THREE.BufferAttribute(northVertices, 3));
     const northMat = new THREE.LineBasicMaterial({ color: 0x0000ff });
@@ -131,8 +146,8 @@ async function renderZenithPoles() {
 
     const southGeo = new THREE.BufferGeometry();
     const southVertices = new Float32Array([
-        0, 0, -1.2,  // Start of the line (origin)
-        0, 0, 0,  // End of the line (along the z-axis)
+        0, 0, -1.2,  // start of the line (origin)
+        0, 0, 0,     // end of the line (along the z-axis)
     ]);
     southGeo.setAttribute("position", new THREE.BufferAttribute(southVertices, 3));
     const southMat = new THREE.LineBasicMaterial({ color: 0xff0000 });

@@ -11,8 +11,7 @@
 //let mapMode = false;
 // assign elevation color to the points
 //const seaLevel = 0;
-// variable to keep track of the fetch queue
-//let fetchFileQueue = Promise.resolve();
+
 // get binary file from server and create new scene
 //fetchBinaryFile(index, mapSize);
 //fetchTextureFile(index, mapSize);
