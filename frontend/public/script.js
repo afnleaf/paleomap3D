@@ -58,16 +58,19 @@ let fetchFileQueue = Promise.resolve();
 let isFetching = false;
 let pendingIndex = null;
 
+// do this once
+renderZenithPoles();
+renderInnerEarth();
+
 // create default scene
-await fetchTextureFile(0, mapSize)
+await fetchTextureFile(0, mapSize);
+    /*
     .then(() => {
-        // do this once
-        renderZenithPoles();
-        renderInnerEarth();
     })
     .catch((error) => {
         console.error("Error: ", error);
     });
+    */
 
 // get the map at slider index
 async function handleMapChange() {
@@ -89,11 +92,13 @@ async function handleMapChange() {
         unloadPreviousMap();
     }
     isFetching = false;
+    /*
     if (pendingIndex !== null) {
         const nextIndex = pendingIndex;
         pendingIndex = null;
-        handleMapChange(nextIndex);
+        handleMapChange();
     }
+    */
 }
 
 // slider inverted, so use absolute value
@@ -212,13 +217,17 @@ async function renderInnerEarth() {
 
 // unload 2nd last map from the scene
 function unloadPreviousMap() {
-    let n = scene.children.length;
+    let n = scene.children.length - 1;
     if(n < 2) {
         return;
     }
-    scene.remove(scene.children[n-2]);
-    //texture.dispose();
-    //geometry.dispose();
+    const lastChild = scene.children[n-1];
+    if(lastChild.material.map) {
+        lastChild.material.map.dispose();
+    }
+    lastChild.material.dispose();
+    lastChild.geometry.dispose();
+    scene.remove(scene.children[n-1]);
 }
 
 // render the scene with the rendering renderer
@@ -246,7 +255,7 @@ const slider = document.getElementById("myRange");
 
 // for keydown
 let isKeyPressed = false;
-let delay = 100;
+let delay = 10;
 
 if(checkbox) {
     // add an event listener to detect changes in the checkbox state
@@ -263,9 +272,9 @@ if(checkbox) {
 
 if(slider) {
     // if the slider is used
-    slider.addEventListener("input", () => {
+    slider.addEventListener("input", debounce(() => {
         handleMapChange();
-    });
+    }, delay));
 
     // for keypresses to change the slider value
     document.addEventListener("keydown", (event) => {
@@ -287,6 +296,15 @@ if(slider) {
     });    
 }
 
+// add delay to process
+function debounce(func, wait) {
+    let timeout;
+    return function (...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+}
+
 // to update scene as user adjusts it
 window.addEventListener("resize", () => {
     const w = window.innerWidth;
@@ -300,10 +318,10 @@ window.addEventListener("resize", () => {
 
 // handle renderer breaking
 renderer.domElement.addEventListener('webglcontextlost', (event) => {
-    event.preventDefault();
-    handleMapChange();
     console.log("ded");
+    event.preventDefault();
 }, false);
 renderer.domElement.addEventListener('webglcontextrestored', (event) => {
     console.log("back up?");
+    handleMapChange();
 }, false);
