@@ -1,4 +1,5 @@
 body {
+    font-family: "Roboto", sans-serif;
     background-color: black;
     margin: 0;
 }
@@ -31,6 +32,7 @@ canvas {
     color: #ededed;
 }
 
+/* links */
 #links {
     position: absolute;
     padding: 0;
@@ -47,28 +49,25 @@ canvas {
     list-style: none;
 }
 
-/* unvisited link */
 a:link {
     color: #ededed;
 }
 
-/* visited link */
 a:visited {
     color: #ededed;
 }
 
-/* mouse over link */
 a:hover {
     color: hotpink;
 }
 
-/* selected link */
 a:active {
     color: #ededed;
 }
 
+/* slider map picker */
 .slider{
-    background-color: #ffffff;
+    background-color: #ccc;
     width: 100%;
     position: fixed;
     bottom: 0;
@@ -85,7 +84,8 @@ input[type="range"]{
     width: 80%;
     align-items: center;
     height: 8px;
-    background-color: #d5d5d5;
+    /* background-color: #d5d5d5; */
+    background-color: #ccc;
     border-radius: 8px;
     outline: none;
 }
@@ -171,6 +171,7 @@ input[type="range"]:active::-webkit-slider-thumb{
 }
 */
 
+/* elevation legend */
 .legend {
     z-index: 100;
     position: absolute;
@@ -213,13 +214,52 @@ ul.legend-labels li span {
     color: #ededed;
 }
 
+/* hd mode switch */
 .switch {
     z-index: 100;
     position: absolute;
     display: flex;
-    left: 100px;
+    align-items: center;
+    left: 10px;
+    top: 220px;
+}
+
+.switch .hdmode {
     font-weight: bold;
     font-size: 90%;
-    margin-bottom: 5px;
+    margin-right: 10px;
     color: #ededed;
+}
+
+.switch input {
+    display: none;
+}
+
+.toggle {
+    position: relative;
+    width: 35px;
+    height: 20px;
+    background-color: #ccc;
+    border-radius: 25px;
+    transition: background-color 0.2s;
+}
+
+.toggle:before {
+    content: "";
+    position: absolute;
+    height: 16px; 
+    width: 16px; 
+    left: 2px; 
+    bottom: 2px; 
+    background-color: #333; 
+    border-radius: 50%; 
+    transition: transform 0.2s; 
+}
+
+input:checked + .toggle {
+    background-color: #3367c9;
+}
+
+input:checked + .toggle:before {
+    transform: translateX(15px);
 }
