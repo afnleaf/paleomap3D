@@ -1,13 +1,12 @@
+/* general ----------------------------------------------------------------- */
 body {
     font-family: "Roboto", sans-serif;
     background-color: black;
     margin: 0;
 }
-
 canvas { 
     display: block; 
 }
-
 #title {
     position: absolute;
     top: 10px;
@@ -21,7 +20,6 @@ canvas {
     margin: 0;
     color: #ededed;
 }
-
 #instructions {
     position: absolute;
     bottom: 15px;
@@ -32,7 +30,8 @@ canvas {
     color: #ededed;
 }
 
-/* links */
+
+/* links ------------------------------------------------------------------- */
 #links {
     position: absolute;
     padding: 0;
@@ -44,28 +43,24 @@ canvas {
     display: flex;
     color: #ededed;
 }
-
 #links ul {
     list-style: none;
 }
-
 a:link {
     color: #ededed;
 }
-
 a:visited {
     color: #ededed;
 }
-
 a:hover {
     color: hotpink;
 }
-
 a:active {
     color: #ededed;
 }
 
-/* slider map picker */
+
+/* slider map picker ------------------------------------------------------- */
 .slider{
     background-color: #ccc;
     width: 100%;
@@ -78,6 +73,7 @@ a:active {
 }
 input[type="range"]{
     position: fixed;
+    appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
     bottom: 10px;
@@ -111,6 +107,7 @@ input[type="range"]::-webkit-slider-thumb{
     border: none;
 }
 input[type="range"]::-moz-range-thumb{
+    appearance: none;
     -webkit-appearance: none;
     height: 20px;
     width: 20px;
@@ -135,7 +132,8 @@ input[type="range"]:active::-webkit-slider-thumb{
     border: 3px solid #3367c9;
 }
 
-/* elevation legend */
+
+/* elevation legend -------------------------------------------------------- */
 .legend {
     z-index: 100;
     position: absolute;
@@ -143,7 +141,6 @@ input[type="range"]:active::-webkit-slider-thumb{
     top: 10px;
     left: 10px;
 }
-
 .legend-title {
     text-align: left;
     margin-bottom: 5px;
@@ -178,7 +175,8 @@ ul.legend-labels li span {
     color: #ededed;
 }
 
-/* hd mode switch */
+
+/* hd mode switch ---------------------------------------------------------- */
 .switch {
     z-index: 100;
     position: absolute;
@@ -187,18 +185,15 @@ ul.legend-labels li span {
     left: 10px;
     top: 220px;
 }
-
 .switch .hdmode {
     font-weight: bold;
     font-size: 90%;
     margin-right: 10px;
     color: #ededed;
 }
-
 .switch input {
     display: none;
 }
-
 .toggle {
     position: relative;
     width: 35px;
@@ -207,7 +202,6 @@ ul.legend-labels li span {
     border-radius: 25px;
     transition: background-color 0.2s;
 }
-
 .toggle:before {
     content: "";
     position: absolute;
@@ -219,11 +213,9 @@ ul.legend-labels li span {
     border-radius: 50%; 
     transition: transform 0.2s; 
 }
-
 input:checked + .toggle {
     background-color: #3367c9;
 }
-
 input:checked + .toggle:before {
     transform: translateX(15px);
 }

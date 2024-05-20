@@ -1,0 +1,11 @@
+services:
+
+  ctexture:
+    build:
+      context: ./ctexture
+    container_name: ctexture
+    stdin_open: true
+    tty: true
+    volumes:
+      - ../data_bin:/build/data_bin
+    #command: ["/bin/sh", "-c", "./bin/main"]
