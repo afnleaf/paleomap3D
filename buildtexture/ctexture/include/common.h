@@ -10,15 +10,11 @@
 // standard libs
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
-#include <limits.h>
-#include <float.h>
-#include <ctype.h>
 #include <stdint.h>
-#include <stddef.h>
-#include <math.h>
 
-void test();
+#define BUFFER_SIZE 4
+
+
+void openBinFile(char* pathToFile);
 
 #endif
