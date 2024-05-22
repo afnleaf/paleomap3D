@@ -8,4 +8,5 @@ services:
     tty: true
     volumes:
       - ../data_bin:/build/data_bin
+      - ./output:/build/output
     #command: ["/bin/sh", "-c", "./bin/main"]
