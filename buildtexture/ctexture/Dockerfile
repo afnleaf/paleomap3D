@@ -12,7 +12,7 @@ RUN apt-get install -y libpng-dev
 WORKDIR /build
 COPY . .
 # compile
-RUN gcc -I./include -o bin/main src/main.c -lpng
+RUN gcc -I./include -o bin/main src/main.c -lpng -lm
 
 #CMD ["./bin/main"]
 #valgrind --leak-check=full ./bin/main

@@ -14,5 +14,5 @@ maps.json
 /data_texture
 *.bin
 /buildtexture/pyscripts/textures_*
-
+/buildtexture/output
 
