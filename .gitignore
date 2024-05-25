@@ -15,4 +15,5 @@ maps.json
 *.bin
 /buildtexture/pyscripts/textures_*
 /buildtexture/output
+/buildtexture/output_old1
 

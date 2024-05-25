@@ -115,14 +115,9 @@ int* openBinFile(char* filepath, size_t fileSize) {
     return pixelArr;
 }
 
-void getColor(int elevation, int color[3]) {
+void getColorOld(int elevation, int color[3]) {
     int sea_level = 0;
-    if(elevation <= -13000) {
-        color[0] = 0;  // 0x000000
-        color[1] = 255;
-        color[2] = 0;
-        printf("<%d>\n", elevation);
-    } else if(elevation > -13000 && elevation < -6000) {
+    if(elevation >= -13000 && elevation < -6000) {
         color[0] = 8;  // 0x080e30
         color[1] = 14;
         color[2] = 48;
@@ -144,7 +139,8 @@ void getColor(int elevation, int color[3]) {
         color[2] = 42;
     } else if(elevation >= 100 && elevation < 400) {
         color[0] = 0;  // 0x00530b
-        color[1] = 53;
+        //color[1] = 53;
+        color[1] = 83;
         color[2] = 11;
     } else if(elevation >= 400 && elevation < 1000) {
         color[0] = 61;  // 0x3d3704
@@ -153,7 +149,8 @@ void getColor(int elevation, int color[3]) {
     } else if(elevation >= 1000 && elevation < 2000) {
         color[0] = 128;  // 0x805411
         color[1] = 84;
-        color[2] = 68;
+        //color[2] = 68;
+        color[2] = 17;
     } else if(elevation >= 2000 && elevation < 3200) {
         color[0] = 151;  // 0x977944
         color[1] = 122;
@@ -162,6 +159,70 @@ void getColor(int elevation, int color[3]) {
         color[0] = 173;  // 0xadacac
         color[1] = 172;
         color[2] = 172;
+    } else {
+        color[0] = 0;  // 0x000000
+        color[1] = 0;
+        color[2] = 0;
+        printf("<%d>\n", elevation);
+    }
+}
+
+void getColor(int elevation, int color[3]) {
+    int sea_level = 0;
+    if(elevation >= -13000 && elevation < -6000) {
+        color[0] = 8;  // 0x080e30
+        color[1] = 14;
+        color[2] = 48;
+    } else if(elevation >= -6000 && elevation < -3000) {
+        color[0] = 31;  // 0x1f2d47
+        color[1] = 45;
+        color[2] = 71;
+    } else if(elevation >= -3000 && elevation < -150) {
+        color[0] = 42;  // 0x2a3c63
+        color[1] = 60;
+        color[2] = 99;
+    } else if(elevation >= -150 && elevation <= -50) {
+        color[0] = 52;  // 0x344b75
+        color[1] = 75;
+        color[2] = 117;
+    } else if(elevation >= -50 && elevation <= sea_level) {
+        color[0] = 87;  // 0x5778b3
+        color[1] = 120;
+        color[2] = 79;
+    } else if(elevation > sea_level && elevation < 75) {
+        color[0] = 79;  // 0x4fa642
+        color[1] = 166;
+        color[2] = 66;
+    } else if(elevation >= 75 && elevation < 150) {
+        color[0] = 52;  // 0x347a2a
+        color[1] = 122;
+        color[2] = 42;
+    } else if(elevation >= 150 && elevation < 400) {
+        color[0] = 0;  // 0x00530b
+        //color[1] = 53;
+        color[1] = 83;
+        color[2] = 11;
+    } else if(elevation >= 400 && elevation < 1000) {
+        color[0] = 61;  // 0x3d3704
+        color[1] = 55;
+        color[2] = 4;
+    } else if(elevation >= 1000 && elevation < 2000) {
+        color[0] = 128;  // 0x805411
+        color[1] = 84;
+        //color[2] = 68;
+        color[2] = 17;
+    } else if(elevation >= 2000 && elevation < 3200) {
+        color[0] = 151;  // 0x977944
+        color[1] = 122;
+        color[2] = 68;
+    } else if(elevation >= 3200 && elevation < 5000) {
+        color[0] = 182;  // 0xb6b5b5
+        color[1] = 181;
+        color[2] = 181;
+    } else if(elevation >= 5000) {
+        color[0] = 238;  // 0xeeeeee
+        color[1] = 238;
+        color[2] = 238;
     } else {
         color[0] = 0;  // 0x000000
         color[1] = 0;

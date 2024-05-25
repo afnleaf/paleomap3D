@@ -14,7 +14,7 @@ COPY . .
 # compile
 RUN gcc -I./include -o bin/main src/main.c -lpng -lm
 
-#CMD ["./bin/main"]
+CMD ["./bin/main"]
 #valgrind --leak-check=full ./bin/main
-CMD ["valgrind", "--leak-check=full", "./bin/main"]
+#CMD ["valgrind", "--leak-check=full", "./bin/main"]
 
