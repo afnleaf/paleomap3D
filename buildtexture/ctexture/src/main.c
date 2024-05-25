@@ -188,7 +188,7 @@ void getColor(int elevation, int color[3]) {
     } else if(elevation >= -50 && elevation <= sea_level) {
         color[0] = 87;  // 0x5778b3
         color[1] = 120;
-        color[2] = 79;
+        color[2] = 179;
     } else if(elevation > sea_level && elevation < 75) {
         color[0] = 79;  // 0x4fa642
         color[1] = 166;
