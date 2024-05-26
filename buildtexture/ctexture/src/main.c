@@ -4,37 +4,32 @@ void callError() {
     perror("Error reading file");
 }
 
-size_t getBinFileSize(char* filepath) {
-    // declare vars
-    FILE* fileP = NULL;
-    fileP = fopen(filepath, "rb");
-    size_t i = 0;
-    if(fileP) {
-        uint16_t buf;
-        // reset to top of file
-        fseek(fileP, 0, SEEK_SET);
-        // loop through file pointer to get file size
-        while(fread(&buf, sizeof(buf), 1, fileP) == 1) {
-            i++;
-        }
-        // check for error
-        if(ferror(fileP)) {
-            callError();
-        } else {
-            printf("%d\n", i);
-        }
-        fclose(fileP);
-    } else {
-        callError();
-    }
-    return i;
-}
+char** getFilepaths(const char* directory) {
+    // dirent.h
+    DIR* dir;
+    struct dirent* entry;
+    dir = opendir(directory);
 
-void printBits(uint16_t num) {
-    for(int i = 15; i >= 0; i--) {
-        printf("%d", (num >> i) & 1);
+    // allocate memory
+    char path[256];
+    char** filepathArr = (char**)malloc(sizeof(char*) * NUM_FILES);
+    int i = 0;
+    if(dir != NULL) {
+        while((entry = readdir(dir)) != NULL) {
+            if(entry->d_type == DT_REG) {
+                strcpy(path, directory);
+                strcat(path, "/");
+                strcat(path, entry->d_name);
+                //strcat(path, "\0");
+                //printf("<%s>\n", path);
+                filepathArr[i] = (char*)malloc(sizeof(char) * strlen(path) + 1);
+                strcpy(filepathArr[i], path);
+                i++;
+            }
+        }
+        closedir(dir);
     }
-    printf("\n");
+    return filepathArr;
 }
 
 Coords* generateVertices() {
@@ -113,58 +108,6 @@ int* openBinFile(char* filepath, size_t fileSize) {
         pixelArr[i].b = b;
     }
     return pixelArr;
-}
-
-void getColorOld(int elevation, int color[3]) {
-    int sea_level = 0;
-    if(elevation >= -13000 && elevation < -6000) {
-        color[0] = 8;  // 0x080e30
-        color[1] = 14;
-        color[2] = 48;
-    } else if(elevation >= -6000 && elevation < -3000) {
-        color[0] = 31;  // 0x1f2d47
-        color[1] = 45;
-        color[2] = 71;
-    } else if(elevation >= -3000 && elevation < -150) {
-        color[0] = 42;  // 0x2a3c63
-        color[1] = 60;
-        color[2] = 99;
-    } else if(elevation >= -150 && elevation <= sea_level) {
-        color[0] = 52;  // 0x344b75
-        color[1] = 75;
-        color[2] = 117;
-    } else if(elevation > sea_level && elevation < 100) {
-        color[0] = 52;  // 0x347a2a
-        color[1] = 122;
-        color[2] = 42;
-    } else if(elevation >= 100 && elevation < 400) {
-        color[0] = 0;  // 0x00530b
-        //color[1] = 53;
-        color[1] = 83;
-        color[2] = 11;
-    } else if(elevation >= 400 && elevation < 1000) {
-        color[0] = 61;  // 0x3d3704
-        color[1] = 55;
-        color[2] = 4;
-    } else if(elevation >= 1000 && elevation < 2000) {
-        color[0] = 128;  // 0x805411
-        color[1] = 84;
-        //color[2] = 68;
-        color[2] = 17;
-    } else if(elevation >= 2000 && elevation < 3200) {
-        color[0] = 151;  // 0x977944
-        color[1] = 122;
-        color[2] = 68;
-    } else if(elevation >= 3200) {
-        color[0] = 173;  // 0xadacac
-        color[1] = 172;
-        color[2] = 172;
-    } else {
-        color[0] = 0;  // 0x000000
-        color[1] = 0;
-        color[2] = 0;
-        printf("<%d>\n", elevation);
-    }
 }
 
 void getColor(int elevation, int color[3]) {
@@ -302,6 +245,10 @@ void createImage(Pixel* pixelArr, size_t fileSize, const char* fileName) {
         if(x >= 0 && x < WIDTH && y >= 0 && y < HEIGHT) {
             //printf("x:<%d> y:<%d>\n", x, y);
             setPixel(rowP[y], x, r, g, b);
+            // when using larger size, need to add more pixels
+            setPixel(rowP[y], x+1, r, g, b);
+            setPixel(rowP[y+1], x, r, g, b);
+            setPixel(rowP[y+1], x+1, r, g, b);
         }
     }
     // PNG file writing
@@ -314,34 +261,6 @@ void createImage(Pixel* pixelArr, size_t fileSize, const char* fileName) {
     }
     free(rowP);
     png_destroy_write_struct(&png, &info);
-}
-
-char** getFilepaths(const char* directory) {
-    // dirent.h
-    DIR* dir;
-    struct dirent* entry;
-    dir = opendir(directory);
-
-    // allocate memory
-    char path[256];
-    char** filepathArr = (char**)malloc(sizeof(char*) * NUM_FILES);
-    int i = 0;
-    if(dir != NULL) {
-        while((entry = readdir(dir)) != NULL) {
-            if(entry->d_type == DT_REG) {
-                strcpy(path, directory);
-                strcat(path, "/");
-                strcat(path, entry->d_name);
-                //strcat(path, "\0");
-                //printf("<%s>\n", path);
-                filepathArr[i] = (char*)malloc(sizeof(char) * strlen(path) + 1);
-                strcpy(filepathArr[i], path);
-                i++;
-            }
-        }
-        closedir(dir);
-    }
-    return filepathArr;
 }
 
 char* getMapNum(const char* filepath) {
@@ -413,5 +332,3 @@ int main() {
     free(coordArr);
     return 0;
 }
-
-

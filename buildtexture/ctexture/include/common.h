@@ -21,8 +21,8 @@
 
 #define FILE_SIZE 6485401
 #define NUM_FILES 109
-#define WIDTH 3600 //5123
-#define HEIGHT 1800 //2500
+#define WIDTH 7200 //3600
+#define HEIGHT 3600 //1800
 
 typedef struct {
     float latitude;
@@ -38,14 +38,13 @@ typedef struct {
 } Pixel;
 
 void callError();
-void printBits(uint16_t num);
+char** getFilepaths(const char* directory);
 Coords* generateVertices();
-size_t getBinFileSize(char* pathToFile);
 int* openBinFile(char* pathToFile, size_t fileSize);
 Pixel* getPixels(Coords* coordArr, int* elevationArr, size_t fileSize);
-void createImage(Pixel* pixelArr, size_t fileSize, const char* fileName);
-void setPixel(png_bytep row, int x, int r, int g, int b);
 void getColor(int elevation, int color[3]);
+void setPixel(png_bytep row, int x, int r, int g, int b);
+void createImage(Pixel* pixelArr, size_t fileSize, const char* fileName);
 char* getMapNum(const char* filepath);
 
 #endif
