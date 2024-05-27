@@ -93,6 +93,8 @@ int* openBinFile(char* filepath, size_t fileSize) {
         float lon = coordArr[i].longitude;
         int ele = elevationArr[i];
         //printf("<%.2f> <%.2f> <%d>\n", lat, lon, ele);
+        // methods to get x and y positions
+        // spherical to cartesian
         int x = (int)roundf(((lon + 180) / 360 * WIDTH));
         int y = (int)roundf(((90 - lat) / 180 * HEIGHT));
         //printf("x<%d> y<%d>\n", x, y);
@@ -246,9 +248,15 @@ void createImage(Pixel* pixelArr, size_t fileSize, const char* fileName) {
             //printf("x:<%d> y:<%d>\n", x, y);
             setPixel(rowP[y], x, r, g, b);
             // when using larger size, need to add more pixels
-            setPixel(rowP[y], x+1, r, g, b);
-            setPixel(rowP[y+1], x, r, g, b);
-            setPixel(rowP[y+1], x+1, r, g, b);
+            if(x + 1 < WIDTH) {
+                setPixel(rowP[y], x + 1, r, g, b);
+            }
+            if(y + 1 < HEIGHT) {
+                setPixel(rowP[y + 1], x, r, g, b);
+            }
+            if(x + 1 < WIDTH && y + 1 < HEIGHT) {
+                setPixel(rowP[y + 1], x + 1, r, g, b);
+            }
         }
     }
     // PNG file writing
