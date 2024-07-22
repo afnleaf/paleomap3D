@@ -223,90 +223,43 @@ input:checked + .toggle:before {
 
 
 /* arrows ------------------------------------------------------------------ */
-/*
-.arrow {
-    border: solid white;
-    border-width: 0 3px 3px 0;
-    display: flex;
-    align-items: center;
-    padding: 10px;
-    position: absolute;
-}
 
-.right {
-    transform: rotate(-45deg) translateX(-50%);
-    -webkit-transform: rotate(-45deg) translateX(-50%);
-    left: 55%;
-    bottom: 40px;
-}
-
-.left {
-    transform: rotate(135deg) translateX(-50%);
-    -webkit-transform: rotate(135deg) translateX(-50%);
-    left: 45%;
-    bottom: 30px;
-}
-*/
-
-.arrow {
-    position: absolute;
-    display: inline-block;
-    cursor: pointer;
-  }
-  
-.arrow::before {
-    content: "";
-    display: inline-block;
-    border: solid white;
-    border-width: 0 3px 3px 0;
-    position: absolute;
-    top: 50%;
+.arrow-container {
+    position: fixed;
+    bottom: 33px;
     left: 50%;
-    padding: 10px;
-    transform-origin: center;
-    background-color: #007bff;
+    transform: translateX(-50%);
+    display: flex;
+    justify-content: center;
+    z-index: 1000;
 }
-
-.arrow:hover {
-    background-color: #000000;
-}
-
-.arrow-right {
-    left: 55%;
-    bottom: 40px;
-    transform: rotate(-45deg) translateX(-50%);
-}
-
-.arrow-left {
-    left: 45%;
-    bottom: 30px;
-    transform: rotate(135deg) translateX(-50%);
-}
-
-/* method 2 */
 
 .arrow-button {
-    background-color: #007bff;
-    color: #ffffff;
+    background-color: rgba(200, 200, 200, 0.3);
+    color: white;
     border: none;
-    padding: 10px 20px;
-    font-size: 24px;
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    font-size: 22px;
     cursor: pointer;
-    position: absolute;
+    margin: 0 10px;
+    transition: background-color 0.3s ease;
     display: flex;
+    justify-content: center;
     align-items: center;
+    padding: 0;
+}
+
+.arrow-label {
+    margin-top: -3px;
 }
 
 .arrow-button:hover {
-    background-color: #0069d9;
+    background-color: rgba(255, 255, 255, 0.5);
 }
 
-.right {
-    left: 60%;
-    bottom: 50px;
-}
-
-.left {
-    left: 40%;
-    bottom: 50px;
+.arrow-button:active {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
 }

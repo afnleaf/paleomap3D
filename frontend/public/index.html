@@ -30,7 +30,9 @@
           </ul>
         </div>
     </div>
+    <!--
     <p id="instructions">move the slider backwards or forwards in time.</p>
+    -->
     <div id="links">
       <ul class = "">
         <li>
@@ -49,10 +51,12 @@
       <input type="checkbox">
       <span class="toggle"></span>
     </label>
-    <i class="arrow arrow-right"></i>
-    <i class="arrow arrow-left"></i>
-    <button class="arrow-button right" id="myButton">&rarr;</button>
-    <button class="arrow-button left" id="myButton">&larr;</button>
+
+    <div class="arrow-container">
+      <button class="arrow-button" id="arrow-left"><span class="arrow-label">&larr;</span></button>
+      <button class="arrow-button" id="arrow-right"><span class="arrow-label">&rarr;</span></button>
+    </div>
+
     <input type="range" min="-108" max="0" value="0" class="slider" id="myRange">
 </body>
 <!-- scripts -->
@@ -60,3 +64,11 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/TrackballControls.js"></script>
 <script type="module" src="script.js"></script>
 </html>
+
+
+<!--
+    <i class="arrow arrow-right"></i>
+    <i class="arrow arrow-left"></i>
+    <button class="arrow-button right" id="myButton">&rarr;</button>
+    <button class="arrow-button left" id="myButton">&larr;</button>
+    -->

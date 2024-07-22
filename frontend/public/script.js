@@ -248,10 +248,13 @@ animate();
 // dom content loaded before scripts tag in index.html
 
 // toggle for map size
-// Get the checkbox element
+// get the checkbox element
 const checkbox = document.querySelector("input[type='checkbox']");
 // access the slider element to create new scenes
 const slider = document.getElementById("myRange");
+// get the arrow elements
+const buttonLeft = document.getElementById("arrow-left");
+const buttonRight = document.getElementById("arrow-right");
 
 // for keydown
 let isKeyPressed = false;
@@ -294,6 +297,21 @@ if(slider) {
             }, delay);
         }
     });    
+}
+
+if(buttonLeft) {
+    buttonLeft.addEventListener("click", () => {
+        slider.value = parseInt(slider.value) - 1;
+        handleMapChange();
+    });
+}
+
+if(buttonRight) {
+    buttonRight.addEventListener("click", () => {
+        slider.value = parseInt(slider.value) + 1;
+        handleMapChange();
+    });
+
 }
 
 // add delay to process
