@@ -110,24 +110,17 @@ sortedTextureLarge.forEach((texturePath, index) => {
 });
 
 // webhook for automatic deployment
-/*
-app.use(express.urlencoded({ extended: true })); // for application/x-www-form-urlencoded
-app.use(express.json()); // for application/json
-
-app.post('/webhook', (req, res) => {
-  const payload = req.body;
-  // Process the webhook payload
-  console.log(payload);
-  res.status(200).send('Webhook received');
+app.post('/push', async ({ body }: { body: { json: () => Promise<any> } }) => {
+    console.log('Webhook triggered.');
+    const contents = await body.json();
+    // do something with contents
+    const branchName = contents.ref.replace("refs/heads/", "");
+    if (branchName === "main") {
+        console.log("Deploying to main.");
+    } else {
+        console.log("Not main.");
+    }
 });
-*/
-app.post("/push", async({request, body}) => {
-    console.log("Webhook triggered by push to main.");
-    console.log(body);
-});
-
-//comment for testing push
-
 
 // port
 app.listen(PORT);
