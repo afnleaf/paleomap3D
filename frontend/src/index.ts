@@ -121,7 +121,7 @@ app.post('/push', async ({ body }: { body: { [key: string]: any } }) => {
             console.log("Deploying to main.");
             try {
                 const output = await new Promise((resolve, reject) => {
-                    exec('../../deployprod.sh', (error, stdout, stderr) => {
+                    exec('~/prod/paleomap3d/deployprod.sh', (error, stdout, stderr) => {
                         if (error) {
                             console.error(`exec error: ${error}`);
                             reject(error);
