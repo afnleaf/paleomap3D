@@ -117,13 +117,15 @@ app.post('/push', async ({ body }: { body: { json: () => Promise<any> } }) => {
     // do something with contents
     const branchName = contents.ref.replace("refs/heads/", "");
     console.log(branchName);
-    if (branchName === "main") {
+    if(branchName === "main") {
         console.log("Deploying to main.");
     } else {
         console.log("Not main.");
     }
+    console.log("test");
 });
 
+// comment for branch test
 // comment for branch test
 // comment for branch test
 
