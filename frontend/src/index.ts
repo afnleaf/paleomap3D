@@ -109,6 +109,23 @@ sortedTextureLarge.forEach((texturePath, index) => {
     app.get(routePath, () => compressor(texturePath));
 });
 
+// webhook for automatic deployment
+/*
+app.use(express.urlencoded({ extended: true })); // for application/x-www-form-urlencoded
+app.use(express.json()); // for application/json
+
+app.post('/webhook', (req, res) => {
+  const payload = req.body;
+  // Process the webhook payload
+  console.log(payload);
+  res.status(200).send('Webhook received');
+});
+*/
+app.post("/push", async({request, body}) => {
+    console.log("Webhook triggered by push to main.");
+    console.log(body);
+});
+
 
 // port
 app.listen(PORT);
