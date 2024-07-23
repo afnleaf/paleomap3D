@@ -110,33 +110,22 @@ sortedTextureLarge.forEach((texturePath, index) => {
 });
 
 // webhook for automatic deployment
-/*
-app.post('/push', async ({body}) => {
+app.post('/push', async ({ body }: { body: { [key: string]: any } }) => {
     console.log('Webhook triggered.');
-    console.log(body["ref"]);
-});
-*/
-app.post('/push', async ({ body }) => {
-    console.log('Webhook triggered.');
-    const webhookBody = body as { [key: string]: any };
-    console.log(webhookBody["ref"]);
-});
-
- /*
-    const contents = await body.json();
-    console.log(contents);
-    // do something with contents
-    const branchName = contents.ref.replace("refs/heads/", "");
-    console.log(branchName);
-    if(branchName === "main") {
-        console.log("Deploying to main.");
+    const ref = body["ref"];
+    if(ref) {
+        const branchName = ref.replace(/^refs\/heads\//, "");
+        console.log(branchName);
+        if(branchName.toLowerCase() === "main") {
+            console.log("Deploying to main.");
+            // run a deployment script
+        } else {
+            console.log("Not main.");
+        }
     } else {
-        console.log("Not main.");
+        console.log("Undefined ref.");
     }
-    console.log("test");
-    */
-
-// comment for branch test
+});
 // comment for branch test
 
 // port
