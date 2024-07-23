@@ -252,7 +252,19 @@ input:checked + .toggle:before {
 }
 
 .arrow-label {
-    margin-top: -3px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+}
+
+.arrow-label-left {
+    margin-left: 6px;
+}
+
+.arrow-label-right {
+    margin-right: -2px;
 }
 
 .arrow-button:hover {
@@ -262,4 +274,12 @@ input:checked + .toggle:before {
 .arrow-button:active {
     outline: none;
     box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+}
+
+.material-symbols-outlined {
+  font-variation-settings:
+  'FILL' 0,
+  'wght' 400,
+  'GRAD' 0,
+  'opsz' 40;
 }

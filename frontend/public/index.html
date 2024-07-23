@@ -6,6 +6,7 @@
     <title>paleomap3D</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="styles.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 </head>
 <body>
     <!-- content -->
@@ -53,22 +54,27 @@
     </label>
 
     <div class="arrow-container">
-      <button class="arrow-button" id="arrow-left"><span class="arrow-label">&larr;</span></button>
-      <button class="arrow-button" id="arrow-right"><span class="arrow-label">&rarr;</span></button>
+      <button class="arrow-button" id="arrow-left">
+        <span class="arrow-label arrow-label-left">
+          <span class="material-symbols-outlined">
+            arrow_back_ios
+          </span>
+        </span>
+      </button>
+      <button class="arrow-button" id="arrow-right">
+        <span class="arrow-label arrow-label-right">
+          <span class="material-symbols-outlined">
+            arrow_forward_ios
+          </span>
+        </span>
+      </button>
     </div>
 
     <input type="range" min="-108" max="0" value="0" class="slider" id="myRange">
+    
 </body>
 <!-- scripts -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/TrackballControls.js"></script>
 <script type="module" src="script.js"></script>
 </html>
-
-
-<!--
-    <i class="arrow arrow-right"></i>
-    <i class="arrow arrow-left"></i>
-    <button class="arrow-button right" id="myButton">&rarr;</button>
-    <button class="arrow-button left" id="myButton">&larr;</button>
-    -->
