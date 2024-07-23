@@ -113,8 +113,10 @@ sortedTextureLarge.forEach((texturePath, index) => {
 app.post('/push', async ({ body }: { body: { json: () => Promise<any> } }) => {
     console.log('Webhook triggered.');
     const contents = await body.json();
+    console.log(contents);
     // do something with contents
     const branchName = contents.ref.replace("refs/heads/", "");
+    console.log(branchName);
     if (branchName === "main") {
         console.log("Deploying to main.");
     } else {
