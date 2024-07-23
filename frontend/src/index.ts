@@ -112,6 +112,8 @@ sortedTextureLarge.forEach((texturePath, index) => {
 // webhook for automatic deployment
 app.post('/push', async ({ body }: { body: { json: () => Promise<any> } }) => {
     console.log('Webhook triggered.');
+    console.log(body);
+    /*
     const contents = await body.json();
     console.log(contents);
     // do something with contents
@@ -123,6 +125,7 @@ app.post('/push', async ({ body }: { body: { json: () => Promise<any> } }) => {
         console.log("Not main.");
     }
     console.log("test");
+    */
 });
 
 // comment for branch test
