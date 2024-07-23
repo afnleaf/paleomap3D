@@ -110,9 +110,16 @@ sortedTextureLarge.forEach((texturePath, index) => {
 });
 
 // webhook for automatic deployment
+/*
 app.post('/push', async ({body}) => {
     console.log('Webhook triggered.');
     console.log(body["ref"]);
+});
+*/
+app.post('/push', async ({ body }) => {
+    console.log('Webhook triggered.');
+    const webhookBody = body as { [key: string]: any };
+    console.log(webhookBody["ref"]);
 });
 
  /*
@@ -130,7 +137,6 @@ app.post('/push', async ({body}) => {
     */
 
 // comment for branch test
-//application/x-www-form-urlencoded
 
 // port
 app.listen(PORT);
