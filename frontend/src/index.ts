@@ -4,6 +4,7 @@ import { html } from "@elysiajs/html";
 import { cors } from "@elysiajs/cors";
 import { compression } from "elysia-compression";
 import Glob from "glob";
+import { exec } from 'child_process';
 // src modules
 import compressor from "./compressor.ts";
 
@@ -115,10 +116,54 @@ app.post('/push', async ({ body }: { body: { [key: string]: any } }) => {
     const ref = body["ref"];
     if(ref) {
         const branchName = ref.replace(/^refs\/heads\//, "");
+        console.log(`Branch: ${branchName}`);
+        if(branchName.toLowerCase() === "main") {
+            console.log("Deploying to main.");
+            try {
+                const output = await new Promise((resolve, reject) => {
+                    exec('../../deployprod.sh', (error, stdout, stderr) => {
+                        if (error) {
+                            console.error(`exec error: ${error}`);
+                            reject(error);
+                        } else {
+                            resolve(stdout);
+                        }
+                    });
+                });
+                console.log('Deployment successful:', output);
+                return { status: 'success', message: 'Deployment completed' };
+            } catch (error) {
+                console.error('Deployment failed:', error);
+                return { status: 'error', message: 'Deployment failed' };
+            }
+        } else {
+            console.log("Not main branch. No deployment triggered.");
+        }
+    } else {
+        console.log("Undefined ref.");
+    }
+    return { status: 'no_action', message: 'No deployment triggered' };
+});
+
+/*
+app.post('/push', async ({ body }: { body: { [key: string]: any } }) => {
+    console.log('Webhook triggered.');
+    const ref = body["ref"];
+    if(ref) {
+        const branchName = ref.replace(/^refs\/heads\//, "");
         console.log(branchName);
         if(branchName.toLowerCase() === "main") {
             console.log("Deploying to main.");
             // run a deployment script
+            return new Promise((resolve, reject) => {
+                exec('../../deployprod.sh', (error, stdout, stderr) => {
+                    if (error) {
+                    reject(error);
+                    } else {
+                    resolve(stdout);
+                    }
+                });
+            });
         } else {
             console.log("Not main.");
         }
@@ -126,8 +171,9 @@ app.post('/push', async ({ body }: { body: { [key: string]: any } }) => {
         console.log("Undefined ref.");
     }
 });
-// comment for branch test
-// comment for branch test
+*/
+
+
 
 // port
 app.listen(PORT);
