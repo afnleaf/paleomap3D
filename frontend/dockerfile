@@ -13,5 +13,8 @@ RUN bun install
 # copy all files in this directory to working directory inside container
 COPY . .
 
+# mod the auto deploy script
+RUN chmod +x deployprod.sh
+
 # some scripts
 CMD [ "bun", "run", "dev"]
