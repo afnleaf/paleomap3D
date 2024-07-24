@@ -13,11 +13,5 @@ RUN bun install
 # copy all files in this directory to working directory inside container
 COPY . .
 
-# Copy the script into the container
-COPY deployprod.sh /app/
-
-# Make the script executable
-RUN chmod +x /app/deployprod.sh
-
 # some scripts
 CMD [ "bun", "run", "dev"]

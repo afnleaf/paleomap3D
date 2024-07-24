@@ -110,6 +110,7 @@ sortedTextureLarge.forEach((texturePath, index) => {
     app.get(routePath, () => compressor(texturePath));
 });
 
+/*
 // webhook for automatic deployment
 app.post('/push', async ({ body }: { body: { [key: string]: any } }) => {
     console.log('Webhook triggered.');
@@ -143,6 +144,7 @@ app.post('/push', async ({ body }: { body: { [key: string]: any } }) => {
     }
     return { status: 'no_action', message: 'No deployment triggered' };
 });
+*/
 
 /*
 app.post('/push', async ({ body }: { body: { [key: string]: any } }) => {
@@ -171,11 +173,6 @@ app.post('/push', async ({ body }: { body: { [key: string]: any } }) => {
     }
 });
 */
-
-//test
-//test
-//test
-//test
 
 // port
 app.listen(PORT);
