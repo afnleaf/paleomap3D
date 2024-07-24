@@ -3,6 +3,11 @@
 # exit immediately if a command exits with a non-zero status
 set -e
 
+if ! cd /home/x230/prod/paleomap3d; then
+  echo "Failed to find directory"
+  exit 1
+fi
+
 # pull from repo
 if ! git pull origin main; then
   echo "Failed to pull latest changes"
