@@ -115,13 +115,12 @@ app.post('/push', async ({ body }: { body: { [key: string]: any } }) => {
     console.log('Webhook triggered.');
     const ref = body["ref"];
     if(ref) {
-        const branchName = ref.replace(/^refs\/heads\//, "");
-        console.log(`Branch: ${branchName}`);
-        if(branchName.toLowerCase() === "main") {
+        if(ref === "refs/heads/main") {
             console.log("Deploying to main.");
             try {
                 const output = await new Promise((resolve, reject) => {
-                    exec('/home/x230/prod/paleomap3d/deployprod.sh', (error, stdout, stderr) => {
+                    //exec('/home/x230/prod/paleomap3d/deployprod.sh', (error, stdout, stderr) => {
+                    exec('/app/deployprod.sh', (error, stdout, stderr) => {
                         if (error) {
                             console.error(`exec error: ${error}`);
                             reject(error);
