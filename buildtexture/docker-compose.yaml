@@ -1,12 +1,23 @@
 services:
 
-  ctexture:
+  # ctexture:
+  #   build:
+  #     context: ./ctexture
+  #   container_name: ctexture
+  #   stdin_open: true
+  #   tty: true
+  #   volumes:
+  #     - ../data_bin:/build/data_bin
+  #     - ./output:/build/output
+  #   #command: ["/bin/sh", "-c", "./bin/main"]
+  
+  gplates:
     build:
-      context: ./ctexture
-    container_name: ctexture
+      context: ./gplates
+    container_name: gplates
     stdin_open: true
     tty: true
     volumes:
-      - ../data_bin:/build/data_bin
-      - ./output:/build/output
-    #command: ["/bin/sh", "-c", "./bin/main"]
+      - ./outputg:/build/outputg
+      - ./inputg:/build/inputg
+

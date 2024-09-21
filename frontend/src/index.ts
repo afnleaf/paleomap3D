@@ -57,6 +57,16 @@ const texturePathLarge = "/app/data_texture/textures_large";
 const textureSmall = Glob.sync(`${texturePathSmall}/*.png`);
 const textureLarge = Glob.sync(`${texturePathLarge}/*.png`);
 
+// get the file names of the gplates files
+const boundaryPath = "/app/data_texture/textures_boundary";
+const boundaries = Glob.sync(`${boundaryPath}/*.png`);
+const platePath = "/app/data_texture/textures_plate";
+const plates = Glob.sync(`${platePath}/*.png`);
+
+// gplates political boundary test
+//const gplate_political = "./fileout.png";
+//app.get("/fileout.png", () => compressor("./fileout.png"));
+
 // sort files numerically ascending based on first digit sequence of filename
 // otherwise they go by alphabetical
 function sortFiles(binFiles: string[]): string[] {
@@ -84,6 +94,10 @@ const sortedBinFilesLarge = sortFiles(binFilesLarge);
 const sortedTextureSmall = sortFiles(textureSmall);
 const sortedTextureLarge = sortFiles(textureLarge);
 
+// sort gplates files
+const sortedBoundaries = sortFiles(boundaries);
+const sortedPlates = sortFiles(plates);
+
 // iterate over the binary files and create http routes for the app
 sortedBinFilesSmall.forEach((binFilePath, index) => {
     const routePath = `/small${index}`;
@@ -108,6 +122,19 @@ sortedTextureLarge.forEach((texturePath, index) => {
     const routePath = `/largetexture${index}`;
     console.log(`route: ${routePath} for ${texturePath}`);
     app.get(routePath, () => compressor(texturePath));
+});
+
+// iterate over the gplates files and create https routes for the app
+sortedBoundaries.forEach((path, index) => {
+    const routePath = `/boundary${index}`;
+    console.log(`route: ${routePath} for ${path}`);
+    app.get(routePath, () => compressor(path));
+});
+
+sortedPlates.forEach((path, index) => {
+    const routePath = `/plate${index}`;
+    console.log(`route: ${routePath} for ${path}`);
+    app.get(routePath, () => compressor(path));
 });
 
 // port

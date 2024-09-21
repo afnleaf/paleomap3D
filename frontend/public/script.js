@@ -33,10 +33,20 @@ const textureCube = cubeLoader.load( [
 ] );
 scene.background = textureCube;
 
+
 // do this once
 const textureLoader = new THREE.TextureLoader();
 const icogeo = new THREE.IcosahedronGeometry(1, 16);
 
+// for gplates
+/*
+const gtex = textureLoader.load('/fileout.png');
+const gmat = new THREE.MeshBasicMaterial({ 
+    map: gtex,
+    transparent: true,
+    //opacity: 0.5,
+});
+*/
 render();
 
 // global controls
@@ -63,7 +73,8 @@ renderZenithPoles();
 renderInnerEarth();
 
 // create default scene
-await fetchTextureFile(0, mapSize);
+//await fetchTextureFile(0, mapSize);
+await loadTexturesAndCreateScene(0, mapSize);
     /*
     .then(() => {
     })
@@ -87,7 +98,8 @@ async function handleMapChange() {
         const mapTitleElement = document.getElementById("title");
         mapTitleElement.innerHTML = mapNames[index].replace(/\n/g, "<br>");
         // allocate new scene
-        await fetchTextureFile(index, mapSize);
+        //await fetchTextureFile(index, mapSize);
+        await loadTexturesAndCreateScene(index, mapSize);
         // free old map for memory optimization
         unloadPreviousMap();
     }
@@ -110,6 +122,7 @@ function getMapIndex(value) {
     }
 }
 
+/*
 // go for the route where the map at index is located
 // how to make this entire process more efficient?
 async function fetchTextureFile(index, size) {
@@ -129,11 +142,65 @@ async function fetchTextureFile(index, size) {
     fetchFileQueue = fetchFileQueue.then(() => fetchTextureFilePromise);
     return fetchTextureFilePromise;
 }
+*/
+
+async function loadTexture(url) {
+    //console.log(url); 
+    return new Promise((resolve, reject) => {
+        textureLoader.load(
+            url,
+            (texture) => {
+                texture.minFilter = THREE.LinearFilter;
+                texture.magFilter = THREE.LinearFilter;
+                texture.generateMipmaps = false;
+                resolve(texture);
+            },
+            undefined,
+            (error) => {
+                console.error(`Error loading texture: ${error}`);
+                reject(error);
+            }
+        );
+    });
+}
+
+async function fetchTextureFile(index, size) {
+    const textureURL = `/${size}texture${index}`;
+    return loadTexture(textureURL);
+}
+
+async function fetchPoliticalFile(index) {
+    const textureURL = `/boundary${index}`;
+    return loadTexture(textureURL);
+}
+
+async function fetchPlateFile(index) {
+    const textureURL = `/plate${index}`;
+    return loadTexture(textureURL);
+}
+
+async function loadTexturesAndCreateScene(index, size) { 
+    //console.log(index);
+    try {
+        //const [texture, political, plates] = await Promise.all([
+        const [texture, plates] = await Promise.all([
+            fetchTextureFile(index, size),
+            //fetchPoliticalFile(index),
+            fetchPlateFile(index),
+        ]);
+        const edges = plates;
+        // Apply texture and political data to create the scene
+        await createSceneFromTexture(texture, edges);
+    } catch (error) {
+        console.error("Error loading textures:", error);
+    }
+}
+
 
 // make path then build earth mesh
-async function createSceneFromTexture(texture) {
+async function createSceneFromTexture(texture, edges) {
     //await renderTools();
-    await renderOuterEarthFromTexture(texture);
+    await renderOuterEarthFromTexture(texture, edges);
 }
 
 // render visual helpers
@@ -143,15 +210,31 @@ async function renderTools() {
     scene.add(axesHelper);
 }
 
+
+
 // render the earth by mapping a texture to the previously created icosahedron
 //async function renderOuterEarthFromTexture(textureURL) {
-async function renderOuterEarthFromTexture(texture) {
+async function renderOuterEarthFromTexture(texture, political) {
+    //console.log("test");
+
     const mat = new THREE.MeshBasicMaterial({
         map: texture
     });
+
+    const gmat = new THREE.MeshBasicMaterial({
+        map: political,
+        //opacity: 0.5,
+        transparent: true
+    });
+
     const earth = new THREE.Mesh(icogeo, mat);
     earth.rotation.x = Math.PI / 2;
     scene.add(earth);
+
+    const boundary = new THREE.Mesh(icogeo, gmat);
+    boundary.rotation.x = Math.PI / 2;
+    scene.add(boundary)
+    //earth2.position.z = 0.1;
 }
 
 // render north and south poles aka the zenith axis
@@ -217,7 +300,7 @@ async function renderInnerEarth() {
 
 // unload 2nd last map from the scene
 function unloadPreviousMap() {
-    let n = scene.children.length - 1;
+    let n = scene.children.length - 2;
     if(n < 2) {
         return;
     }
@@ -230,7 +313,7 @@ function unloadPreviousMap() {
     scene.remove(scene.children[n-1]);
 }
 
-// render the scene with the rendering renderer
+// render tth the rendering renderer
 function render() {
     renderer.render(scene, camera)
 }
