@@ -12,6 +12,10 @@ async function compressor(filePath: string) {
             headers: {
                 "Content-Type": contentType ?? "application/octet-stream",
                 "Content-Encoding": "gzip",
+                "Cache-Control": "public, max-age=31536000, immutable",
+                "CDN-Cache-Control": "max-age=31536000",
+                "Vary": "Accept-Encoding",
+                "ETag": `"${Buffer.from(compressed).toString('base64').substring(0, 27)}"`,
             },
         });
     } catch (error) {
