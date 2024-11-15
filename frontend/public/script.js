@@ -62,6 +62,10 @@ controls.zoomSpeed = 0.9;
 // for swapping between map sizes
 let mapSize = "small";
 
+// line layers
+let plateMode = false;
+let borderMode = false;
+
 // variable to keep track of the fetch queue
 let fetchFileQueue = Promise.resolve();
 // handle map change (debouncing)
@@ -85,6 +89,7 @@ await loadTexturesAndCreateScene(0, mapSize);
 
 // get the map at slider index
 async function handleMapChange() {
+    console.log("handleMapChange()");
     if(isFetching) {
         pendingIndex = getMapIndex(slider.value);
         return;
@@ -99,7 +104,8 @@ async function handleMapChange() {
         mapTitleElement.innerHTML = mapNames[index].replace(/\n/g, "<br>");
         // allocate new scene
         //await fetchTextureFile(index, mapSize);
-        await loadTexturesAndCreateScene(index, mapSize);
+        console.log(`m: ${mapSize}, p: ${plateMode}, b: ${borderMode}`)
+        await loadTexturesAndCreateScene(index, mapSize, plateMode, borderMode);
         // free old map for memory optimization
         unloadPreviousMap();
     }
@@ -169,8 +175,8 @@ async function fetchTextureFile(index, size) {
     return loadTexture(textureURL);
 }
 
-async function fetchPoliticalFile(index) {
-    const textureURL = `/boundary${index}`;
+async function fetchBorderFile(index) {
+    const textureURL = `/border${index}`;
     return loadTexture(textureURL);
 }
 
@@ -179,13 +185,14 @@ async function fetchPlateFile(index) {
     return loadTexture(textureURL);
 }
 
+/*
 async function loadTexturesAndCreateScene(index, size) { 
     //console.log(index);
     try {
         //const [texture, political, plates] = await Promise.all([
         const [texture, plates] = await Promise.all([
             fetchTextureFile(index, size),
-            //fetchPoliticalFile(index),
+            //fetchBorderFile(index),
             fetchPlateFile(index),
         ]);
         const edges = plates;
@@ -195,13 +202,37 @@ async function loadTexturesAndCreateScene(index, size) {
         console.error("Error loading textures:", error);
     }
 }
+*/
+async function loadTexturesAndCreateScene(index, size, p, b) { 
+    try {
+        const texturePromises = [];
 
-
+        texturePromises.push(fetchTextureFile(index, size));
+        if(p) texturePromises.push(fetchPlateFile(index));
+        if(b) texturePromises.push(fetchBorderFile(index));
+        const textures = await Promise.all(texturePromises);
+        const [baseTexture, ...additionalTextures] = textures;
+        const textureData = {
+            base: baseTexture,
+            plate: p ? additionalTextures[0] : null,
+            border: b ? additionalTextures[b ? 1 : 0] : null
+        };
+        await createSceneFromTexture(textureData);
+    } catch (error) {
+        console.error("Error loading textures:", error);
+    }
+}
 // make path then build earth mesh
+async function createSceneFromTexture(textureData) {
+    //await renderTools();
+    await renderOuterEarthFromTexture(textureData);
+}
+/*
 async function createSceneFromTexture(texture, edges) {
     //await renderTools();
     await renderOuterEarthFromTexture(texture, edges);
 }
+*/
 
 // render visual helpers
 async function renderTools() {
@@ -210,10 +241,46 @@ async function renderTools() {
     scene.add(axesHelper);
 }
 
-
-
 // render the earth by mapping a texture to the previously created icosahedron
 //async function renderOuterEarthFromTexture(textureURL) {
+async function renderOuterEarthFromTexture(textureData) {
+    // crate base earth layer
+    const baseMaterial = new THREE.MeshBasicMaterial({
+        map: textureData.base
+    });
+    const earth = new THREE.Mesh(icogeo, baseMaterial);
+    earth.rotation.x = Math.PI / 2;
+    scene.add(earth);
+
+    // add plate layer if it exists
+    if (textureData.plate) {
+        const plateMaterial = new THREE.MeshBasicMaterial({
+            map: textureData.plate,
+            transparent: true,
+            //opacity: 0.7  // Adjust opacity as needed
+        });
+        const plateMesh = new THREE.Mesh(icogeo, plateMaterial);
+        plateMesh.rotation.x = Math.PI / 2;
+        // Slightly offset to prevent z-fighting
+        //plateMesh.position.z = 0.1;
+        scene.add(plateMesh);
+    }
+
+    // add border layer if it exists
+    if (textureData.border) {
+        const borderMaterial = new THREE.MeshBasicMaterial({
+            map: textureData.border,
+            transparent: true,
+            //opacity: 0.8  // Adjust opacity as needed
+        });
+        const borderMesh = new THREE.Mesh(icogeo, borderMaterial);
+        borderMesh.rotation.x = Math.PI / 2;
+        // Slightly offset to prevent z-fighting
+        //borderMesh.position.z = 0.1;
+        scene.add(borderMesh);
+    }
+}
+/*
 async function renderOuterEarthFromTexture(texture, political) {
     //console.log("test");
 
@@ -236,6 +303,7 @@ async function renderOuterEarthFromTexture(texture, political) {
     scene.add(boundary)
     //earth2.position.z = 0.1;
 }
+*/
 
 // render north and south poles aka the zenith axis
 async function renderZenithPoles() {
@@ -331,8 +399,10 @@ animate();
 // dom content loaded before scripts tag in index.html
 
 // toggle for map size
-// get the checkbox element
-const checkbox = document.querySelector("input[type='checkbox']");
+// get the hdToggle element
+const hdToggle = document.getElementById("hdToggle");
+const borderToggle = document.getElementById("borderToggle");
+const plateToggle = document.getElementById("plateToggle");
 // access the slider element to create new scenes
 const slider = document.getElementById("myRange");
 // get the arrow elements
@@ -343,14 +413,39 @@ const buttonRight = document.getElementById("arrow-right");
 let isKeyPressed = false;
 let delay = 10;
 
-if(checkbox) {
-    // add an event listener to detect changes in the checkbox state
-    checkbox.addEventListener("change", (event) => {
-        // check if the checkbox is checked
-        if (event.target.checked) {
+if(hdToggle) {
+    // add an event listener to detect changes in the hdToggle state
+    hdToggle.addEventListener("change", (e) => {
+        console.log(`hdToggle ${e.target.checked}`);
+        // check if the hdToggle is checked
+        if(e.target.checked) {
             mapSize = "large";
         } else {
             mapSize = "small";
+        }
+        handleMapChange();
+    });
+}
+
+if(borderToggle) {
+    borderToggle.addEventListener("change", (e) => {
+        console.log(`borderToggle ${e.target.checked}`);
+        if(e.target.checked) {
+            borderMode = true;
+        } else {
+            borderMode = false;
+        }
+        handleMapChange();
+    });
+}
+
+if(plateToggle) {
+    plateToggle.addEventListener("change", (e) => {
+        console.log(`plateToggle ${e.target.checked}`);
+        if(e.target.checked) {
+            plateMode = true;
+        } else {
+            plateMode = false;
         }
         handleMapChange();
     });

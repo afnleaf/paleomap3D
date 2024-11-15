@@ -177,15 +177,12 @@ ul.legend-labels li span {
 
 
 /* hd mode switch ---------------------------------------------------------- */
+/*
 .switch {
     z-index: 100;
     position: absolute;
     display: flex;
     align-items: center;
-    left: 10px;
-    top: 260px;
-}
-.switch .hdmode {
     font-weight: bold;
     font-size: 90%;
     margin-right: 10px;
@@ -213,13 +210,94 @@ ul.legend-labels li span {
     border-radius: 50%; 
     transition: transform 0.2s; 
 }
+
+.switch .hdmode {
+    position: absolute;
+    left: 10px;
+    top: 260px;
+}
+
+.switch .borderLayer {
+    position: absolute;
+    left: 10px;
+    top: 300px;
+}
+
+.switch .plateLayer {
+    position: absolute;
+    left: 10px;
+    top: 340px;
+}
+
 input:checked + .toggle {
     background-color: #3367c9;
 }
 input:checked + .toggle:before {
     transform: translateX(15px);
 }
+*/
+/* layer switches ---------------------------------------------------------- */
+.switches-container {
+    position: absolute;
+    left: 10px;
+    top: 260px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min
+}
 
+/* Individual switch */
+.switch {
+    display: flex;
+    align-items: center;
+    width: 100px;
+    gap: 20px;
+}
+
+.switch-label {
+    color: #ededed;
+    font-weight: bold;
+    font-size: 90%;
+    width: 40px;
+    text-align: left;
+}
+
+/* Toggle styles */
+.toggle {
+    position: relative;
+    width: 35px;
+    height: 20px;
+    background-color: #ccc;
+    border-radius: 25px;
+    transition: background-color 0.2s;
+    flex-shrink: 0;
+}
+
+.toggle:before {
+    content: "";
+    position: absolute;
+    height: 16px;
+    width: 16px;
+    left: 2px;
+    bottom: 2px;
+    background-color: #333;
+    border-radius: 50%;
+    transition: transform 0.2s;
+}
+
+.switch input {
+    display: none;
+}
+
+input:checked + .toggle {
+    background-color: #3367c9;
+}
+
+input:checked + .toggle:before {
+    transform: translateX(15px);
+}
 
 /* arrows ------------------------------------------------------------------ */
 
