@@ -9,81 +9,90 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 </head>
 <body>
+
     <!-- content -->
     <p id="title">Present-day<br>(Holocene, 0 Ma)</p>
-    <div class="legend">
-        <div class="legend-title">Elevation</div>
-        <div class="legend-scale">
-          <ul class="legend-labels">
-            <li><span style="background:#eeeeee;"></span>5km+</li>
-            <li><span style="background:#b6b5b5;"></span>3.2km to 5km</li>
-            <li><span style="background:#977944;"></span>2km to 3.2km</li>
-            <li><span style="background:#805411;"></span>1km to 2km</li>
-            <li><span style="background:#3d3704;"></span>400m to 1km</li>
-            <li><span style="background:#00530b;"></span>150m to 400m</li>
-            <li><span style="background:#347a2a;"></span>75m to 150m</li>
-            <li><span style="background:#4fa642;"></span>0m to 75m</li>
-            <li><span style="background:#5778b3;"></span>-50m to 0m</li>
-            <li><span style="background:#344b75;"></span>-150m to -50m</li>
-            <li><span style="background:#2a3c63;"></span>-3km to -150m</li>
-            <li><span style="background:#1f2d47;"></span>-6km to -3km</li>
-            <li><span style="background:#080e30;"></span>-11km to -6km</li>
-          </ul>
-        </div>
-    </div>
-    <!--
-    <p id="instructions">move the slider backwards or forwards in time.</p>
-    -->
-    <div id="links">
-      <ul class = "">
-        <!--
-        <li>
-          <a href="https://twitter.com/afnckingleaf" target="_blank" rel="noopener noreferrer">twitter</a>
-        </li>
-        -->
-        <li>
-          <a href="https://github.com/afnleaf/paleomap3D" target="_blank" rel="noopener noreferrer">repo</a>
-        </li>
-        <li>
-          <a href="https://github.com/afnleaf/paleomap3D?tab=readme-ov-file#credits" target="_blank" rel="noopener noreferrer">credits</a>
-        </li>
-      </ul>
-    </div>
-    <div class="switches-container">
-        <label class="switch">
-            <span class="switch-label">HD</span>
-            <input type="checkbox" id="hdToggle">
-            <span class="toggle"></span>
-        </label>
-        <label class="switch">
-            <span class="switch-label">Borders</span>
-            <input type="checkbox" id="borderToggle">
-            <span class="toggle"></span>
-        </label>
-        <label class="switch">
-            <span class="switch-label">Plates</span>
-            <input type="checkbox" id="plateToggle">
-            <span class="toggle"></span>
-        </label>
-    </div>
-    <div class="arrow-container">
-      <button class="arrow-button" id="arrow-left">
-        <span class="arrow-label arrow-label-left">
-          <span class="material-symbols-outlined">
-            arrow_back_ios
+    <div class="controlshud">
+      <div class="arrow-container">
+        <button class="arrow-button" id="arrow-left">
+          <span class="arrow-label arrow-label-left">
+            <span class="material-symbols-outlined">
+              arrow_back_ios
+            </span>
           </span>
-        </span>
-      </button>
-      <button class="arrow-button" id="arrow-right">
-        <span class="arrow-label arrow-label-right">
-          <span class="material-symbols-outlined">
-            arrow_forward_ios
+        </button>
+        <button class="arrow-button" id="arrow-right">
+          <span class="arrow-label arrow-label-right">
+            <span class="material-symbols-outlined">
+              arrow_forward_ios
+            </span>
           </span>
-        </span>
+        </button>
+      </div>
+      <button id="fullscreen-button">
+        <img src="/fullscreen-alt.svg" id="fullscreen-alt" width="24" height="24" alt="fullscreen">
+        <img src="/fullscreen-exit.svg" id="fullscreen-exit" width="24" height="24" alt="fullscreen">
       </button>
+      <input type="range" min="-108" max="0" value="0" class="slider" id="myRange">
     </div>
 
-    <input type="range" min="-108" max="0" value="0" class="slider" id="myRange">
+    <div class="infohud">   
+      <div class="legend">
+          <div class="legend-title">Elevation</div>
+          <div class="legend-scale">
+            <ul class="legend-labels">
+              <li><span style="background:#eeeeee;"></span>5km+</li>
+              <li><span style="background:#b6b5b5;"></span>3.2km to 5km</li>
+              <li><span style="background:#977944;"></span>2km to 3.2km</li>
+              <li><span style="background:#805411;"></span>1km to 2km</li>
+              <li><span style="background:#3d3704;"></span>400m to 1km</li>
+              <li><span style="background:#00530b;"></span>150m to 400m</li>
+              <li><span style="background:#347a2a;"></span>75m to 150m</li>
+              <li><span style="background:#4fa642;"></span>0m to 75m</li>
+              <li><span style="background:#5778b3;"></span>-50m to 0m</li>
+              <li><span style="background:#344b75;"></span>-150m to -50m</li>
+              <li><span style="background:#2a3c63;"></span>-3km to -150m</li>
+              <li><span style="background:#1f2d47;"></span>-6km to -3km</li>
+              <li><span style="background:#080e30;"></span>-11km to -6km</li>
+            </ul>
+          </div>
+      </div>
+      <!--
+      <p id="instructions">move the slider backwards or forwards in time.</p>
+      -->
+      <div id="links">
+        <ul class = "">
+          <!--
+          <li>
+            <a href="https://twitter.com/afnckingleaf" target="_blank" rel="noopener noreferrer">twitter</a>
+          </li>
+          -->
+          <li>
+            <a href="https://github.com/afnleaf/paleomap3D" target="_blank" rel="noopener noreferrer">repo</a>
+          </li>
+          <li>
+            <a href="https://github.com/afnleaf/paleomap3D?tab=readme-ov-file#credits" target="_blank" rel="noopener noreferrer">credits</a>
+          </li>
+        </ul>
+      </div>
+      <div class="switches-container">
+          <label class="switch">
+              <span class="switch-label">HD</span>
+              <input type="checkbox" id="hdToggle">
+              <span class="toggle"></span>
+          </label>
+          <label class="switch">
+              <span class="switch-label">Borders</span>
+              <input type="checkbox" id="borderToggle">
+              <span class="toggle"></span>
+          </label>
+          <label class="switch">
+              <span class="switch-label">Plates</span>
+              <input type="checkbox" id="plateToggle">
+              <span class="toggle"></span>
+          </label>
+      </div>
+    </div>
     
 </body>
 <!-- scripts -->

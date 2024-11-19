@@ -7,6 +7,10 @@ body {
 canvas { 
     display: block; 
 }
+.infohud {
+    display: flex;
+}
+
 #title {
     position: absolute;
     top: 10px;
@@ -245,7 +249,6 @@ input:checked + .toggle:before {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    min
 }
 
 /* Individual switch */
@@ -330,8 +333,8 @@ input:checked + .toggle:before {
 
 .arrow-label {
     display: flex;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
     width: 100%;
     height: 100%;
 }
@@ -359,4 +362,46 @@ input:checked + .toggle:before {
   'wght' 400,
   'GRAD' 0,
   'opsz' 40;
+}
+
+/* full -------------------------------------------------------------------- */
+#fullscreen-button {
+    position: fixed;
+    bottom: 33px;
+    right: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+#fullscreen-alt {
+    display: flex;
+}
+
+#fullscreen-exit {
+    display: none;
+}
+
+#fullscreen-button img {
+    width: 24px;
+    height: 24px;
+    filter: invert(1); 
+}
+
+#fullscreen-button svg {
+    stroke: white;
+}
+
+#fullscreen-button svg path {
+    stroke: white;
+    fill: white;
+}
+
+#fullscreen-button:focus {
+    outline: none;
 }

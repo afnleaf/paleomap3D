@@ -35,8 +35,11 @@ app.get("/script.js", () => compressor("./public/script.js"));
 app.get("/maps.js", () => compressor("./public/maps.js"));
 // favicons
 app.get("/favicon-32x32.png", () => compressor("./public/images/favicon-32x32.png"));
-app.get("/favicon-16x16.png", () => compressor("./public/images/favicon-16x16.png"));
-app.get("/favicon.ico", () => compressor("./public/images/favicon.ico"));
+app.get("/favicon-16x16.png", () => compressor("./public/images/icons/favicon-16x16.png"));
+app.get("/favicon.ico", () => compressor("./public/images/icons/favicon.ico"));
+// icons
+app.get("/fullscreen-alt.svg", () => compressor("./public/images/icons/fullscreen-alt.svg"));
+app.get("/fullscreen-exit.svg", () => compressor("./public/images/icons/fullscreen-exit.svg"));
 // spacebox texture
 app.get("/back.png", () => compressor("./public/images/back.png"));
 app.get("/bottom.png", () => compressor("./public/images/bottom.png"));

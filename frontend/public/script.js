@@ -360,6 +360,7 @@ animate();
 // event listeners at the bottom because of async issues
 // dom content loaded before scripts tag in index.html
 
+//const controlshud = document.querySelector("controlshud");
 // toggle for map size
 // get the hdToggle element
 const hdToggle = document.getElementById("hdToggle");
@@ -370,6 +371,10 @@ const slider = document.getElementById("myRange");
 // get the arrow elements
 const buttonLeft = document.getElementById("arrow-left");
 const buttonRight = document.getElementById("arrow-right");
+// fullscreen
+const fullscreenToggle = document.getElementById("fullscreen-button");
+const fullscreenAlt = document.getElementById("fullscreen-alt");
+const fullscreenExit = document.getElementById("fullscreen-exit");
 
 // for keydown
 let isKeyPressed = false;
@@ -452,6 +457,19 @@ if(buttonRight) {
         handleMapChange();
     });
 
+}
+
+let fullscreen = false;
+if(fullscreenToggle && fullscreenAlt && fullscreenExit) {
+    fullscreenToggle.addEventListener("click", () => {
+        fullscreen = !fullscreen;
+        fullscreenAlt.style.display = fullscreen ? "none" : "flex";
+        fullscreenExit.style.display = fullscreen ? "flex" : "none";
+        const infohud = document.querySelector(".infohud");
+        if(infohud) {
+            infohud.style.display = fullscreen ? "none" : "flex";
+        }
+    });
 }
 
 // add delay to process
