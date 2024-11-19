@@ -37,6 +37,7 @@ scene.background = textureCube;
 // do this once
 const textureLoader = new THREE.TextureLoader();
 const icogeo = new THREE.IcosahedronGeometry(1, 16);
+const rotation = Math.PI / 2;
 
 // for gplates
 /*
@@ -59,9 +60,9 @@ controls.maxDistance = 100;
 controls.staticMoving = true;
 controls.zoomSpeed = 0.9;
 
+// earth layers
 // for swapping between map sizes
 let mapSize = "small";
-
 // line layers
 let plateMode = false;
 let borderMode = false;
@@ -78,7 +79,7 @@ renderInnerEarth();
 
 // create default scene
 //await fetchTextureFile(0, mapSize);
-await loadTexturesAndCreateScene(0, mapSize);
+await loadTexturesAndCreateScene(0, mapSize, false, false);
     /*
     .then(() => {
     })
@@ -185,54 +186,30 @@ async function fetchPlateFile(index) {
     return loadTexture(textureURL);
 }
 
-/*
-async function loadTexturesAndCreateScene(index, size) { 
-    //console.log(index);
-    try {
-        //const [texture, political, plates] = await Promise.all([
-        const [texture, plates] = await Promise.all([
-            fetchTextureFile(index, size),
-            //fetchBorderFile(index),
-            fetchPlateFile(index),
-        ]);
-        const edges = plates;
-        // Apply texture and political data to create the scene
-        await createSceneFromTexture(texture, edges);
-    } catch (error) {
-        console.error("Error loading textures:", error);
-    }
-}
-*/
 async function loadTexturesAndCreateScene(index, size, p, b) { 
+    console.log("loadTexturesAndCreateScene()");
     try {
-        const texturePromises = [];
-
-        texturePromises.push(fetchTextureFile(index, size));
-        if(p) texturePromises.push(fetchPlateFile(index));
-        if(b) texturePromises.push(fetchBorderFile(index));
-        const textures = await Promise.all(texturePromises);
-        const [baseTexture, ...additionalTextures] = textures;
+        // always load base texture
+        const baseTexture = await fetchTextureFile(index, size);
+        // load additional textures based on toggles
+        const plateTexture = p ? await fetchPlateFile(index) : null;
+        const borderTexture = b ? await fetchBorderFile(index) : null;
         const textureData = {
             base: baseTexture,
-            plate: p ? additionalTextures[0] : null,
-            border: b ? additionalTextures[b ? 1 : 0] : null
+            plate: plateTexture,
+            border: borderTexture
         };
         await createSceneFromTexture(textureData);
     } catch (error) {
         console.error("Error loading textures:", error);
     }
 }
+
 // make path then build earth mesh
 async function createSceneFromTexture(textureData) {
     //await renderTools();
     await renderOuterEarthFromTexture(textureData);
 }
-/*
-async function createSceneFromTexture(texture, edges) {
-    //await renderTools();
-    await renderOuterEarthFromTexture(texture, edges);
-}
-*/
 
 // render visual helpers
 async function renderTools() {
@@ -242,28 +219,27 @@ async function renderTools() {
 }
 
 // render the earth by mapping a texture to the previously created icosahedron
-//async function renderOuterEarthFromTexture(textureURL) {
 async function renderOuterEarthFromTexture(textureData) {
+    const outerEarth = new THREE.Group();
+
     // crate base earth layer
     const baseMaterial = new THREE.MeshBasicMaterial({
         map: textureData.base
     });
     const earth = new THREE.Mesh(icogeo, baseMaterial);
-    earth.rotation.x = Math.PI / 2;
-    scene.add(earth);
+    earth.rotation.x = rotation;
+    outerEarth.add(earth);
 
     // add plate layer if it exists
     if (textureData.plate) {
         const plateMaterial = new THREE.MeshBasicMaterial({
             map: textureData.plate,
             transparent: true,
-            //opacity: 0.7  // Adjust opacity as needed
         });
         const plateMesh = new THREE.Mesh(icogeo, plateMaterial);
-        plateMesh.rotation.x = Math.PI / 2;
-        // Slightly offset to prevent z-fighting
-        //plateMesh.position.z = 0.1;
-        scene.add(plateMesh);
+        plateMesh.rotation.x = rotation;
+        plateMesh.renderOrder = 1;
+        outerEarth.add(plateMesh);
     }
 
     // add border layer if it exists
@@ -271,42 +247,19 @@ async function renderOuterEarthFromTexture(textureData) {
         const borderMaterial = new THREE.MeshBasicMaterial({
             map: textureData.border,
             transparent: true,
-            //opacity: 0.8  // Adjust opacity as needed
         });
         const borderMesh = new THREE.Mesh(icogeo, borderMaterial);
-        borderMesh.rotation.x = Math.PI / 2;
-        // Slightly offset to prevent z-fighting
-        //borderMesh.position.z = 0.1;
-        scene.add(borderMesh);
+        borderMesh.rotation.x = rotation;
+        borderMesh.renderOrder = 2;
+        outerEarth.add(borderMesh);
     }
+
+    scene.add(outerEarth);
 }
-/*
-async function renderOuterEarthFromTexture(texture, political) {
-    //console.log("test");
-
-    const mat = new THREE.MeshBasicMaterial({
-        map: texture
-    });
-
-    const gmat = new THREE.MeshBasicMaterial({
-        map: political,
-        //opacity: 0.5,
-        transparent: true
-    });
-
-    const earth = new THREE.Mesh(icogeo, mat);
-    earth.rotation.x = Math.PI / 2;
-    scene.add(earth);
-
-    const boundary = new THREE.Mesh(icogeo, gmat);
-    boundary.rotation.x = Math.PI / 2;
-    scene.add(boundary)
-    //earth2.position.z = 0.1;
-}
-*/
 
 // render north and south poles aka the zenith axis
 async function renderZenithPoles() {
+    const zenithPoles= new THREE.Group();
     const northGeo = new THREE.BufferGeometry();
     const northVertices = new Float32Array([
         0, 0, 0,    // start of the line (origin)
@@ -315,7 +268,7 @@ async function renderZenithPoles() {
     northGeo.setAttribute("position", new THREE.BufferAttribute(northVertices, 3));
     const northMat = new THREE.LineBasicMaterial({ color: 0x0000ff });
     const north = new THREE.Line(northGeo, northMat);
-    scene.add(north);
+    zenithPoles.add(north);
 
     const southGeo = new THREE.BufferGeometry();
     const southVertices = new Float32Array([
@@ -325,11 +278,14 @@ async function renderZenithPoles() {
     southGeo.setAttribute("position", new THREE.BufferAttribute(southVertices, 3));
     const southMat = new THREE.LineBasicMaterial({ color: 0xff0000 });
     const south = new THREE.Line(southGeo, southMat);
-    scene.add(south);
+    zenithPoles.add(south);
+    scene.add(zenithPoles);
 }
 
 // render da deep core
 async function renderInnerEarth() {
+    const innerEarth = new THREE.Group();
+
     let geo;
     let mat;
 
@@ -339,7 +295,7 @@ async function renderInnerEarth() {
         color: 0xffff00,
     });
     const innercore = new THREE.Mesh(geo, mat);
-    scene.add(innercore);
+    innerEarth.add(innercore);
 
     // outer core
     geo = new THREE.IcosahedronGeometry(0.625, 2);
@@ -347,7 +303,7 @@ async function renderInnerEarth() {
         color: 0xf69f31,
     });
     const outercore = new THREE.Mesh(geo, mat);
-    scene.add(outercore);
+    innerEarth.add(outercore);
 
     // mantle
     geo = new THREE.IcosahedronGeometry(0.925, 2);
@@ -355,7 +311,7 @@ async function renderInnerEarth() {
         color: 0xe76c2f,
     });
     const mantle = new THREE.Mesh(geo, mat);
-    scene.add(mantle);
+    innerEarth.add(mantle);
 
     // crust
     geo = new THREE.IcosahedronGeometry(0.9875, 2);
@@ -363,22 +319,28 @@ async function renderInnerEarth() {
         color: 0x75381a,
     });
     const crust = new THREE.Mesh(geo, mat);
-    scene.add(crust);
+    innerEarth.add(crust);
+    
+    scene.add(innerEarth);
 }
 
 // unload 2nd last map from the scene
 function unloadPreviousMap() {
-    let n = scene.children.length - 2;
-    if(n < 2) {
-        return;
+    let n = scene.children.length;
+    const prevGroup = scene.children[n-2];
+    scene.remove(prevGroup);
+    while(prevGroup.children.length > 0) {
+        disposeMesh(prevGroup.children[0])
     }
-    const lastChild = scene.children[n-1];
-    if(lastChild.material.map) {
-        lastChild.material.map.dispose();
+}
+
+function disposeMesh(mesh) {
+    if(mesh.parent) mesh.parent.remove(mesh);
+    if(mesh.isMesh) {
+        if(mesh.geometry) mesh.geometry.dispose();
+        if(mesh.material.map) mesh.material.map.dispose();
+        if(mesh.material) mesh.material.dispose(); 
     }
-    lastChild.material.dispose();
-    lastChild.geometry.dispose();
-    scene.remove(scene.children[n-1]);
 }
 
 // render tth the rendering renderer
@@ -521,3 +483,4 @@ renderer.domElement.addEventListener('webglcontextrestored', (event) => {
     console.log("back up?");
     handleMapChange();
 }, false);
+
