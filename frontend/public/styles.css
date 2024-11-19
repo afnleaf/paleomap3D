@@ -3,6 +3,7 @@ body {
     font-family: "Roboto", sans-serif;
     background-color: black;
     margin: 0;
+    touch-action: manipulation;
 }
 canvas { 
     display: block; 
@@ -10,12 +11,11 @@ canvas {
 .infohud {
     display: flex;
 }
-
 #title {
     position: absolute;
     top: 10px;
     right: 10px;
-    width: 100%;
+    max-width: 60%;
     text-align: right;
     z-index: 100;
     font-weight: bolder;
@@ -179,67 +179,6 @@ ul.legend-labels li span {
     color: #ededed;
 }
 
-
-/* hd mode switch ---------------------------------------------------------- */
-/*
-.switch {
-    z-index: 100;
-    position: absolute;
-    display: flex;
-    align-items: center;
-    font-weight: bold;
-    font-size: 90%;
-    margin-right: 10px;
-    color: #ededed;
-}
-.switch input {
-    display: none;
-}
-.toggle {
-    position: relative;
-    width: 35px;
-    height: 20px;
-    background-color: #ccc;
-    border-radius: 25px;
-    transition: background-color 0.2s;
-}
-.toggle:before {
-    content: "";
-    position: absolute;
-    height: 16px; 
-    width: 16px; 
-    left: 2px; 
-    bottom: 2px; 
-    background-color: #333; 
-    border-radius: 50%; 
-    transition: transform 0.2s; 
-}
-
-.switch .hdmode {
-    position: absolute;
-    left: 10px;
-    top: 260px;
-}
-
-.switch .borderLayer {
-    position: absolute;
-    left: 10px;
-    top: 300px;
-}
-
-.switch .plateLayer {
-    position: absolute;
-    left: 10px;
-    top: 340px;
-}
-
-input:checked + .toggle {
-    background-color: #3367c9;
-}
-input:checked + .toggle:before {
-    transform: translateX(15px);
-}
-*/
 /* layer switches ---------------------------------------------------------- */
 .switches-container {
     position: absolute;
@@ -250,15 +189,12 @@ input:checked + .toggle:before {
     flex-direction: column;
     gap: 10px;
 }
-
-/* Individual switch */
 .switch {
     display: flex;
     align-items: center;
     width: 100px;
     gap: 20px;
 }
-
 .switch-label {
     color: #ededed;
     font-weight: bold;
@@ -266,8 +202,6 @@ input:checked + .toggle:before {
     width: 40px;
     text-align: left;
 }
-
-/* Toggle styles */
 .toggle {
     position: relative;
     width: 35px;
@@ -277,7 +211,6 @@ input:checked + .toggle:before {
     transition: background-color 0.2s;
     flex-shrink: 0;
 }
-
 .toggle:before {
     content: "";
     position: absolute;
@@ -289,21 +222,17 @@ input:checked + .toggle:before {
     border-radius: 50%;
     transition: transform 0.2s;
 }
-
 .switch input {
     display: none;
 }
-
 input:checked + .toggle {
     background-color: #3367c9;
 }
-
 input:checked + .toggle:before {
     transform: translateX(15px);
 }
 
 /* arrows ------------------------------------------------------------------ */
-
 .arrow-container {
     position: fixed;
     bottom: 33px;
@@ -313,7 +242,6 @@ input:checked + .toggle:before {
     justify-content: center;
     z-index: 1000;
 }
-
 .arrow-button {
     background-color: rgba(200, 200, 200, 0.3);
     color: white;
@@ -329,45 +257,27 @@ input:checked + .toggle:before {
     justify-content: center;
     align-items: center;
     padding: 0;
+    /* existing styles */
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
 }
-
-.arrow-label {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-}
-
-.arrow-label-left {
-    margin-left: 6px;
-}
-
-.arrow-label-right {
-    margin-right: -2px;
-}
-
 .arrow-button:hover {
     background-color: rgba(255, 255, 255, 0.5);
 }
-
 .arrow-button:active {
     outline: none;
     box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
 }
-
-.material-symbols-outlined {
-  font-variation-settings:
-  'FILL' 0,
-  'wght' 400,
-  'GRAD' 0,
-  'opsz' 40;
+.arrow-button img {
+    filter: invert(1);
 }
 
 /* full -------------------------------------------------------------------- */
-#fullscreen-button {
+.fullscreen-button {
     position: fixed;
-    bottom: 33px;
+    bottom: 38px;
     right: 10px;
     display: flex;
     align-items: center;
@@ -378,30 +288,17 @@ input:checked + .toggle:before {
     border: none;
     cursor: pointer;
 }
-
-#fullscreen-alt {
-    display: flex;
-}
-
-#fullscreen-exit {
-    display: none;
-}
-
-#fullscreen-button img {
+.fullscreen-button img {
     width: 24px;
     height: 24px;
     filter: invert(1); 
 }
-
-#fullscreen-button svg {
-    stroke: white;
-}
-
-#fullscreen-button svg path {
-    stroke: white;
-    fill: white;
-}
-
-#fullscreen-button:focus {
+.fullscreen-button:focus {
     outline: none;
+}
+#fullscreen-alt {
+    display: flex;
+}
+#fullscreen-exit {
+    display: none;
 }

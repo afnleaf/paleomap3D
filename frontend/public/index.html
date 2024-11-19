@@ -14,6 +14,7 @@
     <p id="title">Present-day<br>(Holocene, 0 Ma)</p>
     <div class="controlshud">
       <div class="arrow-container">
+        <!-- 
         <button class="arrow-button" id="arrow-left">
           <span class="arrow-label arrow-label-left">
             <span class="material-symbols-outlined">
@@ -28,14 +29,20 @@
             </span>
           </span>
         </button>
+        -->
+        <button class="arrow-button" id="arrow-left">         
+          <img src="/arrow-left.svg" width="24" height="24" alt="arrow-left">
+        </button>
+        <button class="arrow-button" id="arrow-right">
+          <img src="/arrow-right.svg" width="24" height="24" alt="arrow-right">
+        </button>
       </div>
-      <button id="fullscreen-button">
+      <button class="fullscreen-button" id="fullscreen-button">
         <img src="/fullscreen-alt.svg" id="fullscreen-alt" width="24" height="24" alt="fullscreen">
         <img src="/fullscreen-exit.svg" id="fullscreen-exit" width="24" height="24" alt="fullscreen">
       </button>
       <input type="range" min="-108" max="0" value="0" class="slider" id="myRange">
     </div>
-
     <div class="infohud">   
       <div class="legend">
           <div class="legend-title">Elevation</div>
@@ -93,7 +100,6 @@
           </label>
       </div>
     </div>
-    
 </body>
 <!-- scripts -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>

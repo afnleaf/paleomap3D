@@ -40,6 +40,8 @@ app.get("/favicon.ico", () => compressor("./public/images/icons/favicon.ico"));
 // icons
 app.get("/fullscreen-alt.svg", () => compressor("./public/images/icons/fullscreen-alt.svg"));
 app.get("/fullscreen-exit.svg", () => compressor("./public/images/icons/fullscreen-exit.svg"));
+app.get("/arrow-left.svg", () => compressor("./public/images/icons/arrow-left.svg"));
+app.get("/arrow-right.svg", () => compressor("./public/images/icons/arrow-right.svg"));
 // spacebox texture
 app.get("/back.png", () => compressor("./public/images/back.png"));
 app.get("/bottom.png", () => compressor("./public/images/bottom.png"));
