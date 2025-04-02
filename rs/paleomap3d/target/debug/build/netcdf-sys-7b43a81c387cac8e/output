@@ -1,0 +1,88 @@
+cargo::rerun-if-changed=build.rs
+cargo::rerun-if-env-changed=NETCDF_DIR
+Usage: nc-config [OPTION]
+
+Available values for OPTION include:
+
+  --help          display this help message and exit
+  --all           display all options
+  --cc            C compiler
+  --cflags        pre-processor and compiler flags
+  --has-c++       whether C++ API is installed
+  --has-c++4      whether netCDF-4 C++ API is installed
+  --has-fortran   whether Fortran API is installed
+  --has-dap2      whether OPeNDAP (DAP2) is enabled in this build
+  --has-dap4      whether DAP4 is enabled in this build
+  --has-dap       same as --has-dap2 (Deprecated)
+  --has-nc2       whether NetCDF-2 API is enabled
+  --has-nc4       whether NetCDF-4/HDF-5 is enabled in this build
+  --has-hdf5      whether HDF5 is used in build (always the same as --has-nc4)
+  --has-hdf4      whether HDF4 was used in build
+  --has-logging   whether logging is enabled with --enable-logging.
+  --has-pnetcdf   whether PnetCDF was used in build
+  --has-szlib     whether szlib is included in build
+  --has-cdf5      whether cdf5 support is included in build
+  --has-parallel4 whether has parallel IO support via HDF5
+  --has-parallel  whether has parallel IO support via HDF5 or PnetCDF
+  --has-nczarr    whether nczarr enabled
+  --libs          library linking information for netcdf
+  --static        library linking information for statically-compiled netcdf
+  --prefix        Install prefix
+  --includedir    Include directory
+  --libdir        Library directory
+  --version       Library version
+
+cargo::rustc-link-search=/usr/lib/x86_64-linux-gnu
+cargo::rustc-link-lib=netcdf
+cargo::metadata=includedir=/usr/include
+cargo::metadata=nc_version=4.8.1
+cargo::rustc-check-cfg=cfg(feature, values("4.4.0"))
+cargo::rustc-check-cfg=cfg(feature, values("4.4.1"))
+cargo::rustc-check-cfg=cfg(feature, values("4.5.0"))
+cargo::rustc-check-cfg=cfg(feature, values("4.6.0"))
+cargo::rustc-check-cfg=cfg(feature, values("4.6.1"))
+cargo::rustc-check-cfg=cfg(feature, values("4.6.2"))
+cargo::rustc-check-cfg=cfg(feature, values("4.6.3"))
+cargo::rustc-check-cfg=cfg(feature, values("4.7.0"))
+cargo::rustc-check-cfg=cfg(feature, values("4.7.1"))
+cargo::rustc-check-cfg=cfg(feature, values("4.7.2"))
+cargo::rustc-check-cfg=cfg(feature, values("4.7.3"))
+cargo::rustc-check-cfg=cfg(feature, values("4.7.4"))
+cargo::rustc-check-cfg=cfg(feature, values("4.8.0"))
+cargo::rustc-check-cfg=cfg(feature, values("4.8.1"))
+cargo::rustc-check-cfg=cfg(feature, values("4.9.0"))
+cargo::rustc-check-cfg=cfg(feature, values("4.9.1"))
+cargo::rustc-check-cfg=cfg(feature, values("4.9.2"))
+cargo:rustc-cfg=feature="4.4.0"
+cargo:version_"4.4.0"=1
+cargo:rustc-cfg=feature="4.4.1"
+cargo:version_"4.4.1"=1
+cargo:rustc-cfg=feature="4.5.0"
+cargo:version_"4.5.0"=1
+cargo:rustc-cfg=feature="4.6.0"
+cargo:version_"4.6.0"=1
+cargo:rustc-cfg=feature="4.6.1"
+cargo:version_"4.6.1"=1
+cargo:rustc-cfg=feature="4.6.2"
+cargo:version_"4.6.2"=1
+cargo:rustc-cfg=feature="4.6.3"
+cargo:version_"4.6.3"=1
+cargo:rustc-cfg=feature="4.7.0"
+cargo:version_"4.7.0"=1
+cargo:rustc-cfg=feature="4.7.1"
+cargo:version_"4.7.1"=1
+cargo:rustc-cfg=feature="4.7.2"
+cargo:version_"4.7.2"=1
+cargo:rustc-cfg=feature="4.7.3"
+cargo:version_"4.7.3"=1
+cargo:rustc-cfg=feature="4.7.4"
+cargo:version_"4.7.4"=1
+cargo:rustc-cfg=feature="4.8.0"
+cargo:version_"4.8.0"=1
+cargo:rustc-cfg=feature="4.8.1"
+cargo:version_"4.8.1"=1
+cargo::rustc-check-cfg=cfg(feature, values("has-mmap","has-dap"))
+cargo::rustc-cfg=feature="has-dap"
+cargo::metadata=has-dap=1
+cargo::rustc-cfg=feature="has-mmap"
+cargo::metadata=has-mmap=1
