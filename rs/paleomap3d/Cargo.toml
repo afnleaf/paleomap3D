@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 netcdf = { version= "0.11.0", features = ["ndarray"]}
+brotli = "7.0.0"

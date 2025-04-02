@@ -1,16 +1,20 @@
-#[allow(unused_variables)]
-#[allow(dead_code)]
+#![allow(unused_variables)]
+#![allow(dead_code)]
 
 fn main() -> Result<(), netcdf::Error> {
     let file = netcdf::open("../../data_raw/netcdf_1/Map01_PALEOMAP_1deg_Holocene_0Ma.nc")?;
     print_file_content(&file);
-    let (mut data, height, width) = get_data(&file).unwrap();
-    print_data(&data, &height, &width);
-    write_to_file("test.bin", data);
+    let (data, height, width) = get_data(&file).unwrap();
+    //print_data(&data, &height, &width);
+    write_to_file("test.bin", &data).unwrap();
+    check_file("test.bin", &data).unwrap();
+
+    brotli_compress("test.bin").unwrap();
     //println!("{:?}", data);
 
     Ok(())
 }
+
 
 
 fn get_data(
@@ -39,9 +43,74 @@ fn get_data(
     Ok((data, i, j))
 }
 
+fn check_file(
+    path: &str,
+    data: &Vec<i16>
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut file = std::fs::File::open(path).unwrap();
+    //let meta = file.metadata().unwrap();
+    let metadata = std::fs::File::metadata(&mut file).unwrap();
+    let file_size = metadata.len() as usize;
+    let num_values = file_size / std::mem::size_of::<i16>();
+
+    let mut bytes = vec![0u8; file_size];
+    //file.read_exact(&mut bytes).unwrap();
+    std::io::Read::read_exact(&mut file, &mut bytes).unwrap();
+    let mut file_data = Vec::with_capacity(num_values);
+    for chunk in bytes.chunks_exact(2) {
+        let value = i16::from_le_bytes([chunk[0], chunk[1]]);
+        file_data.push(value);
+    }
+
+    for i in 0..181 {
+        for j in 0..361 {
+            let a = data[i * 361 + j];
+            let b = file_data[i * 361 + j];
+            if a != b {
+                println!("oops {} {}", a, b);
+            }
+        }
+    }
+    println!("all good");
+        
+    Ok(())
+}
+
+fn brotli_compress(
+    path: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    println!("brotli compressing {}", path);
+    
+    let mut file = std::fs::File::open(path).unwrap();
+    let metadata = std::fs::File::metadata(&mut file).unwrap();
+    let file_size = metadata.len() as usize;
+    let mut bytes = vec![0u8; file_size];
+    std::io::Read::read_exact(&mut file, &mut bytes).unwrap();
+    
+    let mut compressed_buffer = Vec::new();
+    let mut input = std::io::Cursor::new(bytes);
+
+    brotli::BrotliCompress(
+        &mut input,
+        &mut compressed_buffer,
+        &brotli::enc::BrotliEncoderParams {
+            quality: 11,
+            lgwin: 22,
+            ..Default::default()
+        }
+    ).unwrap();
+    println!("brotli compressed.");
+
+    let mut out_file = std::fs::File::create(format!("{}.br", path)).unwrap();
+    std::io::Write::write_all(&mut out_file, &mut compressed_buffer).unwrap();
+    println!("file out");
+
+    Ok(())
+}
+
 fn write_to_file(
     path: &str,
-    data: Vec<i16>
+    data: &Vec<i16>
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut file = std::fs::File::create(path).unwrap();
     let bytes: Vec<u8> = data.iter()
@@ -59,7 +128,6 @@ fn print_data(
         for j in 0..*width {
             let c = data[i * (*width) + j];
             println!("Elevation at {},{}: {:?}", i, j, c);
-            //println!("lat:{} lon:{} ele:{}", i, j, c);
         }
     }
 }
