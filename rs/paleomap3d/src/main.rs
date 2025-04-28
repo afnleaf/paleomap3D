@@ -1,15 +1,50 @@
 #![allow(unused_variables)]
 #![allow(dead_code)]
 
-fn main() -> Result<(), netcdf::Error> {
-    let file = netcdf::open("../../data_raw/netcdf_1/Map01_PALEOMAP_1deg_Holocene_0Ma.nc")?;
+
+use std::fs;
+use std::path::Path;
+
+
+
+/*
+Test, create all the low resolution maps.
+*/
+
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let dir = "../../data_raw/netcdf_1";
+
+    let file_names: Vec<String> = fs::read_dir(dir)?
+        .filter_map(|entry| entry.ok())
+        .filter(|entry| entry.path().is_file())
+        .filter_map(|entry| entry.file_name().into_string().ok())
+        .collect();
+    
+    for name in file_names {
+        println!("{}", name);
+    }
+    
+    Ok(())
+
+
+    //Ok(())
+}
+
+
+
+fn main2() -> Result<(), netcdf::Error> {
+    //let file = netcdf::open("../../data_raw/netcdf_1/Map01_PALEOMAP_1deg_Holocene_0Ma.nc")?;
+    //let file = netcdf::open("../../data_raw/netcdf_6/Map22_PALEOMAP_6min_Holocene_0Ma.nc")?;
+    let file = netcdf::open("../../data_raw/netcdf_6/Map21_PALEOMAP_6min_Mid-Cretaceous_90Ma.nc")?;
+
     print_file_content(&file);
     let (data, height, width) = get_data(&file).unwrap();
     //print_data(&data, &height, &width);
-    write_to_file("test.bin", &data).unwrap();
-    check_file("test.bin", &data).unwrap();
+    write_to_file("test3.bin", &data).unwrap();
+    //check_file("test3.bin", &data).unwrap();
 
-    brotli_compress("test.bin").unwrap();
+    brotli_compress("test3.bin").unwrap();
     //println!("{:?}", data);
 
     Ok(())

@@ -37,7 +37,7 @@ scene.background = textureCube;
 // do this once
 const textureLoader = new THREE.TextureLoader();
 const icogeo = new THREE.IcosahedronGeometry(1, 16);
-const rotation = Math.PI / 2;
+/
 
 // for gplates
 /*

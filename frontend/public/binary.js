@@ -168,7 +168,7 @@ function parseBin(data) {
         const lon = (nibble >>> 15) & 0x1FF;
         const ele = nibble & 0x7FFF;
         // convert the bits to signed integers
-        const la = (lat & 0x80 ? lat | 0xFFFFFF00 : lat);
+        const la = (lat & 0x80 ? lat | 0xFFFFFF00 : lat)
         const lo = (lon & 0x100 ? lon | 0xFFFFFE00 : lon);
         const el = (ele & 0x4000 ? ele | 0xFFFF8000 : ele);
         // get float

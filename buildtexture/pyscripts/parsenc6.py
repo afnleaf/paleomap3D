@@ -1,7 +1,7 @@
 import os
 import re
 import pandas as pd
-import xarray as xr
+importx array as xr
 
 write_dir = "data_bin"
 
@@ -66,8 +66,8 @@ def parse_nc_file(file_path):
     return binary_data
 
 
-    
-# write binary data to a file by byte, pass in correct map number
+   
+# wr ite binary data to a file by byte, pass in correct map number
 # our binary string is always 32 bits, 4 bytes, 2 words, 1 nibble 
 def write_binary_file(binary_data, map_num):
     if not os.path.exists(write_dir):
