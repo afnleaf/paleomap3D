@@ -4,11 +4,11 @@ services:
     build:
       context: ./frontend
     ports:
-      - 3333:3333
+      - "127.0.0.1:3333:3333"
     container_name: frontend-paleo3d
     stdin_open: true
     tty: true
     volumes:
       - ./data_bin:/app/data_bin
       - ./data_texture:/app/data_texture
-    restart: unless-stopped
+    #restart: unless-stopped

@@ -1,6 +1,10 @@
 # PaleoMap3D
 Three.js webapp that renders the globe with colour coded elevation data. Go back in time and see what the earth used to look like! 🌎🌍🌏
 
+![](southamericaafrica.gif)
+
+![](indiahimalaya.gif)
+
 ## Problem
 In csv files, we have:
 - longitude (meridians)

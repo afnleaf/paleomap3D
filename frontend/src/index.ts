@@ -2,7 +2,7 @@
 import { Elysia } from "elysia";
 import { html } from "@elysiajs/html";
 import { cors } from "@elysiajs/cors";
-import { compression } from "elysia-compression";
+//import { compression } from "@elysiajs/compression";
 import Glob from "glob";
 import { exec } from 'child_process';
 // src modules
@@ -20,7 +20,7 @@ app.use(html());
 // compression gzip
 // doesn't work with () => Bun.file()?
 // does it work with compressor?
-app.use(compression());
+//app.use(compression());
 
 // create get routes, pass all the file paths through compressor
 // homepage
@@ -49,6 +49,8 @@ app.get("/front.png", () => compressor("./public/images/front.png"));
 app.get("/left.png", () => compressor("./public/images/left.png"));
 app.get("/right.png", () => compressor("./public/images/right.png"));
 app.get("/top.png", () => compressor("./public/images/top.png"));
+// experimental bevy htmlpacker app
+app.get("/planet.html", () => compressor("./public/planet.html"))
 
 // get the file names of the bin files
 const binPathSmall = "/app/data_bin/small";

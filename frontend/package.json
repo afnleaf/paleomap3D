@@ -19,7 +19,7 @@
     "@elysiajs/static": "^0.7.1",
     "@types/glob": "^8.1.0",
     "elysia": "latest",
-    "elysia-compression": "^0.0.7",
+    //"elysia-compression": "^0.0.7",
     "elysia-ip": "^0.0.7",
     "glob": "7.1.7"
   }

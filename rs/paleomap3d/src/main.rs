@@ -35,7 +35,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let f1 = &s.replace(" ", "_");
         let f2 = &s.replace("_", " ");
         //println!("{}", f2);
-        let new_file_name = PathBuf::from(format!("{}_{}", count+1, f1));
+        //let new_file_name = PathBuf::from(format!("{}_{}", count+1, f1));
+        let new_file_name = PathBuf::from(format!("{}", count+1));
         println!("{:?}", &new_file_name);
 
         main2(map_file, new_file_name)?;
