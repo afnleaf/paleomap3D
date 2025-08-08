@@ -1,16 +1,25 @@
+/*
+* main.rs 
+* simple pipeline to create all the low resolution maps from netcdf
+* in: netcdf
+* out: brotli compressed raw elevation buffer (grid)
+* have to store: names?, latlon system?
+* or just hardcode that in the visualization
+*
+* this code is pretty janky, but because you only really need to run it once
+* it doesn't matter (for now?)
+*
+* the part that matters is how we wrote the data to the file
+* outer for 0 to 181 
+* inner for 0 to 361
+*
+*/
+
 #![allow(unused_variables)]
 #![allow(dead_code)]
 
-
 use std::fs;
 use std::path::PathBuf;
-
-
-
-/*
-Test, create all the low resolution maps.
-*/
-
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let dir = PathBuf::from("../../data_raw/netcdf_1");
@@ -45,8 +54,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-
-
+// bad name
 fn main2(file_path: &str, new: PathBuf) -> Result<(), netcdf::Error> {
     println!("{}", file_path);
     //let file = netcdf::open("../../data_raw/netcdf_6/Map21_PALEOMAP_6min_Mid-Cretaceous_90Ma.nc")?;
@@ -122,7 +130,6 @@ fn compress_and_write(
     Ok(())
 }
 
-
 fn brotli_compress(
     //path: &str,
     path: &PathBuf
@@ -168,6 +175,7 @@ fn write_to_file(
     Ok(())
 }
 
+// this stuff isn't really used
 fn print_data(
     data: &Vec<i16>,
     height: &usize,
@@ -238,3 +246,4 @@ fn check_file(
         
     Ok(())
 }
+
