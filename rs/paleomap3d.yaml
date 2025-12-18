@@ -1,0 +1,13 @@
+# config for paleomap3d wasm build
+#
+pack:
+  runtime:
+    enabled: true
+  metadata:
+    title: "PALEOMAP3D"
+    author: "me"
+    description: "packed by histos"
+    keywords: "hello, from, yaml"
+  wasm:
+    module:
+      path: "wasm_modules/"
