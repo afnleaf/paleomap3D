@@ -8,6 +8,8 @@ pack:
     author: "me"
     description: "packed by histos"
     keywords: "hello, from, yaml"
+  scripts: 
+    - "rightclick.js"
   wasm:
     module:
       path: "wasm_modules/"
