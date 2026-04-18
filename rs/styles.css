@@ -1,6 +1,6 @@
 /* general ----------------------------------------------------------------- */
 body {
-    font-family: "Roboto", sans-serif;
+    font-family: Space Grotesk, system-ui, -apple-system, sans-serif;
     background-color: black;
     margin: 0;
     padding: 0;
@@ -63,7 +63,7 @@ canvas {
 /* slider map picker ------------------------------------------------------- */
 .slider {
     background-color: #ccc;
-    width: 100%;
+    width: 85%;
     position: fixed;
     bottom: 0;
     left: 50%;
@@ -77,7 +77,7 @@ input[type="range"] {
     -webkit-appearance: none;
     -moz-appearance: none;
     bottom: 10px;
-    width: 80%;
+    width: 85%;
     align-items: center;
     height: 8px;
     background-color: #ccc;

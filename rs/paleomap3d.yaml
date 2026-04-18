@@ -8,8 +8,10 @@ pack:
     author: "me"
     description: "packed by histos"
     keywords: "hello, from, yaml"
-  styles:
+  css:
     - "styles.css"
+  html:
+    - "body.html"
   scripts:
     - "rightclick.js"
   wasm:

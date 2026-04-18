@@ -169,9 +169,9 @@ fn create_hud(document: &web_sys::Document) -> Result<(), JsValue> {
     infohud.append_child(&legend)?;
 
     // links
-    let links = create_links(document)?;
-    infohud.append_child(&links)?;
-
+    //let links = create_links(document)?;
+    //infohud.append_child(&links)?;
+    
     body.append_child(&infohud)?;
 
     // wire up event listeners
