@@ -24,8 +24,11 @@ mod tools;
 mod earth;
 mod sun;
 mod orbit_camera;
-mod instance_pipeline;
 mod mapupdate;
+
+mod instance_pipeline_webgpu;
+mod instance_pipeline_webgl2;
+mod render_backend;
 
 
 //#[cfg(not(target_family = "wasm"))]
@@ -74,7 +77,8 @@ pub fn start_bevy() {
         }),
     );
     // our custom render pipeline that enables instanced geometry
-    app.add_plugins(instance_pipeline::CustomMaterialPlugin);
+    // render_backend detects WebGPU vs WebGL2 and picks the right pipeline
+    app.add_plugins(render_backend::RenderBackendPlugin);
     
     //web_sys::console::log_1(&"TEST 1".into());
     // add rest
