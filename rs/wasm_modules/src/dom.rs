@@ -100,12 +100,6 @@ fn moyai() -> Result<(), JsValue> {
 fn create_hud(document: &web_sys::Document) -> Result<(), JsValue> {
     let body = document.body().unwrap();
 
-    // font link
-    let font_link = document.create_element("link")?;
-    font_link.set_attribute("href", "https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap")?;
-    font_link.set_attribute("rel", "stylesheet")?;
-    document.head().unwrap().append_child(&font_link)?;
-
     // title - geological era name
     let title = document.create_element("p")?;
     title.set_id("title");
