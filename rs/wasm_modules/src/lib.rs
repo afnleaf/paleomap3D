@@ -25,6 +25,7 @@ mod earth;
 mod sun;
 mod orbit_camera;
 mod mapupdate;
+mod mapnames;
 
 mod instance_pipeline_webgpu;
 mod instance_pipeline_webgl2;
@@ -135,7 +136,7 @@ fn initial_setup(
     
     //sun::ambient_light(&mut commands);
     tools::fps_widget(&mut commands);
-    mapupdate::current_map_widget(&mut commands);
+    //mapupdate::current_map_widget(&mut commands);
 }
 
 fn ground_plane(

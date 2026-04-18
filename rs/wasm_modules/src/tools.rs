@@ -93,14 +93,15 @@ pub fn fps_widget(commands: &mut Commands) {
         Text::default(),
         Node {
             position_type: PositionType::Absolute,
-            right: Val::Px(5.0),
+            right: Val::Px(10.0),
+            bottom: Val::Px(10.0),
             ..default()
         },
     ))
     .with_child((
         TextSpan::default(),
         TextFont {
-            font_size: 24.0,
+            font_size: 16.0,
             ..default()
         },
         TextColor(GOLD.into()),

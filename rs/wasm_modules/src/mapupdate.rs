@@ -7,6 +7,9 @@ use bevy::{
     time::{Timer},
 };
 
+use std::sync::atomic::Ordering;
+use crate::dom;
+
 
 #[derive(Component)]
 pub struct CurrentMapText;
@@ -48,19 +51,17 @@ const DECREASE_KEYS: [KeyCode; 1] = [KeyCode::ArrowRight];
 // This system runs every frame but only does work when CurrentMap changes.
 pub fn update_map_text_display(
     current_map: Res<CurrentMap>,
-    mut query: Query<&mut TextSpan, With<CurrentMapText>>,
 ) {
     // Res<T>::is_changed() is the key. It's true only on the frame the resource was modified.
     if current_map.is_changed() {
-        // Since it changed, we can now afford the cost of updating the UI text.
-        for mut span in &mut query {
-            **span = format!("{}", current_map.index);
-        }
+        // sync the DOM elements (slider position + title text)
+        dom::sync_dom_to_map_index(current_map.index);
     }
 }
 
 // This system now ONLY handles input and changes the data resource.
 // It is now extremely fast.
+// handles both keyboard input AND DOM slider/button events
 pub fn map_update_system(
     mut current_map: ResMut<CurrentMap>,
     kbd: Res<ButtonInput<KeyCode>>,
@@ -68,6 +69,17 @@ pub fn map_update_system(
     mut key_repeat_timer: ResMut<KeyRepeatTimer>,
     mut last_direction: Local<i8>,
 ) {
+    // check if DOM slider/buttons changed the index
+    let dom_index = dom::DOM_MAP_INDEX.swap(-1, Ordering::Relaxed);
+    if dom_index >= 0 {
+        let new_index = (dom_index as usize).min(108);
+        if new_index != current_map.index {
+            current_map.index = new_index;
+        }
+        // don't process keyboard in the same frame as DOM input
+        return;
+    }
+
     let current_direction = if kbd.any_pressed(INCREASE_KEYS) {
         1
     } else if kbd.any_pressed(DECREASE_KEYS) {

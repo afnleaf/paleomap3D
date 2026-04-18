@@ -65,6 +65,9 @@ features = [
     'Document',
     'Element',
     'HtmlCanvasElement',
+    'HtmlElement',
+    'HtmlInputElement',
+    'HtmlHeadElement',
     'Window',
     'WebGlRenderingContext',
     'WebGl2RenderingContext',
@@ -73,6 +76,7 @@ features = [
     'KeyboardEvent',
     'MouseEvent',
     'CssStyleDeclaration',
+    'Text',
 ]
 
 
