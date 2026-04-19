@@ -21,10 +21,10 @@ canvas {
 }
 #title {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 1rem;
+    left: 1rem;
     max-width: 60%;
-    text-align: right;
+    text-align: left;
     z-index: 100;
     font-weight: bolder;
     font-size: 140%;
@@ -34,100 +34,47 @@ canvas {
     pointer-events: none;
 }
 
-/* links ------------------------------------------------------------------- */
-#links {
-    position: absolute;
-    padding: 0;
-    margin: 0;
-    bottom: 15px;
-    left: -30px;
-    text-align: left;
-    z-index: 100;
-    display: flex;
-    color: #ededed;
-}
-#links ul {
-    list-style: none;
-}
-#links a:link,
-#links a:visited {
-    color: #ededed;
-}
-#links a:hover {
-    color: hotpink;
-}
-#links a:active {
-    color: #ededed;
-}
 
+/* we need to make this simpler across browsers */
 /* slider map picker ------------------------------------------------------- */
+/* div-based: track + thumb, driven by pointer events in dom.rs.
+   avoids the per-browser ::-webkit-/::-moz-/::-ms- thumb pseudo-elements. */
 .slider {
-    background-color: #ccc;
-    width: 85%;
     position: fixed;
-    bottom: 0;
+    bottom: 1rem;
     left: 50%;
-    align-items: center;
-    border-radius: 5px;
     transform: translateX(-50%);
-}
-input[type="range"] {
-    position: fixed;
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    bottom: 10px;
     width: 85%;
-    align-items: center;
-    height: 8px;
-    background-color: #ccc;
-    border-radius: 8px;
+    height: 20px;
+    cursor: pointer;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
     outline: none;
 }
-input[type="range"]::-webkit-slider-runnable-track {
-    -webkit-appearance: none;
+.slider-track {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
     height: 8px;
+    transform: translateY(-50%);
+    background-color: #ccc;
+    border-radius: 8px;
+    pointer-events: none;
 }
-input[type="range"]::-moz-track {
-    -moz-appearance: none;
-    height: 8px;
-}
-input[type="range"]::-ms-track {
-    appearance: none;
-    height: 8px;
-}
-input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    height: 20px;
+.slider-thumb {
+    position: absolute;
+    top: 50%;
     width: 20px;
+    height: 20px;
+    transform: translate(-50%, -50%);
     background-color: #3367c9;
     border-radius: 50%;
-    cursor: pointer;
-    margin-top: -6px;
-    border: none;
+    pointer-events: none;
+    box-sizing: border-box;
 }
-input[type="range"]::-moz-range-thumb {
-    appearance: none;
-    -webkit-appearance: none;
-    height: 20px;
-    width: 20px;
-    background-color: #3367c9;
-    border-radius: 50%;
-    cursor: pointer;
-    margin-top: -6px;
-    border: none;
-}
-input[type="range"]::-ms-thumb {
-    appearance: none;
-    height: 20px;
-    width: 20px;
-    background-color: #3367c9;
-    border-radius: 50%;
-    cursor: pointer;
-    margin-top: -6px;
-    border: none;
-}
-input[type="range"]:active::-webkit-slider-thumb {
+.slider.dragging .slider-thumb {
     background-color: #dddcdc;
     border: 3px solid #3367c9;
 }
@@ -137,26 +84,26 @@ input[type="range"]:active::-webkit-slider-thumb {
     z-index: 100;
     position: absolute;
     display: block;
-    top: 10px;
-    left: 10px;
+    top: 8rem;
+    left: 1rem;
 }
 .legend-title {
     text-align: left;
-    margin-bottom: 5px;
+    margin-bottom: 0.4rem;
     font-weight: bold;
-    font-size: 90%;
+    font-size: 120%;
     color: #ededed;
 }
 .legend-scale ul {
     margin: 0;
-    margin-bottom: 5px;
+    margin-bottom: 0.4rem;
     padding: 0;
     float: left;
     list-style: none;
     color: #ededed;
 }
 .legend-scale ul li {
-    font-size: 70%;
+    font-size: 100%;
     list-style: none;
     margin-left: 0;
     line-height: 15px;
@@ -177,7 +124,7 @@ ul.legend-labels li span {
 /* arrows ------------------------------------------------------------------ */
 .arrow-container {
     position: fixed;
-    bottom: 33px;
+    bottom: 3rem;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
@@ -229,4 +176,31 @@ ul.legend-labels li span {
 }
 .fullscreen-button:focus {
     outline: none;
+}
+
+/* gone rn */
+/* links ------------------------------------------------------------------- */
+#links {
+    position: absolute;
+    padding: 0;
+    margin: 0;
+    bottom: 15px;
+    left: -30px;
+    text-align: left;
+    z-index: 100;
+    display: flex;
+    color: #ededed;
+}
+#links ul {
+    list-style: none;
+}
+#links a:link,
+#links a:visited {
+    color: #ededed;
+}
+#links a:hover {
+    color: hotpink;
+}
+#links a:active {
+    color: #ededed;
 }

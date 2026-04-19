@@ -8,7 +8,7 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast; // for unchecked_ref
 use web_sys::Event;
 
-use std::sync::atomic::{AtomicI32, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
 
 use crate::mapnames;
 
@@ -17,6 +17,17 @@ use crate::mapnames;
 pub static DOM_MAP_INDEX: AtomicI32 = AtomicI32::new(-1);
 // track fullscreen toggle state
 pub static DOM_FULLSCREEN: AtomicI32 = AtomicI32::new(0);
+// mirror of the index the DOM is currently displaying.
+// arrow buttons read this to compute "current ± 1" since the
+// div-based slider has no input.value() to read back from.
+pub static DOM_DISPLAYED_INDEX: AtomicI32 = AtomicI32::new(0);
+// true while a pointer drag is in progress on the slider
+static DRAGGING: AtomicBool = AtomicBool::new(false);
+
+// shorthand for the window().document() chain we'd otherwise repeat in every closure
+fn doc() -> web_sys::Document {
+    web_sys::window().unwrap().document().unwrap()
+}
 
 // function to create and set up the canvas element
 // inside the dom
@@ -139,16 +150,22 @@ fn create_hud(document: &web_sys::Document) -> Result<(), JsValue> {
     controlshud.append_child(&fs_button)?;
 
     // range slider
-    let slider = document.create_element("input")?;
-    let slider: web_sys::HtmlInputElement = slider
-        .dyn_into::<web_sys::HtmlInputElement>()
-        .unwrap();
+    // div-based slider for consistent styling/behavior across browsers.
+    // structure: <div #myRange .slider> <div .slider-track/> <div #slider-thumb .slider-thumb/> </div>
+    // pointer events are wired in setup_event_listeners.
+    let slider = document.create_element("div")?;
     slider.set_id("myRange");
     slider.set_attribute("class", "slider")?;
-    slider.set_type("range");
-    slider.set_attribute("min", "-108")?;
-    slider.set_attribute("max", "0")?;
-    slider.set_value("0");
+    let track = document.create_element("div")?;
+    track.set_attribute("class", "slider-track")?;
+    slider.append_child(&track)?;
+    let thumb = document.create_element("div")?;
+    thumb.set_id("slider-thumb");
+    thumb.set_attribute("class", "slider-thumb")?;
+    // start at index 0 (today) -> thumb at right edge
+    thumb.dyn_ref::<web_sys::HtmlElement>().unwrap()
+        .style().set_property("left", "100%")?;
+    slider.append_child(&thumb)?;
     controlshud.append_child(&slider)?;
 
     body.append_child(&controlshud)?;
@@ -255,33 +272,64 @@ fn create_links(document: &web_sys::Document) -> Result<web_sys::Element, JsValu
 
 fn setup_event_listeners(document: &web_sys::Document) -> Result<(), JsValue> {
     // slider input -> update shared atomic so Bevy picks it up
+    // pointer events unify mouse/touch/pen. move + up listen on window so
+    // the drag survives the cursor leaving the slider hitbox.
     let slider = document.get_element_by_id("myRange").unwrap();
-    let on_slider_input = Closure::<dyn FnMut(Event)>::new(|event: Event| {
-        let target = event.target().unwrap();
-        let input: web_sys::HtmlInputElement = target.dyn_into().unwrap();
-        let val: i32 = input.value().parse().unwrap_or(0);
-        // slider goes -108..0, map index is 0..108
-        let index = val.abs();
-        DOM_MAP_INDEX.store(index, Ordering::Relaxed);
+    let window = web_sys::window().unwrap();
+
+    let on_pointer_down = Closure::<dyn FnMut(Event)>::new(|event: Event| {
+        event.prevent_default();
+        let me: web_sys::MouseEvent = event.dyn_into().unwrap();
+        DRAGGING.store(true, Ordering::Relaxed);
+        // visual: dragging class swaps thumb fill -> outline (matches old :active style)
+        if let Some(s) = doc().get_element_by_id("myRange") {
+            s.set_attribute("class", "slider dragging").ok();
+        }
+        update_index_from_client_x(me.client_x() as f64);
     });
     slider.add_event_listener_with_callback(
-        "input",
-        on_slider_input.as_ref().unchecked_ref()
+        "pointerdown",
+        on_pointer_down.as_ref().unchecked_ref()
     )?;
-    on_slider_input.forget();
+    on_pointer_down.forget();
+
+    let on_pointer_move = Closure::<dyn FnMut(Event)>::new(|event: Event| {
+        if !DRAGGING.load(Ordering::Relaxed) { return; }
+        let me: web_sys::MouseEvent = event.dyn_into().unwrap();
+        update_index_from_client_x(me.client_x() as f64);
+    });
+    window.add_event_listener_with_callback(
+        "pointermove",
+        on_pointer_move.as_ref().unchecked_ref()
+    )?;
+    on_pointer_move.forget();
+
+    let on_pointer_end = Closure::<dyn FnMut(Event)>::new(|_event: Event| {
+        if !DRAGGING.swap(false, Ordering::Relaxed) { return; }
+        if let Some(s) = doc().get_element_by_id("myRange") {
+            s.set_attribute("class", "slider").ok();
+        }
+    });
+    // pointerup ends the drag normally; pointercancel handles touch interruptions
+    // (e.g. system gesture, OS notification). same handler for both.
+    window.add_event_listener_with_callback(
+        "pointerup",
+        on_pointer_end.as_ref().unchecked_ref()
+    )?;
+    window.add_event_listener_with_callback(
+        "pointercancel",
+        on_pointer_end.as_ref().unchecked_ref()
+    )?;
+    on_pointer_end.forget();
 
     // left arrow button -> go back in time (increase index)
     let arrow_left = document.get_element_by_id("arrow-left").unwrap();
     let on_left_click = Closure::<dyn FnMut(Event)>::new(|_event: Event| {
-        let window = web_sys::window().unwrap();
-        let document = window.document().unwrap();
-        let slider: web_sys::HtmlInputElement = document
-            .get_element_by_id("myRange").unwrap()
-            .dyn_into().unwrap();
-        let val: i32 = slider.value().parse().unwrap_or(0);
-        let new_val = (val - 1).max(-108);
-        slider.set_value(&new_val.to_string());
-        DOM_MAP_INDEX.store(new_val.abs(), Ordering::Relaxed);
+        let current = DOM_DISPLAYED_INDEX.load(Ordering::Relaxed);
+        let new_index = (current + 1).min(108);
+        DOM_DISPLAYED_INDEX.store(new_index, Ordering::Relaxed);
+        DOM_MAP_INDEX.store(new_index, Ordering::Relaxed);
+        set_thumb_position(&doc(), new_index);
     });
     arrow_left.add_event_listener_with_callback(
         "click",
@@ -292,15 +340,11 @@ fn setup_event_listeners(document: &web_sys::Document) -> Result<(), JsValue> {
     // right arrow button -> go forward in time (decrease index)
     let arrow_right = document.get_element_by_id("arrow-right").unwrap();
     let on_right_click = Closure::<dyn FnMut(Event)>::new(|_event: Event| {
-        let window = web_sys::window().unwrap();
-        let document = window.document().unwrap();
-        let slider: web_sys::HtmlInputElement = document
-            .get_element_by_id("myRange").unwrap()
-            .dyn_into().unwrap();
-        let val: i32 = slider.value().parse().unwrap_or(0);
-        let new_val = (val + 1).min(0);
-        slider.set_value(&new_val.to_string());
-        DOM_MAP_INDEX.store(new_val.abs(), Ordering::Relaxed);
+        let current = DOM_DISPLAYED_INDEX.load(Ordering::Relaxed);
+        let new_index = (current - 1).max(0);
+        DOM_DISPLAYED_INDEX.store(new_index, Ordering::Relaxed);
+        DOM_MAP_INDEX.store(new_index, Ordering::Relaxed);
+        set_thumb_position(&doc(), new_index);
     });
     arrow_right.add_event_listener_with_callback(
         "click",
@@ -311,8 +355,7 @@ fn setup_event_listeners(document: &web_sys::Document) -> Result<(), JsValue> {
     // fullscreen toggle -> hide/show infohud
     let fs_button = document.get_element_by_id("fullscreen-button").unwrap();
     let on_fs_click = Closure::<dyn FnMut(Event)>::new(|_event: Event| {
-        let window = web_sys::window().unwrap();
-        let document = window.document().unwrap();
+        let document = doc();
         let current = DOM_FULLSCREEN.load(Ordering::Relaxed);
         let new_state = if current == 0 { 1 } else { 0 };
         DOM_FULLSCREEN.store(new_state, Ordering::Relaxed);
@@ -343,19 +386,42 @@ fn setup_event_listeners(document: &web_sys::Document) -> Result<(), JsValue> {
 // called from Bevy systems when CurrentMap changes (e.g. from keyboard)
 // updates the DOM slider position and title text
 pub fn sync_dom_to_map_index(index: usize) {
-    let window = web_sys::window().unwrap();
-    let document = window.document().unwrap();
+    let document = doc();
 
     // update slider
-    if let Some(slider) = document.get_element_by_id("myRange") {
-        let input: web_sys::HtmlInputElement = slider.dyn_into().unwrap();
-        // slider is inverted: index 0 = slider 0, index 108 = slider -108
-        input.set_value(&format!("-{}", index));
-    }
+    DOM_DISPLAYED_INDEX.store(index as i32, Ordering::Relaxed);
+    set_thumb_position(&document, index as i32);
 
     // update title
     if let Some(title) = document.get_element_by_id("title") {
         title.set_inner_html(&mapnames::get_map_title_html(index));
+    }
+}
+
+// pointer x in viewport coords -> map index, then update both atomics + thumb.
+// left edge of slider = oldest (index 108), right edge = today (index 0).
+fn update_index_from_client_x(client_x: f64) {
+    let document = doc();
+    let slider = match document.get_element_by_id("myRange") {
+        Some(s) => s,
+        None => return,
+    };
+    let rect = slider.get_bounding_client_rect();
+    let width = rect.width();
+    if width <= 0.0 { return; }
+    let pct = ((client_x - rect.left()) / width).clamp(0.0, 1.0);
+    let index = ((1.0 - pct) * 108.0).round() as i32;
+    DOM_MAP_INDEX.store(index, Ordering::Relaxed);
+    DOM_DISPLAYED_INDEX.store(index, Ordering::Relaxed);
+    set_thumb_position(&document, index);
+}
+
+// thumb is positioned by `left: X%`; transform: translate(-50%, -50%) centers it.
+fn set_thumb_position(document: &web_sys::Document, index: i32) {
+    if let Some(thumb) = document.get_element_by_id("slider-thumb") {
+        let el: web_sys::HtmlElement = thumb.dyn_into().unwrap();
+        let pct = (108.0 - index as f64) / 108.0 * 100.0;
+        el.style().set_property("left", &format!("{}%", pct)).ok();
     }
 }
 
