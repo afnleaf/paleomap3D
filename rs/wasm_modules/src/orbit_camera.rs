@@ -41,11 +41,11 @@ pub struct OrbitState {
     pub up: Vec3,            // Camera's up vector
     pub rotation_quat: Quat, // Current rotation as quaternion
     pub distance: f32,       // Distance from target
-    pub last_position: Vec3, // For detecting changes
     pub moving: bool,        // Whether the camera is being moved
-    pub velocity: Vec3,      // For pan damping
     pub last_rotation_axis: Option<Vec3>, // For rotation damping
     pub last_rotation_angle: f32,  // For rotation damping
+    //pub last_position: Vec3, // For detecting changes
+    //pub velocity: Vec3,      // For pan damping
 }
 
 
@@ -62,11 +62,11 @@ impl Default for OrbitState {
             up: Vec3::Y,
             rotation_quat: Quat::IDENTITY,
             distance: Self::DEFAULT_DISTANCE,
-            last_position: Self::DEFAULT_POSITION,
             moving: false,
-            velocity: Vec3::ZERO,
             last_rotation_axis: None,
             last_rotation_angle: 0.0,
+            //last_position: Self::DEFAULT_POSITION,
+            //velocity: Vec3::ZERO,       // is this used?
         }
     }
 }
@@ -131,9 +131,9 @@ pub fn orbit_camera_system(
     mut q_camera: Query<(&OrbitSettings, &mut OrbitState, &mut Transform)>,
 ) {
     // Get the primary window
-    let window = primary_window_query.single();
+    let Ok(window) = primary_window_query.single() else { return };
     //let screen_width = window.expect("REASON").width();
-    let screen_width = window.unwrap().width();
+    let screen_width = window.width();
 
     // Accumulate mouse motion
     let mouse_delta: Vec2 = evr_motion.read().map(|ev| ev.delta).sum();
@@ -148,8 +148,8 @@ pub fn orbit_camera_system(
     }
 
     for (settings, mut state, mut transform) in &mut q_camera {
-        // Reset check
-        if kbd.pressed(settings.keys[3]) {
+        // Reset check on KEY_R
+        if kbd.just_pressed(settings.keys[3]) {
             *state = OrbitState::default();
         }
 
@@ -244,12 +244,14 @@ pub fn orbit_camera_system(
 
             state.target += pan_delta;
 
-            if !settings.static_moving {
-                state.velocity += pan_delta
-            }
+            // not used for damping
+            //if !settings.static_moving {
+            //    state.velocity += pan_delta
+            //}
         }
 
         // **Damping for Pan**
+        /*
         if 
         !settings.static_moving && 
         !state.moving && 
@@ -259,6 +261,7 @@ pub fn orbit_camera_system(
                 state.velocity = Vec3::ZERO;
             }
         }
+        */
 
         // **Update Transform**
         transform.rotation = state.rotation_quat;
