@@ -127,6 +127,7 @@ pub fn orbit_camera_system(
     time: Res<Time>,
     mouse_button: Res<ButtonInput<MouseButton>>,
     kbd: Res<ButtonInput<KeyCode>>,
+    touches: Res<Touches>,
     mut evr_motion: EventReader<MouseMotion>,
     mut evr_scroll: EventReader<MouseWheel>,
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
@@ -138,7 +139,7 @@ pub fn orbit_camera_system(
     let screen_width = window.width();
 
     // Accumulate mouse motion
-    let mouse_delta: Vec2 = evr_motion.read().map(|ev| ev.delta).sum();
+    let mut mouse_delta: Vec2 = evr_motion.read().map(|ev| ev.delta).sum();
 
     // Accumulate scroll
     let mut scroll_delta = 0.0;
@@ -147,6 +148,39 @@ pub fn orbit_camera_system(
             MouseScrollUnit::Line => scroll_delta -= ev.y * 0.01,
             MouseScrollUnit::Pixel => scroll_delta -= ev.y * 0.00025,
         }
+    }
+
+    // Touch gestures
+    // 1 finger drag = rotate (feeds mouse_delta like the rotate button)
+    // 2 finger drag = pan from midpoint motion + pinch-zoom from finger distance change
+    // we just shovel touch deltas into mouse_delta / scroll_delta so the
+    // existing rotate/pan/zoom code picks them up unchanged
+    let active_touches: Vec<_> = touches.iter().collect();
+    let mut touch_rotate_active = false;
+    let mut touch_pan_active = false;
+    let mut touch_zoom_active = false;
+    match active_touches.len() {
+        1 => {
+            touch_rotate_active = true;
+            mouse_delta += active_touches[0].delta();
+        }
+        2 => {
+            let t1 = active_touches[0];
+            let t2 = active_touches[1];
+            // pan from average motion of the two fingers
+            touch_pan_active = true;
+            mouse_delta += (t1.delta() + t2.delta()) * 0.5;
+            // pinch: fingers moving apart = zoom in, matches wheel-up convention
+            let prev_dist =
+                (t1.previous_position() - t2.previous_position()).length();
+            let curr_dist = (t1.position() - t2.position()).length();
+            let pinch = curr_dist - prev_dist;
+            if pinch != 0.0 {
+                touch_zoom_active = true;
+                scroll_delta -= pinch * 0.005;
+            }
+        }
+        _ => {}
     }
 
     for (settings, mut state, mut transform) in &mut q_camera {
@@ -161,15 +195,18 @@ pub fn orbit_camera_system(
             (!settings.no_rotate.unwrap_or(false)) &&
             !twist_active &&
             (mouse_button.pressed(settings.rotate_button) ||
-            kbd.pressed(settings.keys[0]));
+            kbd.pressed(settings.keys[0]) ||
+            touch_rotate_active);
         let zoom_active =
             (!settings.no_zoom.unwrap_or(false)) &&
             (kbd.pressed(settings.keys[1]) ||
-            scroll_delta != 0.0);
+            scroll_delta != 0.0 ||
+            touch_zoom_active);
         let pan_active =
             (!settings.no_pan.unwrap_or(false)) &&
             (mouse_button.pressed(settings.pan_button) ||
-            kbd.pressed(settings.keys[2]));
+            kbd.pressed(settings.keys[2]) ||
+            touch_pan_active);
 
         state.moving = 
             rotate_active || zoom_active || pan_active || twist_active;
@@ -257,7 +294,7 @@ pub fn orbit_camera_system(
                 state.rotation_quat = twist_quat * state.rotation_quat;
             }
         }
-
+        // vertical twist
         if twist_active && mouse_delta.y != 0.0 {
             let tilt_angle = mouse_delta.y * 0.005;
             let horizontal_axis = Vec3::from(transform.right());
