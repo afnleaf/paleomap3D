@@ -11,6 +11,8 @@ I could probably figure this out myself but this felt like a good experiment
 for LLMs. Take some existing code and transform it into another language.
 The solution is already there, no problem solving required, just translate. 
 Basically the ideal use case for an LLM. Pure vibe coding.
+
+Edited with claude 4.6 opus max in 2026/04
 */
 
 
@@ -85,7 +87,7 @@ pub struct OrbitSettings {
     pub no_zoom: Option<bool>,
     pub no_pan: Option<bool>,
     pub rotate_button: MouseButton,
-    pub zoom_button: MouseButton,
+    pub twist_button: MouseButton,
     pub pan_button: MouseButton,
     pub keys: [KeyCode; 4],
 }
@@ -104,7 +106,7 @@ impl Default for OrbitSettings {
             no_zoom: Some(false),
             no_pan: Some(false),
             rotate_button: MouseButton::Left,
-            zoom_button: MouseButton::Middle,
+            twist_button: MouseButton::Middle,
             pan_button: MouseButton::Right,
             keys: [
                 KeyCode::KeyA,
@@ -154,23 +156,25 @@ pub fn orbit_camera_system(
         }
 
         // Input states
-        let rotate_active = 
+        let twist_active = mouse_button.pressed(settings.twist_button);
+        let rotate_active =
             (!settings.no_rotate.unwrap_or(false)) &&
-            (mouse_button.pressed(settings.rotate_button) || 
+            !twist_active &&
+            (mouse_button.pressed(settings.rotate_button) ||
             kbd.pressed(settings.keys[0]));
-        let zoom_active = 
+        let zoom_active =
             (!settings.no_zoom.unwrap_or(false)) &&
-            (mouse_button.pressed(settings.zoom_button) || 
-            kbd.pressed(settings.keys[1]) || 
+            (kbd.pressed(settings.keys[1]) ||
             scroll_delta != 0.0);
-        let pan_active = 
+        let pan_active =
             (!settings.no_pan.unwrap_or(false)) &&
-            (mouse_button.pressed(settings.pan_button) || 
+            (mouse_button.pressed(settings.pan_button) ||
             kbd.pressed(settings.keys[2]));
 
-        state.moving = rotate_active || zoom_active || pan_active;
+        state.moving = 
+            rotate_active || zoom_active || pan_active || twist_active;
 
-        // **Rotation**
+        // Rotation
         if rotate_active && mouse_delta != Vec2::ZERO {
             // Scale mouse delta like getMouseOnCircle
             let dx = 2.0 * mouse_delta.x / screen_width;
@@ -217,22 +221,15 @@ pub fn orbit_camera_system(
             }
         }
 
-        // **Zoom**
-        if zoom_active {
-            let mut factor = 1.0;
-            if scroll_delta != 0.0 {
-                // Mouse wheel zoom (direct, no damping)
-                factor = 1.0 + scroll_delta * settings.zoom_speed;
-            } else if mouse_delta.y != 0.0 {
-                // Middle mouse drag zoom (with damping if not static)
-                factor = 1.0 + (-mouse_delta.y * 0.01) * settings.zoom_speed;
-            }
+        // Zoom on mouse wheel scroll (direct, no damping)
+        if zoom_active && scroll_delta != 0.0 {
+            let factor = 1.0 + scroll_delta * settings.zoom_speed;
             state.distance = 
                 (state.distance * factor)
                 .clamp(settings.min_distance, settings.max_distance);
         }
 
-        // **Pan**
+        // Pan
         if pan_active && mouse_delta != Vec2::ZERO {
             let pan_scale = state.distance * settings.pan_speed;
             let right = transform.right();
@@ -250,6 +247,25 @@ pub fn orbit_camera_system(
             //}
         }
 
+        // Twist, roll around eye axis
+        if twist_active && mouse_delta.x != 0.0 {
+            let twist_angle = -mouse_delta.x * 0.005;
+            let eye = state.position - state.target;
+            let eye_axis = eye.normalize_or_zero();
+            if eye_axis != Vec3::ZERO {
+                let twist_quat = Quat::from_axis_angle(eye_axis, twist_angle);
+                state.rotation_quat = twist_quat * state.rotation_quat;
+            }
+        }
+
+        if twist_active && mouse_delta.y != 0.0 {
+            let tilt_angle = mouse_delta.y * 0.005;
+            let horizontal_axis = Vec3::from(transform.right());
+            let tilt_quat = Quat::from_axis_angle(horizontal_axis, tilt_angle);
+            state.rotation_quat = tilt_quat * state.rotation_quat;
+        }
+
+
         // **Damping for Pan**
         /*
         if 
@@ -263,7 +279,7 @@ pub fn orbit_camera_system(
         }
         */
 
-        // **Update Transform**
+        // Update Transform
         transform.rotation = state.rotation_quat;
         let offset = transform.back() * state.distance;
         transform.translation = state.target + offset;
