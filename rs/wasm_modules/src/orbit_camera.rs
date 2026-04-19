@@ -27,6 +27,24 @@ use bevy::{
     window::{Window, PrimaryWindow},
 };
 
+// Tuning constants for input-to-rate conversion.
+// Not exposed via OrbitSettings because they're internal feel knobs,
+// not user-facing config.
+const ROTATION_EPSILON:     f32 = 0.000001;
+// three.js getMouseOnCircle: delta scaled by (2 / screen_width).
+const SCROLL_LINE_SENS:     f32 = 0.01;
+const SCROLL_PIXEL_SENS:    f32 = 0.00025;
+const MOUSE_ROTATE_SCALE:   f32 = 2.0;
+const MOUSE_PAN_SCALE:      f32 = 0.01;
+const MOUSE_TWIST_SENS:     f32 = 0.005;
+const MOUSE_TILT_SENS:      f32 = 0.005;
+// touch only
+const TOUCH_PINCH_SENS:     f32 = 0.001;
+// Rotation already divides by screen_width, so touch delta feeds in 1:1 with
+// mouse motion — matches pre-refactor behavior. 0.001 here made touch drag
+// ~1000x slower than mouse drag.
+const TOUCH_ROTATE_SENS:    f32 = 0.1;
+
 // Bundle to spawn our orbit camera easily
 #[derive(Bundle, Default)]
 pub struct OrbitCameraBundle {
@@ -145,39 +163,36 @@ pub fn orbit_camera_system(
     let mut scroll_delta = 0.0;
     for ev in evr_scroll.read() {
         match ev.unit {
-            MouseScrollUnit::Line => scroll_delta -= ev.y * 0.01,
-            MouseScrollUnit::Pixel => scroll_delta -= ev.y * 0.00025,
+            MouseScrollUnit::Line => scroll_delta -= ev.y * SCROLL_LINE_SENS,
+            MouseScrollUnit::Pixel => scroll_delta -= ev.y * SCROLL_PIXEL_SENS,
         }
     }
 
     // Touch gestures
     // 1 finger drag = rotate (feeds mouse_delta like the rotate button)
-    // 2 finger drag = pan from midpoint motion + pinch-zoom from finger distance change
+    // 2 finger pinch = zoom
     // we just shovel touch deltas into mouse_delta / scroll_delta so the
     // existing rotate/pan/zoom code picks them up unchanged
     let active_touches: Vec<_> = touches.iter().collect();
     let mut touch_rotate_active = false;
-    let mut touch_pan_active = false;
+    let touch_pan_active = false;
     let mut touch_zoom_active = false;
     match active_touches.len() {
         1 => {
             touch_rotate_active = true;
-            mouse_delta += active_touches[0].delta();
+            mouse_delta += active_touches[0].delta() * TOUCH_ROTATE_SENS;
         }
         2 => {
             let t1 = active_touches[0];
             let t2 = active_touches[1];
-            // pan from average motion of the two fingers
-            touch_pan_active = true;
-            mouse_delta += (t1.delta() + t2.delta()) * 0.5;
-            // pinch: fingers moving apart = zoom in, matches wheel-up convention
+            // pinch: fingers moving apart = zoom in
             let prev_dist =
                 (t1.previous_position() - t2.previous_position()).length();
             let curr_dist = (t1.position() - t2.position()).length();
             let pinch = curr_dist - prev_dist;
             if pinch != 0.0 {
                 touch_zoom_active = true;
-                scroll_delta -= pinch * 0.005;
+                scroll_delta -= pinch * TOUCH_PINCH_SENS;
             }
         }
         _ => {}
@@ -214,8 +229,8 @@ pub fn orbit_camera_system(
         // Rotation
         if rotate_active && mouse_delta != Vec2::ZERO {
             // Scale mouse delta like getMouseOnCircle
-            let dx = 2.0 * mouse_delta.x / screen_width;
-            let dy = -2.0 * mouse_delta.y / screen_width;
+            let dx = MOUSE_ROTATE_SCALE * mouse_delta.x / screen_width;
+            let dy = -MOUSE_ROTATE_SCALE * mouse_delta.y / screen_width;
 
             let eye = state.position - state.target;
             let eye_direction = eye.normalize_or_zero();
@@ -226,7 +241,7 @@ pub fn orbit_camera_system(
             let move_direction = sideways_direction * dx + up_direction * dy;
             let move_length = move_direction.length();
 
-            if move_length > 0.000001 {
+            if move_length > ROTATION_EPSILON {
                 let axis = move_direction.cross(eye).normalize_or_zero();
                 let angle = move_length * settings.rotate_speed;
                 let delta_quat = Quat::from_axis_angle(axis, angle);
@@ -240,9 +255,9 @@ pub fn orbit_camera_system(
                     state.last_rotation_angle = angle;
                 }
             }
-        } else if 
-            !settings.static_moving && 
-            state.last_rotation_angle > 0.000001 
+        } else if
+            !settings.static_moving &&
+            state.last_rotation_angle > ROTATION_EPSILON
         {
             // Apply damping
             state.last_rotation_angle *= 1.0 - settings.damping_factor;
@@ -252,7 +267,7 @@ pub fn orbit_camera_system(
                 state.rotation_quat = delta_quat * state.rotation_quat;
             }
             // Reset if angle becomes negligible
-            if state.last_rotation_angle < 0.000001 {
+            if state.last_rotation_angle < ROTATION_EPSILON {
                 state.last_rotation_axis = None;
                 state.last_rotation_angle = 0.0;
             }
@@ -272,7 +287,7 @@ pub fn orbit_camera_system(
             let right = transform.right();
             let up = transform.up();
             let mouse_change = Vec2::new(
-                -mouse_delta.x * 0.01, mouse_delta.y * 0.01);
+                -mouse_delta.x * MOUSE_PAN_SCALE, mouse_delta.y * MOUSE_PAN_SCALE);
             let pan_delta = (right * mouse_change.x +
                 up * mouse_change.y) * pan_scale;
 
@@ -286,7 +301,7 @@ pub fn orbit_camera_system(
 
         // Twist, roll around eye axis
         if twist_active && mouse_delta.x != 0.0 {
-            let twist_angle = -mouse_delta.x * 0.005;
+            let twist_angle = -mouse_delta.x * MOUSE_TWIST_SENS;
             let eye = state.position - state.target;
             let eye_axis = eye.normalize_or_zero();
             if eye_axis != Vec3::ZERO {
@@ -296,7 +311,7 @@ pub fn orbit_camera_system(
         }
         // vertical twist
         if twist_active && mouse_delta.y != 0.0 {
-            let tilt_angle = mouse_delta.y * 0.005;
+            let tilt_angle = mouse_delta.y * MOUSE_TILT_SENS;
             let horizontal_axis = Vec3::from(transform.right());
             let tilt_quat = Quat::from_axis_angle(horizontal_axis, tilt_angle);
             state.rotation_quat = tilt_quat * state.rotation_quat;

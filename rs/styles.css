@@ -19,9 +19,6 @@ canvas {
     -webkit-user-selec: none;
     user-select: none;
 }
-.infohud {
-    display: flex;
-}
 #title {
     position: absolute;
     top: 1rem;

@@ -170,20 +170,15 @@ fn create_hud(document: &web_sys::Document) -> Result<(), JsValue> {
 
     body.append_child(&controlshud)?;
 
-    // info HUD (legend + links)
-    let infohud = document.create_element("div")?;
-    infohud.set_id("infohud");
-    infohud.set_attribute("class", "infohud")?;
-
     // elevation legend
+    // attached directly to body. previously wrapped in an in-flow #infohud
+    // flex container, but toggling that between flex/none caused the canvas's
+    // ResizeObserver to refire and altered screen_width between frames on
+    // mobile, making 1-finger touch rotation feel slower once the legend
+    // was hidden. the legend is position: absolute so a wrapper isn't needed.
     let legend = create_legend(document)?;
-    infohud.append_child(&legend)?;
-
-    // links
-    //let links = create_links(document)?;
-    //infohud.append_child(&links)?;
-    
-    body.append_child(&infohud)?;
+    legend.set_id("legend");
+    body.append_child(&legend)?;
 
     // wire up event listeners
     setup_event_listeners(document)?;
@@ -360,11 +355,11 @@ fn setup_event_listeners(document: &web_sys::Document) -> Result<(), JsValue> {
         let new_state = if current == 0 { 1 } else { 0 };
         DOM_FULLSCREEN.store(new_state, Ordering::Relaxed);
 
-        // toggle infohud visibility
-        if let Some(infohud) = document.get_element_by_id("infohud") {
-            let el: web_sys::HtmlElement = infohud.dyn_into().unwrap();
+        // toggle legend visibility
+        if let Some(legend) = document.get_element_by_id("legend") {
+            let el: web_sys::HtmlElement = legend.dyn_into().unwrap();
             el.style().set_property("display",
-                if new_state == 1 { "none" } else { "flex" }
+                if new_state == 1 { "none" } else { "block" }
             ).ok();
         }
         // swap the fullscreen icon
