@@ -11,9 +11,10 @@ pack:
   css:
     - "styles.css"
   html:
-    - "body.html"
+    - "hud.html"
   scripts:
     - "rightclick.js"
+    - "hud.js"
   wasm:
     module:
       path: "wasm_modules/"

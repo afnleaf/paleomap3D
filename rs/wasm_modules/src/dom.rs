@@ -176,9 +176,9 @@ fn create_hud(document: &web_sys::Document) -> Result<(), JsValue> {
     // ResizeObserver to refire and altered screen_width between frames on
     // mobile, making 1-finger touch rotation feel slower once the legend
     // was hidden. the legend is position: absolute so a wrapper isn't needed.
-    let legend = create_legend(document)?;
-    legend.set_id("legend");
-    body.append_child(&legend)?;
+    //let legend = create_legend(document)?;
+    //legend.set_id("legend");
+    //body.append_child(&legend)?;
 
     // wire up event listeners
     setup_event_listeners(document)?;

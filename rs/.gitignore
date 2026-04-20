@@ -23,5 +23,5 @@ Cargo.lock
 # Added by cargo
 
 # Other
-*.html
+index.html
 .giverny

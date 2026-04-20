@@ -1,0 +1,811 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slider mockup — paleomap3D</title>
+<link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
+<link href="https://fonts.bunny.net/css?family=space-grotesk:400,500,700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #000;
+    --fg: #ededed;
+    --fg-muted: #9a9a9a;
+    --fg-dim: #666;
+    --track: #2a2a2a;
+    --thumb: #3367c9;
+    --thumb-glow: rgba(51,103,201,0.35);
+    --major-tick: #ededed;
+    --minor-tick: #4a4a4a;
+    --cenozoic: #c3a961;
+    --mesozoic: #4a8a52;
+    --paleozoic: #4a6b8a;
+
+    /* shared chrome used by rail buttons and slide-out panels */
+    --chrome-bg:     rgba(12,14,22,0.72);
+    --chrome-border: rgba(255,255,255,0.1);
+    --chrome-hover:  rgba(40,44,58,0.85);
+    --chrome-radius: 8px;
+    --rail-btn-size: 42px;
+    --rail-gap:      10px;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: "Space Grotesk", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-user-select: none; user-select: none;
+  }
+
+  /* fake globe backdrop so the HUD reads against something */
+  .stage {
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at 50% 55%, #1a2333 0%, #0a0f1a 40%, #000 75%),
+      radial-gradient(circle at 20% 30%, rgba(255,255,255,0.03), transparent 50%);
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    padding: 1rem;
+    position: relative;
+  }
+
+  /* title (top-left, same spot as the app) */
+  .title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    line-height: 1.25;
+    margin: 0;
+    pointer-events: none;
+  }
+  .title .title-era { display: block; }
+  .title .title-age {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 400;
+    opacity: 0.75;
+    margin-top: 2px;
+  }
+  .title .title-broader {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-top: 8px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    color: rgba(255,255,255,0.9);
+  }
+  .title .title-broader.cenozoic  { background: var(--cenozoic); }
+  .title .title-broader.mesozoic  { background: var(--mesozoic); }
+  .title .title-broader.paleozoic { background: var(--paleozoic); }
+
+  /* bottom HUD row: prev | slider | next
+     align-items: flex-start so we can push buttons down to track center
+     instead of centering on the whole slider column */
+  .slider-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    width: min(85%, 960px);
+    margin: 0 auto;
+    padding-bottom: 1.5rem;
+  }
+
+  .arrow-btn {
+    flex-shrink: 0;
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: #fff;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+    -webkit-tap-highlight-color: transparent;
+    /* align button center with the track line:
+       era-bands(10) + era-bands margin-bottom(5) + half track-wrap(14) - half button(19) */
+    margin-top: 10px;
+  }
+  .arrow-btn:hover:not(:disabled) {
+    background: rgba(255,255,255,0.16);
+    border-color: rgba(255,255,255,0.25);
+  }
+  .arrow-btn:disabled { opacity: 0.25; cursor: default; }
+
+  /* slider ---------------------------------------------------------------- */
+  .slider {
+    position: relative;
+    flex: 1;
+    touch-action: none;
+  }
+
+  /* era bands: proportional colored strips that live above the track */
+  .era-bands {
+    position: relative;
+    height: 10px;
+    margin-bottom: 5px;
+    border-radius: 2px;
+    overflow: hidden;
+    background: #111;
+  }
+  .era-band {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.85);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .era-band.cenozoic  { background: var(--cenozoic); }
+  .era-band.mesozoic  { background: var(--mesozoic); }
+  .era-band.paleozoic { background: var(--paleozoic); }
+
+  /* track + tick layer */
+  .track-wrap {
+    position: relative;
+    height: 28px;
+    cursor: pointer;
+  }
+  .track {
+    position: absolute;
+    top: 50%; left: 0; right: 0;
+    height: 4px;
+    transform: translateY(-50%);
+    background: var(--track);
+    border-radius: 2px;
+    pointer-events: none;
+  }
+  .ticks {
+    position: absolute; inset: 0;
+    pointer-events: none;
+  }
+  .tick {
+    position: absolute;
+    top: 50%;
+    background: var(--minor-tick);
+    transform: translate(-50%, -50%);
+  }
+  .tick.minor { width: 1px; height: 6px; }
+  .tick.major { width: 2px; height: 14px; background: var(--major-tick); }
+
+  /* thumb */
+  .thumb {
+    position: absolute;
+    top: 50%; left: 100%;
+    width: 18px; height: 18px;
+    background: var(--thumb);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 0 4px var(--thumb-glow), 0 2px 6px rgba(0,0,0,0.4);
+    cursor: grab;
+    transition: left 0.12s ease, box-shadow 0.15s ease;
+    z-index: 2;
+  }
+  .slider.dragging .thumb {
+    cursor: grabbing;
+    box-shadow: 0 0 0 9px var(--thumb-glow), 0 2px 6px rgba(0,0,0,0.4);
+    transition: box-shadow 0.15s ease;
+  }
+
+  /* tooltip above thumb */
+  .tooltip {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1a1a1a;
+    border: 1px solid #333;
+    color: var(--fg);
+    font-size: 0.72rem;
+    font-weight: 500;
+    padding: 5px 9px;
+    border-radius: 4px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+    text-align: center;
+  }
+  .tooltip .tip-era { display: block; font-weight: 600; }
+  .tooltip .tip-age {
+    display: block;
+    font-size: 0.62rem;
+    font-weight: 400;
+    opacity: 0.72;
+    margin-top: 1px;
+  }
+  .tooltip::after {
+    content: "";
+    position: absolute;
+    top: 100%; left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #333;
+  }
+  .slider.dragging .tooltip,
+  .slider:hover .tooltip { opacity: 1; }
+
+  /* boundary labels under the track */
+  .tick-labels {
+    position: relative;
+    height: 14px;
+    margin-top: 2px;
+  }
+  .tick-label {
+    position: absolute;
+    top: 0;
+    transform: translateX(-50%);
+    font-size: 0.6rem;
+    color: var(--fg-dim);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* present / past */
+  .end-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4px;
+    font-size: 0.7rem;
+    color: var(--fg-muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  /* mobile ---------------------------------------------------------------- */
+  @media (max-width: 600px) {
+    .slider-row { width: 92%; gap: 0.4rem; padding-bottom: 2rem; }
+    /* era-bands-mobile(7) + margin(5) + half track-wrap(14) - half button(17) */
+    .arrow-btn  { width: 34px; height: 34px; margin-top: 9px; }
+    .era-bands  { height: 7px; }
+    .era-band   { font-size: 0; }           /* hide band text, keep color */
+    .tick-label { font-size: 0; }           /* hide all by default */
+    .tick-label.keep-mobile { font-size: 0.6rem; } /* keep era boundaries */
+    .tooltip    { font-size: 0.7rem; }
+    .title      { font-size: 1.15rem; }
+  }
+
+  /* map-control rail (right edge) --------------------------------------- */
+  /* OSM-style: vertical stack of icon buttons grouped in rounded containers.
+     add more .rail-group blocks later for zoom / fullscreen / etc. */
+  .rail {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .rail-group {
+    display: flex;
+    flex-direction: column;
+    background: var(--chrome-bg);
+    border: 1px solid var(--chrome-border);
+    border-radius: var(--chrome-radius);
+    backdrop-filter: blur(8px);
+    overflow: hidden;
+  }
+  .rail-btn {
+    width: var(--rail-btn-size);
+    height: var(--rail-btn-size);
+    background: transparent;
+    border: 0;
+    color: var(--fg);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: background 0.15s, color 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .rail-btn + .rail-btn { border-top: 1px solid var(--chrome-border); }
+  .rail-btn:hover { background: rgba(255,255,255,0.08); }
+  .rail-btn[aria-expanded="true"] {
+    background: rgba(51,103,201,0.22);
+    color: #bfd0ff;
+  }
+
+  /* slide-out panel (attached to the rail on the right) ---------------- */
+  /* state: data-state="open"|"closed". CSS defaults handle unset value:
+       mobile = closed, desktop = open. JS only writes on user action. */
+  .panel {
+    position: absolute;
+    top: 1rem;
+    right: calc(1rem + var(--rail-btn-size) + var(--rail-gap));
+    width: min(260px, calc(100vw - 5rem));
+    z-index: 15;
+    background: var(--chrome-bg);
+    border: 1px solid var(--chrome-border);
+    border-radius: var(--chrome-radius);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+    transform-origin: top right;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+  }
+  /* hidden by default (mobile) + explicit closed */
+  .panel:not([data-state="open"]) {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(8px) scale(0.97);
+  }
+  /* desktop: visible unless explicitly closed */
+  @media (min-width: 600px) {
+    .panel:not([data-state="closed"]) {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(0) scale(1);
+    }
+  }
+  /* explicit open (mobile user tapped the rail button) */
+  .panel[data-state="open"] {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0) scale(1);
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 14px 9px;
+    border-bottom: 1px solid var(--chrome-border);
+  }
+  .panel-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--fg);
+    margin: 0;
+    line-height: 1;
+  }
+  .panel-close {
+    width: 24px; height: 24px;
+    padding: 0;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--fg-muted);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: background 0.15s, color 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .panel-close:hover { background: rgba(255,255,255,0.08); color: var(--fg); }
+
+  .panel-body { padding: 11px 14px 12px; }
+
+  /* legend list inside the panel */
+  .legend-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .legend-list li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    line-height: 1.2;
+    color: var(--fg);
+    font-variant-numeric: tabular-nums;
+  }
+  .legend-list .swatch {
+    width: 15px; height: 15px;
+    border-radius: 2px;
+    border: 1px solid rgba(255,255,255,0.15);
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 600px) {
+    :root { --rail-btn-size: 38px; --rail-gap: 8px; }
+    .panel-title    { font-size: 1rem; }
+    .legend-list li { font-size: 0.82rem; }
+    .legend-list .swatch { width: 13px; height: 13px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+
+  <p class="title" id="title">
+    <span class="title-era">Present-day</span>
+    <span class="title-age">(Holocene, 0 Ma)</span>
+    <span class="title-broader cenozoic">Cenozoic</span>
+  </p>
+
+  <!-- right-edge control rail (OSM-style). more buttons go in .rail-group. -->
+  <div class="rail" role="toolbar" aria-label="Map controls">
+    <div class="rail-group">
+      <button class="rail-btn"
+              data-panel-toggle="panel-legend"
+              aria-controls="panel-legend"
+              aria-expanded="true"
+              aria-label="Elevation legend"
+              title="Elevation">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="16" x2="12" y2="12"/>
+          <line x1="12" y1="8"  x2="12.01" y2="8"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- elevation legend, attached to the rail button above -->
+  <section class="panel" id="panel-legend" aria-labelledby="panel-legend-title">
+    <header class="panel-header">
+      <h3 class="panel-title" id="panel-legend-title">Elevation</h3>
+      <button class="panel-close" data-panel-close="panel-legend" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6"  x2="6"  y2="18"/>
+          <line x1="6"  y1="6"  x2="18" y2="18"/>
+        </svg>
+      </button>
+    </header>
+    <div class="panel-body">
+      <ul class="legend-list" id="legend-list"></ul>
+    </div>
+  </section>
+
+  <div></div>
+
+  <div class="slider-row">
+    <button class="arrow-btn" id="prev" aria-label="older">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+
+    <div class="slider" id="slider">
+      <div class="era-bands">
+        <div class="era-band paleozoic" style="left:0%;     width:53.70%">Paleozoic</div>
+        <div class="era-band mesozoic"  style="left:53.70%; width:34.26%">Mesozoic</div>
+        <div class="era-band cenozoic"  style="left:87.96%; width:12.04%">Cenozoic</div>
+      </div>
+      <div class="track-wrap" id="track-wrap">
+        <div class="track"></div>
+        <div class="ticks" id="ticks"></div>
+        <div class="thumb" id="thumb">
+          <div class="tooltip" id="tooltip">
+            <span class="tip-era">Present-day</span>
+            <span class="tip-age">Holocene, 0 Ma</span>
+          </div>
+        </div>
+      </div>
+      <div class="tick-labels" id="ticklabels"></div>
+      <div class="end-labels">
+        <span>← 541 Ma · Past</span>
+        <span>Present →</span>
+      </div>
+    </div>
+
+    <button class="arrow-btn" id="next" aria-label="newer">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+    </button>
+  </div>
+
+</div>
+
+<script>
+/* full mapnames.rs table — [era, age] for each of the 109 indices */
+const MAP_NAMES = [
+  ["Present-day",                  "Holocene, 0 Ma"],
+  ["Early Pliocene",               "Zanclean, 4.47 Ma"],
+  ["Middle/Late Miocene",          "Serravallian & Tortonian, 10.5 Ma"],
+  ["Middle Miocene",               "Langhian, 14.9 Ma"],
+  ["Early Miocene",                "Aquitanian & Burdigalian, 19.5 Ma"],
+  ["Late Oligocene",               "Chattian, 25.6 Ma"],
+  ["Early Oligocene",              "Rupelian, 31 Ma"],
+  ["Late Eocene",                  "Priabonian, 35.9 Ma"],
+  ["Late Middle Eocene",           "Bartonian, 39.5 Ma"],
+  ["Early Middle Eocene",          "Lutetian, 44.5 Ma"],
+  ["Early Eocene",                 "Ypresian, 51.9 Ma"],
+  ["Paleocene/Eocene Boundary",    "PETM, 56 Ma"],
+  ["Paleocene",                    "Danian & Thanetian, 61 Ma"],
+  ["KT Boundary",                  "Latest Maastrichtian, 66 Ma"],
+  ["Late Cretaceous",              "Maastrichtian, 69 Ma"],
+  ["Late Cretaceous",              "Late Campanian, 75 Ma"],
+  ["Late Cretaceous",              "Early Campanian, 80.8 Ma"],
+  ["Late Cretaceous",              "Santonian & Coniacian, 86.7 Ma"],
+  ["Mid-Cretaceous",               "Turonian, 91.9 Ma"],
+  ["Mid-Cretaceous",               "Cenomanian, 97.2 Ma"],
+  ["Early Cretaceous",             "Late Albian, 102.6 Ma"],
+  ["Early Cretaceous",             "Middle Albian, 107 Ma"],
+  ["Early Cretaceous",             "Early Albian, 111 Ma"],
+  ["Early Cretaceous",             "Late Aptian, 115.8 Ma"],
+  ["Early Cretaceous",             "Early Aptian, 121.8 Ma"],
+  ["Early Cretaceous",             "Barremian, 127.2 Ma"],
+  ["Early Cretaceous",             "Hauterivian, 131.2 Ma"],
+  ["Early Cretaceous",             "Valanginian, 136.4 Ma"],
+  ["Early Cretaceous",             "Berriasian, 142.4 Ma"],
+  ["Jurassic/Cretaceous Boundary", "145 Ma"],
+  ["Late Jurassic",                "Tithonian, 148.6 Ma"],
+  ["Late Jurassic",                "Kimmeridgian, 154.7 Ma"],
+  ["Late Jurassic",                "Oxfordian, 160.4 Ma"],
+  ["Middle Jurassic",              "Callovian, 164.8 Ma"],
+  ["Middle Jurassic",              "Bajocian & Bathonian, 168.2 Ma"],
+  ["Middle Jurassic",              "Aalenian, 172.2 Ma"],
+  ["Early Jurassic",               "Toarcian, 178.4 Ma"],
+  ["Early Jurassic",               "Pliensbachian, 186.8 Ma"],
+  ["Early Jurassic",               "Sinemurian/Pliensbachian, 190.8 Ma"],
+  ["Early Jurassic",               "Hettangian & Sinemurian, 196 Ma"],
+  ["Late Triassic",                "Rhaetian/Hettangian, 201.3 Ma"],
+  ["Late Triassic",                "Rhaetian, 204.9 Ma"],
+  ["Late Triassic",                "Late Norian, 213.2 Ma"],
+  ["Late Triassic",                "Mid Norian, 217.8 Ma"],
+  ["Late Triassic",                "Early Norian, 222.4 Ma"],
+  ["Late Triassic",                "Carnian/Norian, 227 Ma"],
+  ["Late Triassic",                "Carnian, 232 Ma"],
+  ["Late Triassic",                "Early Carnian, 233.6 Ma"],
+  ["Middle Triassic",              "Ladinian, 239.5 Ma"],
+  ["Middle Triassic",              "Anisian, 244.6 Ma"],
+  ["Permo-Triassic Boundary",      "252 Ma"],
+  ["Late Permian",                 "Lopingian, 256 Ma"],
+  ["Late Middle Permian",          "Capitanian, 262.5 Ma"],
+  ["Middle Permian",               "Wordian/Capitanian Boundary, 265.1 Ma"],
+  ["Middle Permian",               "Roadian & Wordian, 268.7 Ma"],
+  ["Early Permian",                "Late Kungurian, 275 Ma"],
+  ["Early Permian",                "Early Kungurian, 280 Ma"],
+  ["Early Permian",                "Artinskian, 286.8 Ma"],
+  ["Early Permian",                "Sakmarian, 292.6 Ma"],
+  ["Early Permian",                "Asselian, 297 Ma"],
+  ["Late Pennsylvanian",           "Gzhelian, 301.3 Ma"],
+  ["Late Pennsylvanian",           "Kasimovian, 305.4 Ma"],
+  ["Middle Pennsylvanian",         "Moscovian, 311.1 Ma"],
+  ["Early/Middle Carboniferous",   "Baskirian/Moscovian boundary, 314.6 Ma"],
+  ["Early Pennsylvanian",          "Bashkirian, 319.2 Ma"],
+  ["Late Mississippian",           "Serpukhovian, 327 Ma"],
+  ["Late Mississippian",           "Visean/Serpukhovian boundary, 330.9 Ma"],
+  ["Middle Mississippian",         "Late Visean, 333 Ma"],
+  ["Middle Mississippian",         "Middle Visean, 338.8 Ma"],
+  ["Middle Mississippian",         "Early Visean, 344 Ma"],
+  ["Early Mississippian",          "Late Tournaisian, 349 Ma"],
+  ["Early Mississippian",          "Early Tournaisian, 354 Ma"],
+  ["Devono-Carboniferous Boundary","358.9 Ma"],
+  ["Late Devonian",                "Middle Famennian, 365.6 Ma"],
+  ["Late Devonian",                "Early Famennian, 370 Ma"],
+  ["Late Devonian",                "Late Frasnian, 375 Ma"],
+  ["Late Devonian",                "Early Frasnian, 380 Ma"],
+  ["Middle Devonian",              "Givetian, 385.2 Ma"],
+  ["Middle Devonian",              "Eifelian, 390.5 Ma"],
+  ["Early Devonian",               "Late Emsian, 395 Ma"],
+  ["Early Devonian",               "Middle Emsian, 400 Ma"],
+  ["Early Devonian",               "Early Emsian, 405 Ma"],
+  ["Early Devonian",               "Pragian, 409.2 Ma"],
+  ["Early Devonian",               "Lochkovian, 415 Ma"],
+  ["Late Silurian",                "Pridoli, 421.1 Ma"],
+  ["Late Silurian",                "Ludlow, 425.2 Ma"],
+  ["Middle Silurian",              "Wenlock, 430.4 Ma"],
+  ["Early Silurian",               "Late Llandovery, 436 Ma"],
+  ["Early Silurian",               "Early Llandovery, 441.2 Ma"],
+  ["Late Ordovician",              "Hirnantian, 444.5 Ma"],
+  ["Late Ordovician",              "Katian, 449.1 Ma"],
+  ["Late Ordovician",              "Sandbian, 455.7 Ma"],
+  ["Middle Ordovician",            "Late Darwillian, 460 Ma"],
+  ["Middle Ordovician",            "Early Darwillian, 465 Ma"],
+  ["Early Ordovician",             "Floian/Dapingian boundary, 470 Ma"],
+  ["Early Ordovician",             "Late Early Floian, 475 Ma"],
+  ["Early Ordovician",             "Tremadoc, 481.6 Ma"],
+  ["Cambro-Ordovician Boundary",   "485.4 Ma"],
+  ["Late Cambrian",                "Jiangshanian, 491.8 Ma"],
+  ["Late Cambrian",                "Pabian, 495.5 Ma"],
+  ["Late Middle Cambrian",         "Guzhangian, 498.8 Ma"],
+  ["Late Middle Cambrian",         "Early Epoch 3, 505 Ma"],
+  ["Early Middle Cambrian",        "Late Epoch 2, 510 Ma"],
+  ["Early Middle Cambrian",        "Middle Epoch 2, 515 Ma"],
+  ["Early/Middle Cambrian boundary","520 Ma"],
+  ["Early Cambrian",               "Late Terreneuvian, 525 Ma"],
+  ["Early Cambrian",               "Middle Terreneuvian, 530 Ma"],
+  ["Early Cambrian",               "Early Terreneuvian, 535 Ma"],
+  ["Cambrian/Precambrian boundary","541 Ma"],
+];
+
+/* tick-label boundaries (where to draw major ticks + labels) */
+const BOUNDARIES = [
+  { idx: 0,   name: "Present"             },
+  { idx: 13,  name: "K/Pg"                },
+  { idx: 29,  name: "J/K"                 },
+  { idx: 40,  name: "T/J"                 },
+  { idx: 50,  name: "P/T",  major: true   },   // Paleozoic/Mesozoic — kept on mobile
+  { idx: 72,  name: "D/C"                 },
+  { idx: 97,  name: "O/Cm"                },
+  { idx: 108, name: "—"                   },
+];
+
+/* broader era follows the stratigraphic convention:
+   idx 13 (KT Boundary / Latest Maastrichtian) is still Mesozoic;
+   idx 50 (P/T, 252 Ma) is the Paleozoic/Mesozoic break */
+function broaderEra(idx) {
+  if (idx < 13) return "Cenozoic";
+  if (idx < 50) return "Mesozoic";
+  return "Paleozoic";
+}
+const pctFromIdx = i => (108 - i) / 108 * 100;
+
+/* elevation legend — same 13 bands as dom.rs (top = high, bottom = deep) */
+const ELEVATION_BANDS = [
+  ["#eeeeee", "5 km+"],
+  ["#b6b5b5", "3.2 km to 5 km"],
+  ["#977944", "2 km to 3.2 km"],
+  ["#805411", "1 km to 2 km"],
+  ["#3d3704", "400 m to 1 km"],
+  ["#00530b", "150 m to 400 m"],
+  ["#347a2a", "75 m to 150 m"],
+  ["#4fa642", "0 m to 75 m"],
+  ["#5778b3", "-50 m to 0 m"],
+  ["#344b75", "-150 m to -50 m"],
+  ["#2a3c63", "-3 km to -150 m"],
+  ["#1f2d47", "-6 km to -3 km"],
+  ["#080e30", "-11 km to -6 km"],
+];
+const legendList = document.getElementById("legend-list");
+ELEVATION_BANDS.forEach(([color, label]) => {
+  const li = document.createElement("li");
+  const sw = document.createElement("span");
+  sw.className = "swatch";
+  sw.style.background = color;
+  li.appendChild(sw);
+  li.appendChild(document.createTextNode(label));
+  legendList.appendChild(li);
+});
+
+/* -- rail ↔ panel wiring ------------------------------------------------
+   initial state lives in CSS (mobile closed / desktop open via @media).
+   JS only writes data-state once the user acts. A panel's open state is:
+     explicit data-state if present; otherwise the viewport-based default. */
+const DESKTOP_Q = window.matchMedia("(min-width: 600px)");
+const isPanelOpen = p => {
+  if (p.dataset.state === "open")   return true;
+  if (p.dataset.state === "closed") return false;
+  return DESKTOP_Q.matches;
+};
+const setPanelOpen = (p, open) => {
+  p.dataset.state = open ? "open" : "closed";
+  document.querySelectorAll(`[data-panel-toggle="${p.id}"]`)
+    .forEach(btn => btn.setAttribute("aria-expanded", open ? "true" : "false"));
+};
+
+document.querySelectorAll("[data-panel-toggle]").forEach(btn => {
+  const panel = document.getElementById(btn.dataset.panelToggle);
+  if (!panel) return;
+  // sync aria with CSS default so screen readers aren't told "expanded" when hidden
+  btn.setAttribute("aria-expanded", isPanelOpen(panel) ? "true" : "false");
+  btn.addEventListener("click", () => setPanelOpen(panel, !isPanelOpen(panel)));
+});
+document.querySelectorAll("[data-panel-close]").forEach(btn => {
+  const panel = document.getElementById(btn.dataset.panelClose);
+  if (panel) btn.addEventListener("click", () => setPanelOpen(panel, false));
+});
+// keep aria-expanded honest if viewport crosses the breakpoint
+DESKTOP_Q.addEventListener("change", () => {
+  document.querySelectorAll("[data-panel-toggle]").forEach(btn => {
+    const panel = document.getElementById(btn.dataset.panelToggle);
+    if (panel) btn.setAttribute("aria-expanded", isPanelOpen(panel) ? "true" : "false");
+  });
+});
+
+/* render ticks + labels ------------------------------------------------- */
+const ticks = document.getElementById("ticks");
+const ticklabels = document.getElementById("ticklabels");
+
+/* minor tick every 5 indices */
+for (let i = 0; i <= 108; i += 5) {
+  const el = document.createElement("div");
+  el.className = "tick minor";
+  el.style.left = pctFromIdx(i) + "%";
+  ticks.appendChild(el);
+}
+/* major ticks + labels at boundaries */
+BOUNDARIES.forEach(b => {
+  const pct = pctFromIdx(b.idx);
+  const t = document.createElement("div");
+  t.className = "tick major";
+  t.style.left = pct + "%";
+  ticks.appendChild(t);
+
+  if (b.name !== "—" && b.name !== "Present") {
+    const l = document.createElement("div");
+    l.className = "tick-label" + (b.major ? " keep-mobile" : "");
+    l.style.left = pct + "%";
+    l.textContent = b.name;
+    ticklabels.appendChild(l);
+  }
+});
+
+/* interactivity --------------------------------------------------------- */
+const slider = document.getElementById("slider");
+const trackWrap = document.getElementById("track-wrap");
+const thumb  = document.getElementById("thumb");
+const tip    = document.getElementById("tooltip");
+const title  = document.getElementById("title");
+const prev   = document.getElementById("prev");
+const next   = document.getElementById("next");
+
+let currentIdx = 0;
+let dragging = false;
+
+/* pre-grab the text nodes we update on every change */
+const titleEra     = title.querySelector(".title-era");
+const titleAge     = title.querySelector(".title-age");
+const titleBroader = title.querySelector(".title-broader");
+const tipEra       = tip.querySelector(".tip-era");
+const tipAge       = tip.querySelector(".tip-age");
+
+function setIndex(i) {
+  currentIdx = Math.max(0, Math.min(108, Math.round(i)));
+  thumb.style.left = pctFromIdx(currentIdx) + "%";
+
+  const [era, age] = MAP_NAMES[currentIdx];
+  const broader = broaderEra(currentIdx);
+
+  // title
+  titleEra.textContent = era;
+  titleAge.textContent = `(${age})`;
+  titleBroader.textContent = broader;
+  titleBroader.className = "title-broader " + broader.toLowerCase();
+
+  // tooltip
+  tipEra.textContent = era;
+  tipAge.textContent = age;
+
+  prev.disabled = currentIdx >= 108;
+  next.disabled = currentIdx <= 0;
+}
+
+function fromClientX(x) {
+  const r = trackWrap.getBoundingClientRect();
+  const t = Math.max(0, Math.min(1, (x - r.left) / r.width));
+  setIndex((1 - t) * 108);
+}
+
+trackWrap.addEventListener("pointerdown", e => {
+  dragging = true;
+  slider.classList.add("dragging");
+  fromClientX(e.clientX);
+  e.preventDefault();
+});
+window.addEventListener("pointermove", e => {
+  if (!dragging) return;
+  fromClientX(e.clientX);
+});
+function endDrag() {
+  if (!dragging) return;
+  dragging = false;
+  slider.classList.remove("dragging");
+}
+window.addEventListener("pointerup", endDrag);
+window.addEventListener("pointercancel", endDrag);
+
+prev.addEventListener("click", () => setIndex(currentIdx + 1));
+next.addEventListener("click", () => setIndex(currentIdx - 1));
+
+/* keyboard: matches the engine's behavior so you can feel the full loop */
+window.addEventListener("keydown", e => {
+  if (e.key === "ArrowLeft")  setIndex(currentIdx + 1);
+  if (e.key === "ArrowRight") setIndex(currentIdx - 1);
+});
+
+setIndex(0);
+</script>
+
+</body>
+</html>
