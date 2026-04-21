@@ -1,4 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
+  // elevation legend ------------------------------------------------------- /
   const ELEVATION_BANDS = [
     ["#eeeeee", "5 km+"],
     ["#b6b5b5", "3.2 km to 5 km"],
@@ -26,7 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
     legendList.appendChild(li);
   });
 
-  /* -- rail ↔ panel wiring ------------------------------------------------ */
+  // rail <-> panel wiring -------------------------------------------------- /
   const DESKTOP_Q = window.matchMedia("(min-width: 600px)");
   const isPanelOpen = p => {
     if (p.dataset.state === "open")   return true;
@@ -42,7 +43,6 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("[data-panel-toggle]").forEach(btn => {
     const panel = document.getElementById(btn.dataset.panelToggle);
     if (!panel) return;
-    // sync aria with CSS default so screen readers aren't told "expanded" when hidden
     btn.setAttribute("aria-expanded", isPanelOpen(panel) ? "true" : "false");
     btn.addEventListener("click", () => setPanelOpen(panel, !isPanelOpen(panel)));
   });
@@ -58,4 +58,296 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  // bottom-sheet swipe-to-dismiss (mobile only) ---------------------------- /
+  // while dragging, inline transform overrides the CSS translateY and tracks
+  // the finger. on release we clear the inline style; if the drag crossed
+  // CLOSE_THRESHOLD we flip data-state to "closed" and CSS animates the rest
+  // of the way down, otherwise CSS snaps back to translateY(0).
+  const MOBILE_Q = window.matchMedia("(max-width: 600px)");
+  const CLOSE_THRESHOLD = 60; // px; tuned to feel like a deliberate swipe
+
+  document.querySelectorAll(".panel-handle").forEach(handle => {
+    const panel = handle.closest(".panel");
+    if (!panel) return;
+    let dragStartY = null;
+
+    handle.addEventListener("pointerdown", e => {
+      // desktop: panel is a side chrome, not a sheet; no drag
+      if (!MOBILE_Q.matches) return;
+      if (!isPanelOpen(panel)) return;
+      e.preventDefault();
+      dragStartY = e.clientY;
+      handle.setPointerCapture(e.pointerId);
+      panel.classList.add("dragging");
+    });
+
+    handle.addEventListener("pointermove", e => {
+      if (dragStartY === null) return;
+      // clamp upward: dragging above the rest position shouldn't do anything
+      const dy = Math.max(0, e.clientY - dragStartY);
+      panel.style.transform = `translateY(${dy}px)`;
+    });
+
+    const endDrag = e => {
+      if (dragStartY === null) return;
+      const dy = Math.max(0, e.clientY - dragStartY);
+      dragStartY = null;
+      panel.classList.remove("dragging");
+      panel.style.transform = ""; // hand the transform back to CSS
+      if (dy > CLOSE_THRESHOLD) setPanelOpen(panel, false);
+    };
+    handle.addEventListener("pointerup", endDrag);
+    handle.addEventListener("pointercancel", endDrag);
+  });
+
+  // map name table --------------------------------------------------------- /
+  // ported from frontend/public/maps.js; previously also lived in
+  // wasm_modules/src/mapnames.rs, but since JS is the only consumer now
+  // the table lives here only. [era, age] per index, 0 = present-day,
+  // 108 = Cambrian/Precambrian boundary.
+  const MAP_NAMES = [
+    ["Present-day",                    "Holocene, 0 Ma"],
+    ["Early Pliocene",                 "Zanclean, 4.47 Ma"],
+    ["Middle/Late Miocene",            "Serravallian&Tortonian, 10.5 Ma"],
+    ["Middle Miocene",                 "Langhian, 14.9 Ma"],
+    ["Early Miocene",                  "Aquitanian&Burdigalian, 19.5 Ma"],
+    ["Late Oligocene",                 "Chattian, 25.6 Ma"],
+    ["Early Oligocene",                "Rupelian, 31 Ma"],
+    ["Late Eocene",                    "Priabonian, 35.9 Ma"],
+    ["Late Middle Eocene",             "Bartonian, 39.5 Ma"],
+    ["Early Middle Eocene",            "Lutetian, 44.5 Ma"],
+    ["Early Eocene",                   "Ypresian, 51.9 Ma"],
+    ["Paleocene/Eocene Boundary",      "PETM, 56 Ma"],
+    ["Paleocene",                      "Danian & Thanetian, 61 Ma"],
+    ["KT Boundary",                    "Latest Maastrichtian, 66 Ma"],
+    ["Late Cretaceous",                "Maastrichtian, 69 Ma"],
+    ["Late Cretaceous",                "Late Campanian, 75 Ma"],
+    ["Late Cretaceous",                "Early Campanian, 80.8 Ma"],
+    ["Late Cretaceous",                "Santonian&Coniacian, 86.7 Ma"],
+    ["Mid-Cretaceous",                 "Turonian, 91.9 Ma"],
+    ["Mid-Cretaceous",                 "Cenomanian, 97.2 Ma"],
+    ["Early Cretaceous",               "Late Albian, 102.6 Ma"],
+    ["Early Cretaceous",               "Middle Albian, 107 Ma"],
+    ["Early Cretaceous",               "Early Albian, 111 Ma"],
+    ["Early Cretaceous",               "Late Aptian, 115.8 Ma"],
+    ["Early Cretaceous",               "Early Aptian, 121.8 Ma"],
+    ["Early Cretaceous",               "Barremian, 127.2 Ma"],
+    ["Early Cretaceous",               "Hauterivian, 131.2 Ma"],
+    ["Early Cretaceous",               "Valanginian, 136.4 Ma"],
+    ["Early Cretaceous",               "Berriasian, 142.4 Ma"],
+    ["Jurassic/Cretaceous Boundary",   "145 Ma"],
+    ["Late Jurassic",                  "Tithonian, 148.6 Ma"],
+    ["Late Jurassic",                  "Kimmeridgian, 154.7 Ma"],
+    ["Late Jurassic",                  "Oxfordian, 160.4 Ma"],
+    ["Middle Jurassic",                "Callovian, 164.8 Ma"],
+    ["Middle Jurassic",                "Bajocian&Bathonian, 168.2 Ma"],
+    ["Middle Jurassic",                "Aalenian, 172.2 Ma"],
+    ["Early Jurassic",                 "Toarcian, 178.4 Ma"],
+    ["Early Jurassic",                 "Pliensbachian, 186.8 Ma"],
+    ["Early Jurassic",                 "Sinemurian/Pliensbachian, 190.8 Ma"],
+    ["Early Jurassic",                 "Hettangian&Sinemurian, 196 Ma"],
+    ["Late Triassic",                  "Rhaetian/Hettangian, 201.3 Ma"],
+    ["Late Triassic",                  "Rhaetian, 204.9 Ma"],
+    ["Late Triassic",                  "Late Norian, 213.2 Ma"],
+    ["Late Triassic",                  "Mid Norian, 217.8 Ma"],
+    ["Late Triassic",                  "Early Norian, 222.4 Ma"],
+    ["Late Triassic",                  "Carnian/Norian, 227 Ma"],
+    ["Late Triassic",                  "Carnian, 232 Ma"],
+    ["Late Triassic",                  "Early Carnian, 233.6 Ma"],
+    ["Middle Triassic",                "Ladinian, 239.5 Ma"],
+    ["Middle Triassic",                "Anisian, 244.6 Ma"],
+    ["Permo-Triassic Boundary",        "252 Ma"],
+    ["Late Permian",                   "Lopingian, 256 Ma"],
+    ["Late Middle Permian",            "Capitanian, 262.5 Ma"],
+    ["Middle Permian",                 "Wordian/Capitanian Boundary, 265.1 Ma"],
+    ["Middle Permian",                 "Roadian&Wordian, 268.7 Ma"],
+    ["Early Permian",                  "Late Kungurian, 275 Ma"],
+    ["Early Permian",                  "Early Kungurian, 280 Ma"],
+    ["Early Permian",                  "Artinskian, 286.8 Ma"],
+    ["Early Permian",                  "Sakmarian, 292.6 Ma"],
+    ["Early Permian",                  "Asselian, 297 Ma"],
+    ["Late Pennsylvanian",             "Gzhelian, 301.3 Ma"],
+    ["Late Pennsylvanian",             "Kasimovian, 305.4 Ma"],
+    ["Middle Pennsylvanian",           "Moscovian, 311.1 Ma"],
+    ["Early/Middle Carboniferous",     "Baskirian/Moscovian boundary, 314.6 Ma"],
+    ["Early Pennsylvanian",            "Bashkirian, 319.2 Ma"],
+    ["Late Mississippian",             "Serpukhovian, 327 Ma"],
+    ["Late Mississippian",             "Visean/Serpukhovian boundary, 330.9 Ma"],
+    ["Middle Mississippian",           "Late Visean, 333 Ma"],
+    ["Middle Mississippian",           "Middle Visean, 338.8 Ma"],
+    ["Middle Mississippian",           "Early Visean, 344 Ma"],
+    ["Early Mississippian",            "Late Tournaisian, 349 Ma"],
+    ["Early Mississippian",            "Early Tournaisian, 354 Ma"],
+    ["Devono-Carboniferous Boundary",  "358.9 Ma"],
+    ["Late Devonian",                  "Middle Famennian, 365.6 Ma"],
+    ["Late Devonian",                  "Early Famennian, 370 Ma"],
+    ["Late Devonian",                  "Late Frasnian, 375 Ma"],
+    ["Late Devonian",                  "Early Frasnian, 380 Ma"],
+    ["Middle Devonian",                "Givetian, 385.2 Ma"],
+    ["Middle Devonian",                "Eifelian, 390.5 Ma"],
+    ["Early Devonian",                 "Late Emsian, 395 Ma"],
+    ["Early Devonian",                 "Middle Emsian, 400 Ma"],
+    ["Early Devonian",                 "Early Emsian, 405 Ma"],
+    ["Early Devonian",                 "Pragian, 409.2 Ma"],
+    ["Early Devonian",                 "Lochkovian, 415 Ma"],
+    ["Late Silurian",                  "Pridoli, 421.1 Ma"],
+    ["Late Silurian",                  "Ludlow, 425.2 Ma"],
+    ["Middle Silurian",                "Wenlock, 430.4 Ma"],
+    ["Early Silurian",                 "Late Llandovery, 436 Ma"],
+    ["Early Silurian",                 "Early Llandovery, 441.2 Ma"],
+    ["Late Ordovician",                "Hirnantian, 444.5 Ma"],
+    ["Late Ordovician",                "Katian, 449.1 Ma"],
+    ["Late Ordovician",                "Sandbian, 455.7 Ma"],
+    ["Middle Ordovician",              "Late Darwillian, 460 Ma"],
+    ["Middle Ordovician",              "Early Darwillian, 465 Ma"],
+    ["Early Ordovician",               "Floian/Dapingian boundary, 470 Ma"],
+    ["Early Ordovician",               "Late Early Floian, 475 Ma"],
+    ["Early Ordovician",               "Tremadoc, 481.6 Ma"],
+    ["Cambro-Ordovician Boundary",     "485.4 Ma"],
+    ["Late Cambrian",                  "Jiangshanian, 491.8 Ma"],
+    ["Late Cambrian",                  "Pabian, 495.5 Ma"],
+    ["Late Middle Cambrian",           "Guzhangian, 498.8 Ma"],
+    ["Late Middle Cambrian",           "Early Epoch 3, 505 Ma"],
+    ["Early Middle Cambrian",          "Late Epoch 2, 510 Ma"],
+    ["Early Middle Cambrian",          "Middle Epoch 2, 515 Ma"],
+    ["Early/Middle Cambrian boundary", "520 Ma"],
+    ["Early Cambrian",                 "Late Terreneuvian, 525 Ma"],
+    ["Early Cambrian",                 "Middle Terreneuvian, 530 Ma"],
+    ["Early Cambrian",                 "Early Terreneuvian, 535 Ma"],
+    ["Cambrian/Precambrian boundary",  "541 Ma"],
+  ];
+
+  // broader era follows stratigraphic convention:
+  // idx 13 (KT Boundary / Latest Maastrichtian) is still Mesozoic;
+  // idx 50 (P/T, 252 Ma) is the Paleozoic/Mesozoic break
+  const broaderEra = idx =>
+    idx < 13 ? "Cenozoic" : idx < 50 ? "Mesozoic" : "Paleozoic";
+
+  // slider tick rendering --------------------------------------------------- /
+  const MAP_MAX_IDX = 108;
+  const pctFromIdx = i => (MAP_MAX_IDX - i) / MAP_MAX_IDX * 100;
+
+  /* labels at era boundaries */
+  const BOUNDARIES = [
+    { idx: 0,   name: "Present" },
+    { idx: 13,  name: "K/Pg" },
+    { idx: 29,  name: "J/K" },
+    { idx: 40,  name: "T/J" },
+    { idx: 50,  name: "P/T" },
+    { idx: 72,  name: "D/C" },
+    { idx: 97,  name: "O/Cm" },
+    { idx: 108, name: "-" },
+  ];
+
+  const ticklabels  = document.getElementById("ticklabels");
+  const tickAnchor  = document.getElementById("track-wrap");
+
+  // for each visible boundary we inject two siblings: a .tick-mark (white
+  // vertical line inside the track) and a .tick-label (text below the track).
+  // both share the same left% so they stay vertically aligned on resize.
+  BOUNDARIES.forEach(b => {
+    if (b.name === "-" || b.name === "Present") return;
+    const pct = pctFromIdx(b.idx) + "%";
+
+    if (ticklabels) {
+      const l = document.createElement("div");
+      l.className = "tick-label";
+      l.style.left = pct;
+      l.textContent = b.name;
+      ticklabels.appendChild(l);
+    }
+    if (tickAnchor) {
+      const tm = document.createElement("div");
+      tm.className = "tick-mark";
+      tm.style.left = pct;
+      tickAnchor.appendChild(tm);
+    }
+  });
+
+  // slider pointer/drag/arrow handlers -------------------------------------- /
+  // JS owns all HUD DOM mutation. two CustomEvents on window bridge to Bevy;
+  // both carry just the integer index as detail:
+  //   "paleomap3d:map-changed" (Rust -> JS): Bevy's CurrentMap changed
+  //   "paleomap3d:set-index"   (JS -> Rust): user moved the slider
+  const trackWrap    = document.getElementById("track-wrap");
+  const slider       = document.getElementById("slider");
+  const thumb        = document.getElementById("thumb");
+  const prevBtn      = document.getElementById("prev");
+  const nextBtn      = document.getElementById("next");
+  const titleEra     = document.querySelector("#title .title-era");
+  const titleAge     = document.querySelector("#title .title-age");
+  const titleBroader = document.querySelector("#title .title-broader");
+
+  let displayedIdx = 0;
+  let dragging = false;
+
+  // full HUD paint from just an index (thumb position, arrow disabled
+  // state, title era/age/broader-era badge). called on drag, arrow click,
+  // and on the map-changed event from Rust.
+  const paintHud = idx => {
+    displayedIdx = idx;
+    if (thumb)   thumb.style.left = pctFromIdx(idx) + "%";
+    if (prevBtn) prevBtn.toggleAttribute("disabled", idx >= MAP_MAX_IDX);
+    if (nextBtn) nextBtn.toggleAttribute("disabled", idx === 0);
+    const [era, age] = MAP_NAMES[idx] || ["", ""];
+    const broader = broaderEra(idx);
+    if (titleEra) titleEra.textContent = era;
+    if (titleAge) titleAge.textContent = "(" + age + ")";
+    if (titleBroader) {
+      titleBroader.textContent = broader;
+      // class swap repaints the badge color (cenozoic/mesozoic/paleozoic)
+      titleBroader.className = "title-broader " + broader.toLowerCase();
+    }
+  };
+
+  // ask Bevy to move to a given index. we optimistically paint the HUD
+  // so the UI feels responsive instead of waiting for the Bevy round-trip.
+  const requestIndex = idx => {
+    const clamped = Math.max(0, Math.min(MAP_MAX_IDX, idx|0));
+    window.dispatchEvent(new CustomEvent("paleomap3d:set-index", { detail: clamped }));
+    paintHud(clamped);
+  };
+
+  // pointer x in viewport coords -> map index.
+  // left edge of track = oldest (108), right edge = today (0).
+  const indexFromClientX = clientX => {
+    const rect = trackWrap.getBoundingClientRect();
+    if (rect.width <= 0) return displayedIdx;
+    const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    return Math.round((1 - pct) * MAP_MAX_IDX);
+  };
+
+  if (trackWrap) {
+    // pointer events unify mouse/touch/pen. move+up listen on window so
+    // the drag survives the cursor leaving the slider hitbox.
+    trackWrap.addEventListener("pointerdown", e => {
+      e.preventDefault();
+      dragging = true;
+      if (slider) slider.classList.add("dragging");
+      requestIndex(indexFromClientX(e.clientX));
+    });
+    window.addEventListener("pointermove", e => {
+      if (!dragging) return;
+      requestIndex(indexFromClientX(e.clientX));
+    });
+    // pointerup ends the drag normally; pointercancel handles touch interruptions
+    // (e.g. system gesture, OS notification).
+    const endDrag = () => {
+      if (!dragging) return;
+      dragging = false;
+      if (slider) slider.classList.remove("dragging");
+    };
+    window.addEventListener("pointerup", endDrag);
+    window.addEventListener("pointercancel", endDrag);
+  }
+
+  // prev = older (higher index), next = newer (lower index)
+  if (prevBtn) prevBtn.addEventListener("click", () => requestIndex(displayedIdx + 1));
+  if (nextBtn) nextBtn.addEventListener("click", () => requestIndex(displayedIdx - 1));
+
+  // repaint when Bevy (or Rust-side keyboard handler) says CurrentMap changed
+  window.addEventListener("paleomap3d:map-changed", e => {
+    if (typeof e.detail !== "number") return;
+    paintHud(e.detail);
+  });
 });

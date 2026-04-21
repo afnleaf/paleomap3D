@@ -25,7 +25,6 @@ mod earth;
 mod sun;
 mod orbit_camera;
 mod mapupdate;
-mod mapnames;
 
 mod instance_pipeline_webgpu;
 mod instance_pipeline_webgl2;
@@ -108,7 +107,7 @@ pub fn start_bevy() {
     app.add_systems(
             Update,
             (
-                tools::fps_update_system,
+                //tools::fps_update_system,
                 orbit_camera::orbit_camera_system
                     .run_if(any_with_component::<orbit_camera::OrbitState>),
                 sun::orbit_geocentrism,
@@ -135,7 +134,7 @@ fn initial_setup(
     //sphere(&mut commands, &mut meshes, &mut materials);
     
     //sun::ambient_light(&mut commands);
-    tools::fps_widget(&mut commands);
+    //tools::fps_widget(&mut commands);
     //mapupdate::current_map_widget(&mut commands);
 }
 

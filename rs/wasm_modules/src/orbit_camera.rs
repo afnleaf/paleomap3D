@@ -34,16 +34,14 @@ const ROTATION_EPSILON:     f32 = 0.000001;
 // three.js getMouseOnCircle: delta scaled by (2 / screen_width).
 const SCROLL_LINE_SENS:     f32 = 0.01;
 const SCROLL_PIXEL_SENS:    f32 = 0.00025;
-const MOUSE_ROTATE_SCALE:   f32 = 2.0;
+const MOUSE_ROTATE_SCALE:   f32 = 3.0;
 const MOUSE_PAN_SCALE:      f32 = 0.01;
 const MOUSE_TWIST_SENS:     f32 = 0.005;
 const MOUSE_TILT_SENS:      f32 = 0.005;
 // touch only
-const TOUCH_PINCH_SENS:     f32 = 0.001;
-// Rotation already divides by screen_width, so touch delta feeds in 1:1 with
-// mouse motion — matches pre-refactor behavior. 0.001 here made touch drag
-// ~1000x slower than mouse drag.
-const TOUCH_ROTATE_SENS:    f32 = 0.1;
+const TOUCH_PINCH_SENS:     f32 = 0.0008;
+// Rotation already divides by screen_width, so touch delta feeds in 1:1
+const TOUCH_ROTATE_SENS:    f32 = 0.001;
 
 // Bundle to spawn our orbit camera easily
 #[derive(Bundle, Default)]

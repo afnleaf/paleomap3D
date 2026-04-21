@@ -54,8 +54,8 @@ pub fn update_map_text_display(
 ) {
     // Res<T>::is_changed() is the key. It's true only on the frame the resource was modified.
     if current_map.is_changed() {
-        // sync the DOM elements (slider position + title text)
-        dom::sync_dom_to_map_index(current_map.index);
+        // tell hud.js to repaint slider thumb + title text
+        dom::notify_map_changed(current_map.index);
     }
 }
 

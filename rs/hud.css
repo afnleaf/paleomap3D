@@ -1,0 +1,466 @@
+/* design tokens ---------------------------------------------------------- */
+/* shared chrome used by rail buttons and slide-out panels */
+:root {
+    --fg:            #ededed;
+    --fg-muted:      #9a9a9a;
+    --fg-dim:        #666;
+    --chrome-bg:     rgba(12,14,22,0.72);
+    --chrome-border: rgba(255,255,255,0.1);
+    --chrome-radius: 8px;
+    --rail-btn-size: 42px;
+    --rail-gap:      10px;
+
+    /* slider color palette */
+    --track:         #2a2a2a;
+    --thumb:         #3367c9;
+    --thumb-glow:    rgba(51,103,201,0.35);
+    --cenozoic:      #c3a961;
+    --mesozoic:      #4a8a52;
+    --paleozoic:     #4a6b8a;
+}
+
+/* general ----------------------------------------------------------------- */
+body {
+    font-family: Space Grotesk, system-ui, -apple-system, sans-serif;
+    background-color: black;
+    color: var(--fg);
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+}
+canvas {
+    display: block;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+    -webkit-user-selec: none;
+    user-select: none;
+}
+
+/* title (inline inside timeline chrome) ---------------------------------- */
+/* flex layout: era + era-badge share the top line (gap 10px between), age
+   gets its own line via flex-basis:100% which forces a wrap. order in the
+   DOM is era, broader, age so flex natural order produces the visual we want. */
+#title, .title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: center;
+    gap: 2px 10px;
+    padding: 0 10px;
+    margin: 0;
+    color: var(--fg);
+    pointer-events: none;
+}
+.title .title-era {
+    font-size: 1.1rem;
+    font-weight: 700;
+    line-height: 1.25;
+}
+.title .title-age {
+    text-align: center;
+    font-size: 0.85rem;
+    font-weight: 400;
+    opacity: 0.75;
+}
+.title .title-broader {
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 3px;
+    color: rgba(255,255,255,0.9);
+}
+.title .title-broader.cenozoic  { background: var(--cenozoic); }
+.title .title-broader.mesozoic  { background: var(--mesozoic); }
+.title .title-broader.paleozoic { background: var(--paleozoic); }
+
+/* bottom HUD dock: full-width strip fixed to the viewport bottom. its
+   padding-bottom is the single knob for gap-from-bottom — change that
+   value in one place and desktop + mobile both update. pointer-events
+   passes through empty regions so the canvas under the dock still
+   receives camera-drag pointers in the strips beside the chrome. */
+.hud-bottom {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding-bottom: 0.4rem;
+    display: flex;
+    justify-content: center;
+    z-index: 100;
+    pointer-events: none;
+}
+
+/* timeline chrome: title (above) and slider-row (below) stacked as one
+   visual unit. centered horizontally by .hud-bottom's flex; width is the
+   only responsive knob (desktop cap vs mobile %). */
+.timeline-chrome {
+    width: min(85%, 960px);
+    pointer-events: auto;
+}
+
+/* slider row: prev | slider | next -------------------------------------- */
+/* align-items: flex-start so arrow buttons can be pushed down to track
+   center via margin-top, rather than centering across the whole column */
+.slider-row {
+    margin-top: 8px;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+
+.arrow-btn {
+    flex-shrink: 0;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: #fff;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+    -webkit-tap-highlight-color: transparent;
+    /* vertical alignment with track line:
+       era-bands(10) + margin(5) + half track-wrap(14) - half button(19) */
+    margin-top: 10px;
+}
+.arrow-btn:hover:not(:disabled) {
+    background: rgba(255,255,255,0.16);
+    border-color: rgba(255,255,255,0.25);
+}
+.arrow-btn:disabled { opacity: 0.25; cursor: default; }
+
+/* slider ----------------------------------------------------------------- */
+.slider {
+    position: relative;
+    flex: 1;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    outline: none;
+}
+
+/* track: era colors are baked into the track itself via a three-stop
+   linear-gradient with hard stops at the era boundaries. the .era-bands
+   row that used to live above the track was removed — redundant with the
+   era badge in the title, and the track now carries the color context. */
+.track-wrap {
+    position: relative;
+    height: 28px;
+    cursor: pointer;
+}
+.track {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 10px;
+    transform: translateY(-50%);
+    background: linear-gradient(to right,
+        var(--paleozoic) 0%,
+        var(--paleozoic) 53.70%,
+        var(--mesozoic)  53.70%,
+        var(--mesozoic)  87.96%,
+        var(--cenozoic)  87.96%,
+        var(--cenozoic)  100%);
+    border-radius: 2px;
+    pointer-events: none;
+}
+/* tick marks: thin white vertical lines at each era-boundary %, injected
+   by hud.js. sit inside track-wrap so their x-position is relative to the
+   same box the thumb uses. under the thumb via z-index. */
+.tick-mark {
+    position: absolute;
+    top: 50%;
+    width: 2px;
+    height: 14px;
+    background: rgba(255,255,255,0.6);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* thumb */
+.thumb {
+    position: absolute;
+    top: 50%;
+    left: 100%;
+    width: 18px;
+    height: 18px;
+    background: var(--thumb);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 0 4px var(--thumb-glow), 0 2px 6px rgba(0,0,0,0.4);
+    cursor: grab;
+    transition: left 0.12s ease, box-shadow 0.15s ease;
+    z-index: 2;
+}
+.slider.dragging .thumb {
+    cursor: grabbing;
+    box-shadow: 0 0 0 9px var(--thumb-glow), 0 2px 6px rgba(0,0,0,0.4);
+    transition: box-shadow 0.15s ease;
+}
+
+/* boundary labels under the track */
+.tick-labels {
+    position: relative;
+    height: 14px;
+    margin-top: 2px;
+}
+.tick-label {
+    position: absolute;
+    top: 0;
+    transform: translateX(-50%);
+    font-size: 0.75rem;
+    color: var(--fg-dim);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+/* map-control rail (right edge) ------------------------------------------ */
+/* OSM-style: vertical stack of icon buttons grouped in rounded containers.
+   add more .rail-group blocks later for zoom / fullscreen / etc. */
+.rail {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.rail-group {
+    display: flex;
+    flex-direction: column;
+    background: var(--chrome-bg);
+    border: 1px solid var(--chrome-border);
+    border-radius: var(--chrome-radius);
+    backdrop-filter: blur(8px);
+    overflow: hidden;
+}
+.rail-btn {
+    width: var(--rail-btn-size);
+    height: var(--rail-btn-size);
+    background: transparent;
+    border: 0;
+    color: var(--fg);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: background 0.15s, color 0.15s;
+    -webkit-tap-highlight-color: transparent;
+}
+.rail-btn + .rail-btn { border-top: 1px solid var(--chrome-border); }
+.rail-btn:hover { background: rgba(255,255,255,0.08); }
+/* unquoted attribute value — packer escapes " inside CSS */
+.rail-btn[aria-expanded=true] {
+    background: rgba(51,103,201,0.22);
+    color: #bfd0ff;
+}
+
+/* slide-out panel attached to the rail ----------------------------------- */
+/* state: data-state=open|closed. CSS defaults handle unset value:
+   mobile = closed, desktop = open. JS only writes on user action.
+   A panel's open state is: explicit data-state if present; otherwise
+   the viewport-based default. */
+.panel {
+    position: absolute;
+    top: 1rem;
+    right: calc(1rem + var(--rail-btn-size) + var(--rail-gap));
+    width: min(260px, calc(100vw - 5rem));
+    z-index: 15;
+    background: var(--chrome-bg);
+    border: 1px solid var(--chrome-border);
+    border-radius: var(--chrome-radius);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+    transform-origin: top right;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+/* hidden by default (mobile) + explicit closed */
+.panel:not([data-state=open]) {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(8px) scale(0.97);
+}
+/* desktop: visible unless explicitly closed */
+@media (min-width: 600px) {
+    .panel:not([data-state=closed]) {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateX(0) scale(1);
+    }
+}
+/* explicit open (mobile user tapped the rail button) */
+.panel[data-state=open] {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0) scale(1);
+}
+.panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 14px 9px;
+    border-bottom: 1px solid var(--chrome-border);
+}
+.panel-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--fg);
+    margin: 0;
+    line-height: 1;
+}
+.panel-close {
+    width: 24px; height: 24px;
+    padding: 0;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--fg-muted);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: background 0.15s, color 0.15s;
+    -webkit-tap-highlight-color: transparent;
+}
+.panel-close:hover { background: rgba(255,255,255,0.08); color: var(--fg); }
+.panel-body { padding: 11px 14px 12px; }
+
+/* drag handle: only rendered in mobile bottom-sheet mode (see media query).
+   dragging class (set by JS on pointerdown) kills the transition so the
+   sheet tracks the finger instead of easing behind it. */
+.panel-handle { display: none; }
+.panel.dragging { transition: none; }
+
+  /* legend list inside the panel */
+  .legend-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .legend-list li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    line-height: 1.2;
+    color: var(--fg);
+    font-variant-numeric: tabular-nums;
+  }
+  .legend-list .swatch {
+    width: 15px; height: 15px;
+    border-radius: 2px;
+    border: 1px solid rgba(255,255,255,0.15);
+    flex-shrink: 0;
+  }
+
+  /* mobile ------------------------------------------------------------- */
+  @media (max-width: 600px) {
+    :root { --rail-btn-size: 38px; --rail-gap: 8px; }
+    .panel-title    { font-size: 1rem; }
+    .legend-list li { font-size: 0.82rem; }
+    .legend-list .swatch { width: 13px; height: 13px; }
+
+    /* bottom sheet: on mobile the side-docked panel becomes a sheet pinned
+       above the timeline chrome. the rail button still opens it (slide up
+       from below); drag the handle down past the JS threshold to dismiss. */
+    .panel {
+        top: auto;
+        right: 1rem;
+        left: 1rem;
+        bottom: calc(2rem + 140px); /* clear the title+slider chrome + air */
+        width: auto;
+        max-height: 55vh;
+        display: flex;
+        flex-direction: column;
+        transform-origin: bottom center;
+    }
+    /* override the desktop translateX slide with a translateY slide */
+    .panel:not([data-state=open]) { transform: translateY(120%); }
+    .panel[data-state=open]       { transform: translateY(0); }
+
+    /* handle: generous 24px hit area with a small centered pill for affordance.
+       touch-action: none so the browser doesn't hijack the drag as a scroll. */
+    .panel-handle {
+        display: flex;
+        justify-content: center;
+        padding: 8px 0 6px;
+        cursor: grab;
+        touch-action: none;
+    }
+    .panel.dragging .panel-handle { cursor: grabbing; }
+    .panel-handle-grip {
+        width: 36px;
+        height: 4px;
+        background: rgba(255,255,255,0.25);
+        border-radius: 2px;
+    }
+
+    /* trim the header top padding since the handle already provides it */
+    .panel-header { padding-top: 4px; }
+    /* long legend shouldn't push the sheet past max-height */
+    .panel-body { overflow-y: auto; flex: 1 1 auto; }
+
+    /* timeline + slider mobile tweaks:
+       track(8) centered in track-wrap, half track-wrap(14) - half button(17) */
+    .timeline-chrome { width: 92%; }
+    .slider-row { gap: 0.4rem; }
+    .arrow-btn  { width: 34px; height: 34px; margin-top: 9px; }
+    .track      { height: 0.2rem; }               /* slightly slimmer on mobile */
+    .tick-label { font-size: 0.68rem; }        /* all boundary labels visible */
+    /* mobile title = exactly two lines:
+         line 1 = era (full-width, font clamped so the longest era names
+                 like "Early/Middle Cambrian boundary" fit even on 320px)
+         line 2 = badge + age (share the row, centered via justify-content)
+       attempts to keep era + badge on one line failed on iPhone SE because
+       the longest era alone is ~260px and the SE only has ~282px available. */
+    .title { padding: 0 6px; gap: 2px 8px; }
+    .title .title-era {
+        flex-basis: 100%;
+        text-align: center;
+        font-size: clamp(0.82rem, 3.6vw, 1rem);
+    }
+    .title .title-age { font-size: 0.78rem; }
+  }
+
+/* gone rn */
+/* links ------------------------------------------------------------------- */
+#links {
+    position: absolute;
+    padding: 0;
+    margin: 0;
+    bottom: 15px;
+    left: -30px;
+    text-align: left;
+    z-index: 100;
+    display: flex;
+    color: #ededed;
+}
+#links ul {
+    list-style: none;
+}
+#links a:link,
+#links a:visited {
+    color: #ededed;
+}
+#links a:hover {
+    color: hotpink;
+}
+#links a:active {
+    color: #ededed;
+}

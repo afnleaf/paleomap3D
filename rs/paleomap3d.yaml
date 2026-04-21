@@ -9,7 +9,7 @@ pack:
     description: "packed by histos"
     keywords: "hello, from, yaml"
   css:
-    - "styles.css"
+    - "hud.css"
   html:
     - "hud.html"
   scripts:
