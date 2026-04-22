@@ -8,6 +8,7 @@ use bevy::{
 };
 
 use std::sync::atomic::Ordering;
+use std::time::Duration;
 use crate::dom;
 
 
@@ -69,6 +70,14 @@ pub fn map_update_system(
     mut key_repeat_timer: ResMut<KeyRepeatTimer>,
     mut last_direction: Local<i8>,
 ) {
+    // retune the arrow-key repeat cadence if JS pushed a new speed.
+    // done before the DOM-index early-return so a combined frame (speed
+    // change + drag) still applies the new cadence.
+    let dom_speed = dom::DOM_REPEAT_MS.swap(-1, Ordering::Relaxed);
+    if dom_speed > 0 {
+        key_repeat_timer.0.set_duration(Duration::from_millis(dom_speed as u64));
+    }
+
     // check if DOM slider/buttons changed the index
     let dom_index = dom::DOM_MAP_INDEX.swap(-1, Ordering::Relaxed);
     if dom_index >= 0 {

@@ -12,6 +12,9 @@
 *
 *   JS  -> Rust: window event "paleomap3d:set-index",   detail = <number>
 *                -> written to DOM_MAP_INDEX atomic; mapupdate reads it.
+*   JS  -> Rust: window event "paleomap3d:set-speed",   detail = <number ms>
+*                -> written to DOM_REPEAT_MS atomic; mapupdate retunes its
+*                   KeyRepeatTimer so arrow-key cadence matches JS playback.
 *   Rust -> JS:  window event "paleomap3d:map-changed", detail = <number>
 *                -> hud.js repaints thumb/title/arrows.
 */
@@ -25,6 +28,10 @@ use std::sync::atomic::{AtomicI32, Ordering};
 // bridge from hud.js pointer/arrow interactions to the Bevy systems.
 // -1 means "no change pending", 0..=108 means "DOM wants this index".
 pub static DOM_MAP_INDEX: AtomicI32 = AtomicI32::new(-1);
+
+// bridge from the JS speed-cycle button to Bevy's KeyRepeatTimer.
+// -1 = no pending change; a positive value is the new repeat period in ms.
+pub static DOM_REPEAT_MS: AtomicI32 = AtomicI32::new(-1);
 
 // function to create and set up the canvas element
 // inside the dom
@@ -69,6 +76,7 @@ pub fn create_canvas() -> Result<(), JsValue> {
     // wire the JS->Rust half of the bridge (hud.js dispatches set-index
     // when the user drags the slider or clicks the arrows).
     install_set_index_listener(&window)?;
+    install_set_speed_listener(&window)?;
 
     // push the initial state out so hud.js can paint index 0 (Present-day).
     // hud.js's DOMContentLoaded listener has already run by the time
@@ -120,6 +128,28 @@ fn install_set_index_listener(window: &web_sys::Window) -> Result<(), JsValue> {
     )?;
     // same lifetime-of-app listener pattern as the canvas dragstart closure
     on_set_index.forget();
+    Ok(())
+}
+
+// JS -> Rust: hud.js dispatches window CustomEvent("paleomap3d:set-speed",
+// { detail: <ms> }) when the speed-cycle button advances. the value is
+// clamped to a sane range and stashed in DOM_REPEAT_MS; mapupdate swaps
+// it out and retunes KeyRepeatTimer so arrow-key repeat follows playback.
+fn install_set_speed_listener(window: &web_sys::Window) -> Result<(), JsValue> {
+    let on_set_speed = Closure::<dyn FnMut(Event)>::new(|event: Event| {
+        let Ok(ce) = event.dyn_into::<web_sys::CustomEvent>() else { return };
+        let Some(raw) = ce.detail().as_f64() else { return };
+        // clamp to [10, 2000] ms. lower bound stops a runaway zero/negative
+        // from making the timer fire every frame; upper bound is arbitrary
+        // but larger than any preset we'd realistically offer.
+        let ms = (raw as i32).clamp(10, 2000);
+        DOM_REPEAT_MS.store(ms, Ordering::Relaxed);
+    });
+    window.add_event_listener_with_callback(
+        "paleomap3d:set-speed",
+        on_set_speed.as_ref().unchecked_ref(),
+    )?;
+    on_set_speed.forget();
     Ok(())
 }
 

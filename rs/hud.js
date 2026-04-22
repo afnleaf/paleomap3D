@@ -257,12 +257,31 @@ document.addEventListener("DOMContentLoaded", () => {
     window.addEventListener("pointercancel", endDrag);
   }
 
+  // speed presets shared by all three step-cadences: chevron hold-repeat,
+  // playback tick, and (via the set-speed bridge) Bevy's KeyRepeatTimer for
+  // keyboard arrow repeat. 1× = 100ms; faster reads smoother because
+  // individual frame swaps stop being resolvable.
+  const SPEED_PRESETS = [
+    { label: "0.5×", ms: 200 },
+    { label: "1×",   ms: 100 },
+    { label: "2×",   ms: 50  },
+    { label: "4×",   ms: 25  },
+  ];
+  let speedIdx = 1;
+
+  // JS -> Rust bridge sibling to paleomap3d:set-index. pushes the current
+  // preset ms so Bevy can retune KeyRepeatTimer; the Rust listener clamps.
+  const dispatchSpeed = () => {
+    window.dispatchEvent(new CustomEvent("paleomap3d:set-speed", {
+      detail: SPEED_PRESETS[speedIdx].ms,
+    }));
+  };
+
   // prev = older (higher index), next = newer (lower index).
-  // press-and-hold advances continuously at the same 90ms cadence as the
-  // Bevy keyboard handler (KeyRepeatTimer in mapupdate.rs). pattern:
-  // one step immediately on pointerdown, then setInterval fires every 90ms
-  // until pointerup/cancel or the button goes disabled (end of range).
-  const HOLD_REPEAT_MS = 90;
+  // press-and-hold advances at the current SPEED_PRESETS[speedIdx] cadence,
+  // captured at pointerdown so mid-hold speed-cycle doesn't interrupt the
+  // running interval. pattern: one step immediately on pointerdown, then
+  // setInterval fires until pointerup/cancel or the button goes disabled.
   const attachHoldRepeat = (btn, delta) => {
     if (!btn) return;
     let interval = null;
@@ -280,7 +299,7 @@ document.addEventListener("DOMContentLoaded", () => {
       interval = setInterval(() => {
         if (btn.disabled) { stop(); return; }
         requestIndex(displayedIdx + delta);
-      }, HOLD_REPEAT_MS);
+      }, SPEED_PRESETS[speedIdx].ms);
     });
     btn.addEventListener("pointerup", stop);
     btn.addEventListener("pointercancel", stop);
@@ -288,9 +307,109 @@ document.addEventListener("DOMContentLoaded", () => {
   attachHoldRepeat(prevBtn, +1);
   attachHoldRepeat(nextBtn, -1);
 
-  // repaint when Bevy (or Rust-side keyboard handler) says CurrentMap changed
+  // playback ---------------------------------------------------------------- /
+  // play/pause drives a setInterval that calls the same requestIndex() the
+  // slider uses, so Bevy sees identical input whether the user dragged,
+  // pressed an arrow tip, or hit play.
+  // direction default = +1 (toward past, index increases). on hitting an
+  // endpoint we flip direction AND auto-pause: one round-trip per play press,
+  // and the next press resumes in the opposite direction without a manual flip.
+  // SPEED_PRESETS is shared with the chevron hold-repeat above.
+  const playPauseBtn = document.getElementById("playpause");
+  const directionBtn = document.getElementById("direction");
+  const speedBtn     = document.getElementById("speed");
+
+  let playDirection = +1;
+  let playTimer = null;
+
+  const updatePlayLabel = () => {
+    if (!playPauseBtn) return;
+    playPauseBtn.textContent = playTimer ? "Pause" : "Play";
+    playPauseBtn.classList.toggle("active", !!playTimer);
+  };
+  const updateDirectionLabel = () => {
+    if (!directionBtn) return;
+    directionBtn.textContent = playDirection > 0 ? "Past" : "Present";
+  };
+  const updateSpeedLabel = () => {
+    if (!speedBtn) return;
+    speedBtn.textContent = SPEED_PRESETS[speedIdx].label;
+  };
+
+  const playbackTick = () => {
+    requestIndex(displayedIdx + playDirection);
+    // landed on an endpoint after stepping: flip direction so the next
+    // play press goes the other way, then auto-pause.
+    if ((playDirection > 0 && displayedIdx >= MAP_MAX_IDX) ||
+        (playDirection < 0 && displayedIdx <= 0)) {
+      playDirection = -playDirection;
+      updateDirectionLabel();
+      stopPlayback();
+    }
+  };
+
+  const stopPlayback = () => {
+    if (!playTimer) return;
+    clearInterval(playTimer);
+    playTimer = null;
+    updatePlayLabel();
+  };
+  const startPlayback = () => {
+    if (playTimer) return;
+    // sitting on the endpoint our direction would push past (e.g. at idx 0
+    // with direction = -1): flip first so the first tick actually moves
+    // instead of pausing immediately on the post-tick endpoint check.
+    if (playDirection > 0 && displayedIdx >= MAP_MAX_IDX) {
+      playDirection = -1;
+      updateDirectionLabel();
+    } else if (playDirection < 0 && displayedIdx <= 0) {
+      playDirection = +1;
+      updateDirectionLabel();
+    }
+    playTimer = setInterval(playbackTick, SPEED_PRESETS[speedIdx].ms);
+    updatePlayLabel();
+  };
+
+  if (playPauseBtn) {
+    playPauseBtn.addEventListener("click", () => {
+      if (playTimer) stopPlayback(); else startPlayback();
+    });
+  }
+  if (directionBtn) {
+    directionBtn.addEventListener("click", () => {
+      playDirection = -playDirection;
+      updateDirectionLabel();
+    });
+  }
+  if (speedBtn) {
+    speedBtn.addEventListener("click", () => {
+      speedIdx = (speedIdx + 1) % SPEED_PRESETS.length;
+      updateSpeedLabel();
+      dispatchSpeed();
+      // restart the timer at the new cadence if we're mid-playback;
+      // otherwise the new speed is picked up on the next play press.
+      if (playTimer) {
+        clearInterval(playTimer);
+        playTimer = setInterval(playbackTick, SPEED_PRESETS[speedIdx].ms);
+      }
+    });
+  }
+  updatePlayLabel();
+  updateDirectionLabel();
+  updateSpeedLabel();
+
+  // repaint when Bevy (or Rust-side keyboard handler) says CurrentMap changed.
+  // first firing doubles as the "wasm is ready" signal: wasm init calls
+  // notify_map_changed(0) right after installing its set-speed listener, so
+  // pushing speed here guarantees Rust gets it even though DOMContentLoaded
+  // ran before the listener was in place.
+  let initialSpeedPushed = false;
   window.addEventListener("paleomap3d:map-changed", e => {
     if (typeof e.detail !== "number") return;
     paintHud(e.detail);
+    if (!initialSpeedPushed) {
+      initialSpeedPushed = true;
+      dispatchSpeed();
+    }
   });
 });

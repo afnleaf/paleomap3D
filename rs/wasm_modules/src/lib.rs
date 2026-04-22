@@ -83,7 +83,7 @@ pub fn start_bevy() {
     //web_sys::console::log_1(&"TEST 1".into());
     // add rest
     app.insert_resource(KeyRepeatTimer(
-        Timer::from_seconds(0.09, TimerMode::Repeating)));
+        Timer::from_seconds(0.1, TimerMode::Repeating)));
     app.insert_resource(ClearColor(Color::srgb(0.0, 0.0, 0.0))); // black bg
     //web_sys::console::log_1(&"TEST 2".into());
     app.add_plugins(bevy::diagnostic::FrameTimeDiagnosticsPlugin::default());

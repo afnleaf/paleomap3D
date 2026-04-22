@@ -20,6 +20,15 @@
       <span class="title-age">(Holocene, 0 Ma)</span>
     </p>
 
+    <!-- playback controls: play/pause toggles a fixed-cadence stepper that
+         reuses the slider's requestIndex pipeline; direction toggles which
+         way it steps. wiring lives in hud.js. -->
+    <div class="playback-controls">
+      <button class="pb-btn" id="playpause">Play</button>
+      <button class="pb-btn" id="direction">Past</button>
+      <button class="pb-btn" id="speed">1&times;</button>
+    </div>
+
     <div class="slider-row">
       <div class="slider" id="slider">
         <!-- track row: prev-tip | track-wrap | next-tip flush together.
