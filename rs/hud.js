@@ -279,7 +279,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (btn.disabled) return;
       e.preventDefault();
       // pointer capture so pointerup fires on the button even if the finger
-      // slides off its hitbox mid-hold — without it, a small slip on touch
+      // slides off its hitbox mid-hold, without it a small slip on touch
       // would strand the interval running forever.
       btn.setPointerCapture(e.pointerId);
       requestIndex(displayedIdx + delta);

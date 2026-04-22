@@ -68,7 +68,7 @@ canvas {
 }
 
 /* bottom HUD dock: full-width strip fixed to the viewport bottom. its
-   padding-bottom is the single knob for gap-from-bottom — change that
+   padding-bottom is the single knob for gap-from-bottom, change that
    value in one place and desktop + mobile both update. pointer-events
    passes through empty regions so the canvas under the dock still
    receives camera-drag pointers in the strips beside the chrome. */
@@ -145,7 +145,7 @@ canvas {
     background: linear-gradient(to bottom, #23386e 0%, var(--thumb) 100%);
 }
 
-/* slider row: just the slider itself now — prev/next tips live inside
+/* slider row: just the slider itself now, prev/next tips live inside
    .slider as part of .track-with-tips, not as flanking siblings. */
 .slider-row {
     margin-top: 8px;
@@ -209,7 +209,7 @@ canvas {
 
 /* track: era colors are baked into the track itself via a three-stop
    linear-gradient with hard stops at the era boundaries. the .era-bands
-   row that used to live above the track was removed — redundant with the
+   row that used to live above the track was removed, redundant with the
    era badge in the title, and the track now carries the color context. */
 .track-wrap {
     position: relative;
@@ -270,7 +270,7 @@ canvas {
 }
 
 /* boundary labels under the track. side margins match .track-tip width so
-   the labels sit inside the same horizontal span as .track-wrap — without
+   the labels sit inside the same horizontal span as .track-wrap, without
    them, a tick at 50% would anchor to slider-center, not track-wrap-center. */
 .tick-labels {
     position: relative;

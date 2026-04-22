@@ -20,10 +20,12 @@ Edited with claude 4.6 opus max in 2026/04
 // I fix width when too long, also added the R to reset
 use bevy::{
     prelude::*,
-    input::mouse::{
-        MouseButton, MouseMotion, MouseScrollUnit, MouseWheel
+    input::{
+        mouse::{MouseButton, MouseMotion, MouseScrollUnit, MouseWheel},
+        touch::{TouchInput, TouchPhase},
     },
-    render::view::{NoIndirectDrawing},
+    platform::collections::HashMap,
+    render::view::NoIndirectDrawing,
 };
 
 // Tuning constants for input-to-rate conversion.
@@ -36,9 +38,13 @@ const MOUSE_ROTATE_SCALE:   f32 = 0.003;
 const MOUSE_PAN_SCALE:      f32 = 0.01;
 const MOUSE_TWIST_SENS:     f32 = 0.005;
 const MOUSE_TILT_SENS:      f32 = 0.005;
-// touch only
+// touch only. TOUCH_ROTATE_SENS matches MOUSE_ROTATE_SCALE because the
+// previous tuning (0.0001) was implicitly being amplified ~30x by browser
+// compat mouse events firing alongside touch events. once a HUD button tap
+// caused the browser to stop emitting compat mouse events for touch, only
+// the tiny touch contribution remained and rotation felt ~30x slower.
 const TOUCH_PINCH_SENS:     f32 = 0.0008;
-const TOUCH_ROTATE_SENS:    f32 = 0.0001;
+const TOUCH_ROTATE_SENS:    f32 = 0.006;
 
 // Bundle to spawn our orbit camera easily
 #[derive(Bundle, Default)]
@@ -143,6 +149,17 @@ pub fn orbit_camera_system(
     touches: Res<Touches>,
     mut evr_motion: EventReader<MouseMotion>,
     mut evr_scroll: EventReader<MouseWheel>,
+    mut evr_touch: EventReader<TouchInput>,
+    // per-id previous position we saw in a Moved event. we don't trust
+    // Touches::delta() because bevy_input only advances previous_position
+    // on frames that have TouchInput events (bevy_input-0.16.1/src/touch.rs
+    // touch_screen_input_system). browsers coalesce touchmoves, so most
+    // frames have no events, and delta stays frozen at its last non-zero
+    // value until the next event. that produces phantom rotation while the
+    // finger is still and, worse, a browser-cadence-dependent total rotation
+    // per pixel of finger travel. summing event deltas ourselves sidesteps
+    // the whole thing.
+    mut touch_prev: Local<HashMap<u64, Vec2>>,
     mut q_camera: Query<(&OrbitSettings, &mut OrbitState, &mut Transform)>,
 ) {
     // Accumulate mouse motion
@@ -158,20 +175,44 @@ pub fn orbit_camera_system(
     }
 
     // Touch gestures
-    // 1 finger drag = rotate (kept separate from mouse_delta touch
-    // and mouse deltas come in at different scales on WASM mobile,
-    // so each needs its own rad/px constant)
-    // 2 finger pinch = zoom (shoveled into scroll_delta since zoom
-    // is already a pure scalar)
+    // 1 finger drag = rotate. 2 finger pinch = zoom (folded into scroll_delta).
+    // rotation delta is summed from TouchInput Moved events rather than read
+    // from Touches::delta(), see touch_prev doc above. pinch still uses the
+    // Touches resource's cached positions because it reads position-pairs,
+    // not deltas, and same-stale-position on both fingers yields pinch=0,
+    // which is the right answer for "fingers haven't moved."
     let active_touches: Vec<_> = touches.iter().collect();
     let mut touch_rotate_active = false;
     let touch_pan_active = false;
     let mut touch_zoom_active = false;
     let mut touch_rotate_delta = Vec2::ZERO;
+
+    // accumulate per-event Moved deltas for the single-finger case, and keep
+    // touch_prev in sync with every phase so it doesn't leak stale ids.
+    for ev in evr_touch.read() {
+        match ev.phase {
+            TouchPhase::Started => {
+                touch_prev.insert(ev.id, ev.position);
+            }
+            TouchPhase::Moved => {
+                let prev = touch_prev.insert(ev.id, ev.position)
+                    .unwrap_or(ev.position);
+                if active_touches.len() == 1 {
+                    touch_rotate_delta += ev.position - prev;
+                }
+            }
+            TouchPhase::Ended | TouchPhase::Canceled => {
+                touch_prev.remove(&ev.id);
+            }
+        }
+    }
+    // drop any ids that Touches no longer considers pressed (defensive, if
+    // an End/Cancel event was somehow missed, this keeps the map bounded).
+    touch_prev.retain(|id, _| touches.get_pressed(*id).is_some());
+
     match active_touches.len() {
         1 => {
             touch_rotate_active = true;
-            touch_rotate_delta = active_touches[0].delta();
         }
         2 => {
             let t1 = active_touches[0];
@@ -218,12 +259,22 @@ pub fn orbit_camera_system(
             rotate_active || zoom_active || pan_active || twist_active;
 
         // Rotation
-        if 
-            rotate_active 
-            && (mouse_delta != Vec2::ZERO || touch_rotate_delta != Vec2::ZERO) {
+        // when a touch is active we discard mouse_delta: some browsers
+        // (Brave/Chrome DevTools touch emulation, parts of iOS Safari's
+        // compat pipeline) fire synthesized mousemove events alongside
+        // every touchmove, which would double-count and make rotation feel
+        // twice as fast until the compat stream goes away on its own.
+        let mouse_delta_for_rotate = if touch_rotate_active {
+            Vec2::ZERO
+        } else {
+            mouse_delta
+        };
+        if
+            rotate_active
+            && (mouse_delta_for_rotate != Vec2::ZERO || touch_rotate_delta != Vec2::ZERO) {
 
-            let dx_mouse = MOUSE_ROTATE_SCALE * mouse_delta.x;
-            let dy_mouse = -MOUSE_ROTATE_SCALE * mouse_delta.y;
+            let dx_mouse = MOUSE_ROTATE_SCALE * mouse_delta_for_rotate.x;
+            let dy_mouse = -MOUSE_ROTATE_SCALE * mouse_delta_for_rotate.y;
             let dx_touch = touch_rotate_delta.x * TOUCH_ROTATE_SENS;
             let dy_touch = -touch_rotate_delta.y * TOUCH_ROTATE_SENS;
             let dx = dx_mouse + dx_touch;
