@@ -24,24 +24,21 @@ use bevy::{
         MouseButton, MouseMotion, MouseScrollUnit, MouseWheel
     },
     render::view::{NoIndirectDrawing},
-    window::{Window, PrimaryWindow},
 };
 
 // Tuning constants for input-to-rate conversion.
 // Not exposed via OrbitSettings because they're internal feel knobs,
 // not user-facing config.
 const ROTATION_EPSILON:     f32 = 0.000001;
-// three.js getMouseOnCircle: delta scaled by (2 / screen_width).
 const SCROLL_LINE_SENS:     f32 = 0.01;
 const SCROLL_PIXEL_SENS:    f32 = 0.00025;
-const MOUSE_ROTATE_SCALE:   f32 = 3.0;
+const MOUSE_ROTATE_SCALE:   f32 = 0.003;
 const MOUSE_PAN_SCALE:      f32 = 0.01;
 const MOUSE_TWIST_SENS:     f32 = 0.005;
 const MOUSE_TILT_SENS:      f32 = 0.005;
 // touch only
 const TOUCH_PINCH_SENS:     f32 = 0.0008;
-// Rotation already divides by screen_width, so touch delta feeds in 1:1
-const TOUCH_ROTATE_SENS:    f32 = 0.001;
+const TOUCH_ROTATE_SENS:    f32 = 0.0001;
 
 // Bundle to spawn our orbit camera easily
 #[derive(Bundle, Default)]
@@ -60,12 +57,11 @@ pub struct OrbitState {
     pub rotation_quat: Quat, // Current rotation as quaternion
     pub distance: f32,       // Distance from target
     pub moving: bool,        // Whether the camera is being moved
-    pub last_rotation_axis: Option<Vec3>, // For rotation damping
-    pub last_rotation_angle: f32,  // For rotation damping
+    pub last_rotation_axis: Option<Vec3>,   // For rotation damping
+    pub last_rotation_angle: f32,           // For rotation damping
     //pub last_position: Vec3, // For detecting changes
     //pub velocity: Vec3,      // For pan damping
 }
-
 
 impl OrbitState {
     const DEFAULT_DISTANCE: f32 = 22.0;
@@ -108,6 +104,7 @@ pub struct OrbitSettings {
     pub keys: [KeyCode; 4],
 }
 
+// we might end up combining our static consts into this
 impl Default for OrbitSettings {
     fn default() -> Self {
         OrbitSettings {
@@ -146,14 +143,8 @@ pub fn orbit_camera_system(
     touches: Res<Touches>,
     mut evr_motion: EventReader<MouseMotion>,
     mut evr_scroll: EventReader<MouseWheel>,
-    primary_window_query: Query<&Window, With<PrimaryWindow>>,
     mut q_camera: Query<(&OrbitSettings, &mut OrbitState, &mut Transform)>,
 ) {
-    // Get the primary window
-    let Ok(window) = primary_window_query.single() else { return };
-    //let screen_width = window.expect("REASON").width();
-    let screen_width = window.width();
-
     // Accumulate mouse motion
     let mut mouse_delta: Vec2 = evr_motion.read().map(|ev| ev.delta).sum();
 
@@ -167,18 +158,20 @@ pub fn orbit_camera_system(
     }
 
     // Touch gestures
-    // 1 finger drag = rotate (feeds mouse_delta like the rotate button)
-    // 2 finger pinch = zoom
-    // we just shovel touch deltas into mouse_delta / scroll_delta so the
-    // existing rotate/pan/zoom code picks them up unchanged
+    // 1 finger drag = rotate (kept separate from mouse_delta touch
+    // and mouse deltas come in at different scales on WASM mobile,
+    // so each needs its own rad/px constant)
+    // 2 finger pinch = zoom (shoveled into scroll_delta since zoom
+    // is already a pure scalar)
     let active_touches: Vec<_> = touches.iter().collect();
     let mut touch_rotate_active = false;
     let touch_pan_active = false;
     let mut touch_zoom_active = false;
+    let mut touch_rotate_delta = Vec2::ZERO;
     match active_touches.len() {
         1 => {
             touch_rotate_active = true;
-            mouse_delta += active_touches[0].delta() * TOUCH_ROTATE_SENS;
+            touch_rotate_delta = active_touches[0].delta();
         }
         2 => {
             let t1 = active_touches[0];
@@ -225,10 +218,16 @@ pub fn orbit_camera_system(
             rotate_active || zoom_active || pan_active || twist_active;
 
         // Rotation
-        if rotate_active && mouse_delta != Vec2::ZERO {
-            // Scale mouse delta like getMouseOnCircle
-            let dx = MOUSE_ROTATE_SCALE * mouse_delta.x / screen_width;
-            let dy = -MOUSE_ROTATE_SCALE * mouse_delta.y / screen_width;
+        if 
+            rotate_active 
+            && (mouse_delta != Vec2::ZERO || touch_rotate_delta != Vec2::ZERO) {
+
+            let dx_mouse = MOUSE_ROTATE_SCALE * mouse_delta.x;
+            let dy_mouse = -MOUSE_ROTATE_SCALE * mouse_delta.y;
+            let dx_touch = touch_rotate_delta.x * TOUCH_ROTATE_SENS;
+            let dy_touch = -touch_rotate_delta.y * TOUCH_ROTATE_SENS;
+            let dx = dx_mouse + dx_touch;
+            let dy = dy_mouse + dy_touch;
 
             let eye = state.position - state.target;
             let eye_direction = eye.normalize_or_zero();

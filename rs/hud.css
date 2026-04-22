@@ -1,16 +1,9 @@
 /* dont use "" in this file*/
 
 /* design tokens ---------------------------------------------------------- */
-/* shared chrome used by rail buttons and slide-out panels */
 :root {
     --fg:            #ededed;
-    --fg-muted:      #9a9a9a;
     --fg-dim:        #666;
-    --chrome-bg:     rgba(12,14,22,0.72);
-    --chrome-border: rgba(255,255,255,0.1);
-    --chrome-radius: 8px;
-    --rail-btn-size: 42px;
-    --rail-gap:      10px;
 
     /* slider color palette */
     --track:         #2a2a2a;
@@ -251,194 +244,8 @@ canvas {
     font-variant-numeric: tabular-nums;
 }
 
-/* map-control rail (right edge) ------------------------------------------ */
-/* OSM-style: vertical stack of icon buttons grouped in rounded containers.
-   add more .rail-group blocks later for zoom / fullscreen / etc. */
-.rail {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    z-index: 20;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-.rail-group {
-    display: flex;
-    flex-direction: column;
-    background: var(--chrome-bg);
-    border: 1px solid var(--chrome-border);
-    border-radius: var(--chrome-radius);
-    backdrop-filter: blur(8px);
-    overflow: hidden;
-}
-.rail-btn {
-    width: var(--rail-btn-size);
-    height: var(--rail-btn-size);
-    background: transparent;
-    border: 0;
-    color: var(--fg);
-    cursor: pointer;
-    display: grid;
-    place-items: center;
-    transition: background 0.15s, color 0.15s;
-    -webkit-tap-highlight-color: transparent;
-}
-.rail-btn + .rail-btn { border-top: 1px solid var(--chrome-border); }
-.rail-btn:hover { background: rgba(255,255,255,0.08); }
-/* unquoted attribute value — packer escapes " inside CSS */
-.rail-btn[aria-expanded=true] {
-    background: rgba(51,103,201,0.22);
-    color: #bfd0ff;
-}
-
-/* slide-out panel attached to the rail ----------------------------------- */
-/* state: data-state=open|closed. CSS defaults handle unset value:
-   mobile = closed, desktop = open. JS only writes on user action.
-   A panel's open state is: explicit data-state if present; otherwise
-   the viewport-based default. */
-.panel {
-    position: absolute;
-    top: 1rem;
-    right: calc(1rem + var(--rail-btn-size) + var(--rail-gap));
-    width: min(260px, calc(100vw - 5rem));
-    z-index: 15;
-    background: var(--chrome-bg);
-    border: 1px solid var(--chrome-border);
-    border-radius: var(--chrome-radius);
-    backdrop-filter: blur(10px);
-    box-shadow: 0 6px 24px rgba(0,0,0,0.35);
-    transform-origin: top right;
-    transition: opacity 0.18s ease, transform 0.18s ease;
-}
-/* hidden by default (mobile) + explicit closed */
-.panel:not([data-state=open]) {
-    opacity: 0;
-    pointer-events: none;
-    transform: translateX(8px) scale(0.97);
-}
-/* desktop: visible unless explicitly closed */
-@media (min-width: 600px) {
-    .panel:not([data-state=closed]) {
-        opacity: 1;
-        pointer-events: auto;
-        transform: translateX(0) scale(1);
-    }
-}
-/* explicit open (mobile user tapped the rail button) */
-.panel[data-state=open] {
-    opacity: 1;
-    pointer-events: auto;
-    transform: translateX(0) scale(1);
-}
-.panel-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 11px 14px 9px;
-    border-bottom: 1px solid var(--chrome-border);
-}
-.panel-title {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--fg);
-    margin: 0;
-    line-height: 1;
-}
-.panel-close {
-    width: 24px; height: 24px;
-    padding: 0;
-    border: 0;
-    border-radius: 4px;
-    background: transparent;
-    color: var(--fg-muted);
-    cursor: pointer;
-    display: grid;
-    place-items: center;
-    transition: background 0.15s, color 0.15s;
-    -webkit-tap-highlight-color: transparent;
-}
-.panel-close:hover { background: rgba(255,255,255,0.08); color: var(--fg); }
-.panel-body { padding: 11px 14px 12px; }
-
-/* drag handle: only rendered in mobile bottom-sheet mode (see media query).
-   dragging class (set by JS on pointerdown) kills the transition so the
-   sheet tracks the finger instead of easing behind it. */
-.panel-handle { display: none; }
-.panel.dragging { transition: none; }
-
-  /* legend list inside the panel */
-  .legend-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .legend-list li {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 0.9rem;
-    line-height: 1.2;
-    color: var(--fg);
-    font-variant-numeric: tabular-nums;
-  }
-  .legend-list .swatch {
-    width: 15px; height: 15px;
-    border-radius: 2px;
-    border: 1px solid rgba(255,255,255,0.15);
-    flex-shrink: 0;
-  }
-
-  /* mobile ------------------------------------------------------------- */
-  @media (max-width: 600px) {
-    :root { --rail-btn-size: 38px; --rail-gap: 8px; }
-    .panel-title    { font-size: 1rem; }
-    .legend-list li { font-size: 0.82rem; }
-    .legend-list .swatch { width: 13px; height: 13px; }
-
-    /* bottom sheet: on mobile the side-docked panel becomes a sheet pinned
-       above the timeline chrome. the rail button still opens it (slide up
-       from below); drag the handle down past the JS threshold to dismiss. */
-    .panel {
-        top: auto;
-        right: 1rem;
-        left: 1rem;
-        bottom: calc(2rem + 140px); /* clear the title+slider chrome + air */
-        width: auto;
-        max-height: 55vh;
-        display: flex;
-        flex-direction: column;
-        transform-origin: bottom center;
-    }
-    /* override the desktop translateX slide with a translateY slide */
-    .panel:not([data-state=open]) { transform: translateY(120%); }
-    .panel[data-state=open]       { transform: translateY(0); }
-
-    /* handle: generous 24px hit area with a small centered pill for affordance.
-       touch-action: none so the browser doesn't hijack the drag as a scroll. */
-    .panel-handle {
-        display: flex;
-        justify-content: center;
-        padding: 8px 0 6px;
-        cursor: grab;
-        touch-action: none;
-    }
-    .panel.dragging .panel-handle { cursor: grabbing; }
-    .panel-handle-grip {
-        width: 36px;
-        height: 4px;
-        background: rgba(255,255,255,0.25);
-        border-radius: 2px;
-    }
-
-    /* trim the header top padding since the handle already provides it */
-    .panel-header { padding-top: 4px; }
-    /* long legend shouldn't push the sheet past max-height */
-    .panel-body { overflow-y: auto; flex: 1 1 auto; }
-
+/* mobile ----------------------------------------------------------------- */
+@media (max-width: 600px) {
     /* timeline + slider mobile tweaks: tip buttons shrink so the track
        reclaims the horizontal space that circular arrow buttons used to
        eat. tick-labels margins follow the smaller tip width so boundary
@@ -462,7 +269,7 @@ canvas {
         font-size: clamp(0.82rem, 3.6vw, 1rem);
     }
     .title .title-age { font-size: 0.78rem; }
-  }
+}
 
 /* gone rn */
 /* links ------------------------------------------------------------------- */
