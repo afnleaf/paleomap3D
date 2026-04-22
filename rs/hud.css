@@ -1,3 +1,5 @@
+/* dont use "" in this file*/
+
 /* design tokens ---------------------------------------------------------- */
 /* shared chrome used by rail buttons and slide-out panels */
 :root {
@@ -101,45 +103,63 @@ canvas {
 }
 
 /* timeline chrome: title (above) and slider-row (below) stacked as one
-   visual unit. centered horizontally by .hud-bottom's flex; width is the
-   only responsive knob (desktop cap vs mobile %). */
+   visual unit. centered horizontally by .hud-bottom's flex. 2px of side
+   padding keeps the chevron tips from kissing the viewport edge; max-width
+   caps how wide the chrome grows on desktop. */
 .timeline-chrome {
-    width: min(85%, 960px);
+    width: 100%;
+    max-width: 100rem;
+    padding: 0 2px;
     pointer-events: auto;
 }
 
-/* slider row: prev | slider | next -------------------------------------- */
-/* align-items: flex-start so arrow buttons can be pushed down to track
-   center via margin-top, rather than centering across the whole column */
+/* slider row: just the slider itself now — prev/next tips live inside
+   .slider as part of .track-with-tips, not as flanking siblings. */
 .slider-row {
     margin-top: 8px;
     display: flex;
     align-items: flex-start;
-    gap: 0.75rem;
 }
 
-.arrow-btn {
+/* track-with-tips: chevron-tip buttons and the track-wrap laid out as
+   one flex row. tips flank track-wrap flush with no gap so the whole
+   shape reads as one arrow-headed ribbon. */
+.track-with-tips {
+    display: flex;
+    align-items: center;
+}
+
+/* track-tip: invisible rectangular hit zone with a CSS-drawn chevron
+   (::before) inside. color matches the track's gradient end-stop on
+   that side so the chevron reads as a continuation of the track. */
+.track-tip {
     flex-shrink: 0;
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.12);
-    color: #fff;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
     cursor: pointer;
-    display: grid;
-    place-items: center;
-    transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+    position: relative;
     -webkit-tap-highlight-color: transparent;
-    /* vertical alignment with track line:
-       era-bands(10) + margin(5) + half track-wrap(14) - half button(19) */
-    margin-top: 10px;
+    transition: opacity 0.15s;
 }
-.arrow-btn:hover:not(:disabled) {
-    background: rgba(255,255,255,0.16);
-    border-color: rgba(255,255,255,0.25);
+.track-tip::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 20px;
+    height: 22px;
+    transform: translateY(-50%);
+    background: currentColor;
+    transition: filter 0.15s;
 }
-.arrow-btn:disabled { opacity: 0.25; cursor: default; }
+#prev { color: var(--paleozoic); }
+#next { color: var(--cenozoic); }
+#prev::before { right: 0; clip-path: polygon(0 50%, 100% 0, 100% 100%); }
+#next::before { left: 0;  clip-path: polygon(100% 50%, 0 0, 0 100%); }
+.track-tip:hover:not(:disabled)::before { filter: brightness(1.3); }
+.track-tip:disabled { opacity: 0.25; cursor: default; }
 
 /* slider ----------------------------------------------------------------- */
 .slider {
@@ -157,6 +177,7 @@ canvas {
    era badge in the title, and the track now carries the color context. */
 .track-wrap {
     position: relative;
+    flex: 1;                      /* fills the space between the two tips */
     height: 28px;
     cursor: pointer;
 }
@@ -174,7 +195,7 @@ canvas {
         var(--mesozoic)  87.96%,
         var(--cenozoic)  87.96%,
         var(--cenozoic)  100%);
-    border-radius: 2px;
+    border-radius: 0;             /* square ends meet the chevron tips cleanly */
     pointer-events: none;
 }
 /* tick marks: thin white vertical lines at each era-boundary %, injected
@@ -212,11 +233,13 @@ canvas {
     transition: box-shadow 0.15s ease;
 }
 
-/* boundary labels under the track */
+/* boundary labels under the track. side margins match .track-tip width so
+   the labels sit inside the same horizontal span as .track-wrap — without
+   them, a tick at 50% would anchor to slider-center, not track-wrap-center. */
 .tick-labels {
     position: relative;
     height: 14px;
-    margin-top: 2px;
+    margin: 2px 44px 0;
 }
 .tick-label {
     position: absolute;
@@ -416,13 +439,16 @@ canvas {
     /* long legend shouldn't push the sheet past max-height */
     .panel-body { overflow-y: auto; flex: 1 1 auto; }
 
-    /* timeline + slider mobile tweaks:
-       track(8) centered in track-wrap, half track-wrap(14) - half button(17) */
-    .timeline-chrome { width: 92%; }
-    .slider-row { gap: 0.4rem; }
-    .arrow-btn  { width: 34px; height: 34px; margin-top: 9px; }
-    .track      { height: 0.2rem; }               /* slightly slimmer on mobile */
-    .tick-label { font-size: 0.68rem; }        /* all boundary labels visible */
+    /* timeline + slider mobile tweaks: tip buttons shrink so the track
+       reclaims the horizontal space that circular arrow buttons used to
+       eat. tick-labels margins follow the smaller tip width so boundary
+       labels stay aligned with tick-marks inside track-wrap. */
+    .track-tip       { width: 2rem; height: 2rem; }
+    .track-tip::before { width: 1rem; height: 1rem; }
+    .track-wrap      { height: 22px; }
+    .track           { height: 0.2rem; }          /* slightly slimmer on mobile */
+    .tick-labels     { margin: 2px 36px 0; }
+    .tick-label      { font-size: 0.68rem; }      /* all boundary labels visible */
     /* mobile title = exactly two lines:
          line 1 = era (full-width, font clamped so the longest era names
                  like "Early/Middle Cambrian boundary" fit even on 320px)

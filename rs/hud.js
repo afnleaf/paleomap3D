@@ -341,9 +341,36 @@ document.addEventListener("DOMContentLoaded", () => {
     window.addEventListener("pointercancel", endDrag);
   }
 
-  // prev = older (higher index), next = newer (lower index)
-  if (prevBtn) prevBtn.addEventListener("click", () => requestIndex(displayedIdx + 1));
-  if (nextBtn) nextBtn.addEventListener("click", () => requestIndex(displayedIdx - 1));
+  // prev = older (higher index), next = newer (lower index).
+  // press-and-hold advances continuously at the same 90ms cadence as the
+  // Bevy keyboard handler (KeyRepeatTimer in mapupdate.rs). pattern:
+  // one step immediately on pointerdown, then setInterval fires every 90ms
+  // until pointerup/cancel or the button goes disabled (end of range).
+  const HOLD_REPEAT_MS = 90;
+  const attachHoldRepeat = (btn, delta) => {
+    if (!btn) return;
+    let interval = null;
+    const stop = () => {
+      if (interval) { clearInterval(interval); interval = null; }
+    };
+    btn.addEventListener("pointerdown", e => {
+      if (btn.disabled) return;
+      e.preventDefault();
+      // pointer capture so pointerup fires on the button even if the finger
+      // slides off its hitbox mid-hold — without it, a small slip on touch
+      // would strand the interval running forever.
+      btn.setPointerCapture(e.pointerId);
+      requestIndex(displayedIdx + delta);
+      interval = setInterval(() => {
+        if (btn.disabled) { stop(); return; }
+        requestIndex(displayedIdx + delta);
+      }, HOLD_REPEAT_MS);
+    });
+    btn.addEventListener("pointerup", stop);
+    btn.addEventListener("pointercancel", stop);
+  };
+  attachHoldRepeat(prevBtn, +1);
+  attachHoldRepeat(nextBtn, -1);
 
   // repaint when Bevy (or Rust-side keyboard handler) says CurrentMap changed
   window.addEventListener("paleomap3d:map-changed", e => {
