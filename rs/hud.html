@@ -16,7 +16,6 @@
   <div class="timeline-chrome">
     <p class="title" id="title">
       <span class="title-era">Present-day</span>
-      <span class="title-broader cenozoic">Cenozoic</span>
       <span class="title-age">(Holocene, 0 Ma)</span>
     </p>
 
@@ -24,8 +23,8 @@
          reuses the slider's requestIndex pipeline; direction toggles which
          way it steps. wiring lives in hud.js. -->
     <div class="playback-controls">
-      <button class="pb-btn" id="playpause">Play</button>
-      <button class="pb-btn" id="direction">Past</button>
+      <button class="pb-btn" id="playpause" aria-label="Play"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6,4 20,12 6,20" fill="currentColor"/></svg></button>
+      <button class="pb-btn" id="direction" aria-label="Toward past"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><polygon points="12,6 12,18 4,12" fill="currentColor"/><polygon points="20,6 20,18 12,12" fill="currentColor"/></svg></button>
       <button class="pb-btn" id="speed">1&times;</button>
     </div>
 

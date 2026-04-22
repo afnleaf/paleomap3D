@@ -39,15 +39,15 @@ canvas {
     user-select: none;
 }
 
-/* title (inline inside timeline chrome) ---------------------------------- */
-/* flex layout: era + era-badge share the top line (gap 10px between), age
-   gets its own line via flex-basis:100% which forces a wrap. order in the
-   DOM is era, broader, age so flex natural order produces the visual we want. */
+/* title: flex item inside chrome, flex container for era + age. min-width:0
+   lets it shrink below content width on narrow viewports. */
 #title, .title {
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
-    justify-content: center;
+    justify-content: flex-start;
     gap: 2px 10px;
     padding: 0 10px;
     margin: 0;
@@ -64,19 +64,8 @@ canvas {
     font-size: 0.85rem;
     font-weight: 400;
     opacity: 0.75;
+    text-wrap: balance;
 }
-.title .title-broader {
-    font-size: 0.62rem;
-    font-weight: 600;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    padding: 2px 7px;
-    border-radius: 3px;
-    color: rgba(255,255,255,0.9);
-}
-.title .title-broader.cenozoic  { background: var(--cenozoic); }
-.title .title-broader.mesozoic  { background: var(--mesozoic); }
-.title .title-broader.paleozoic { background: var(--paleozoic); }
 
 /* bottom HUD dock: full-width strip fixed to the viewport bottom. its
    padding-bottom is the single knob for gap-from-bottom — change that
@@ -95,38 +84,66 @@ canvas {
     pointer-events: none;
 }
 
-/* timeline chrome: title (above) and slider-row (below) stacked as one
-   visual unit. centered horizontally by .hud-bottom's flex. 2px of side
-   padding keeps the chevron tips from kissing the viewport edge; max-width
-   caps how wide the chrome grows on desktop. */
+/* mobile = flex (buttons left via order:-1, title right next to them).
+   desktop = grid, see @media below. */
 .timeline-chrome {
     width: 100%;
     max-width: 100rem;
     padding: 0 2px;
     pointer-events: auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: 16px;
 }
 
-/* playback controls: minimal placeholder styling. placement and look
-   intentionally bare until the function is dialled in. */
+/* VCR-bevel buttons. .active shares :active's pressed-in geometry so the
+   play button stays visually held-down while playback runs. */
 .playback-controls {
     display: flex;
     justify-content: center;
-    gap: 8px;
-    margin-top: 6px;
+    gap: 4px;
+    flex: 0 0 auto;
+    margin-left: 8px;
+    order: -1;
+    align-self: flex-end;
 }
 .pb-btn {
-    background: var(--track);
+    background: linear-gradient(to bottom, #4a4a4a 0%, var(--track) 100%);
     color: var(--fg);
-    border: 0;
-    padding: 6px 12px;
-    border-radius: 4px;
+    border: 1px solid #0a0a0a;
+    padding: 5px 8px;
+    min-width: 40px;
+    border-radius: 3px;
     font: inherit;
-    font-size: 0.8rem;
+    font-size: 1rem;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.18),
+        inset 0 -2px 1px rgba(0,0,0,0.45),
+        0 2px 0 #0a0a0a,
+        0 3px 5px rgba(0,0,0,0.55);
+    transition: transform 60ms ease-out, box-shadow 60ms ease-out, background 80ms ease-out;
 }
-.pb-btn:hover { filter: brightness(1.3); }
-.pb-btn.active { background: var(--thumb); }
+.pb-btn svg { width: 22px; height: 22px; }
+.pb-btn:hover { filter: brightness(1.12); }
+.pb-btn:active,
+.pb-btn.active {
+    transform: translateY(2px);
+    box-shadow:
+        inset 0 2px 3px rgba(0,0,0,0.6),
+        inset 0 -1px 0 rgba(255,255,255,0.05);
+}
+.pb-btn:active {
+    background: linear-gradient(to bottom, #1e1e1e 0%, var(--track) 100%);
+}
+.pb-btn.active {
+    background: linear-gradient(to bottom, #23386e 0%, var(--thumb) 100%);
+}
 
 /* slider row: just the slider itself now — prev/next tips live inside
    .slider as part of .track-with-tips, not as flanking siblings. */
@@ -134,6 +151,7 @@ canvas {
     margin-top: 8px;
     display: flex;
     align-items: flex-start;
+    flex-basis: 100%;
 }
 
 /* track-with-tips: chevron-tip buttons and the track-wrap laid out as
@@ -158,6 +176,9 @@ canvas {
     position: relative;
     -webkit-tap-highlight-color: transparent;
     transition: opacity 0.15s;
+    /* 2rem is the hit target; negative margins stop it from inflating the
+       row's visual height so tick labels can sit closer to the track. */
+    margin: -6px 0;
 }
 .track-tip::before {
     content: '';
@@ -193,7 +214,7 @@ canvas {
 .track-wrap {
     position: relative;
     flex: 1;                      /* fills the space between the two tips */
-    height: 28px;
+    height: 18px;
     cursor: pointer;
 }
 .track {
@@ -201,7 +222,7 @@ canvas {
     top: 50%;
     left: 0;
     right: 0;
-    height: 10px;
+    height: 4px;
     transform: translateY(-50%);
     background: linear-gradient(to right,
         var(--paleozoic) 0%,
@@ -253,14 +274,14 @@ canvas {
    them, a tick at 50% would anchor to slider-center, not track-wrap-center. */
 .tick-labels {
     position: relative;
-    height: 14px;
-    margin: 2px 44px 0;
+    height: 16px;
+    margin: 0 44px 0;
 }
 .tick-label {
     position: absolute;
     top: 0;
     transform: translateX(-50%);
-    font-size: 0.75rem;
+    font-size: 0.85rem;
     color: var(--fg-dim);
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
@@ -272,26 +293,37 @@ canvas {
        reclaims the horizontal space that circular arrow buttons used to
        eat. tick-labels margins follow the smaller tip width so boundary
        labels stay aligned with tick-marks inside track-wrap. */
-    .track-tip       { width: 2rem; height: 2rem; }
-    .track-tip::before { width: 1rem; height: 1rem; }
-    .track-wrap      { height: 22px; }
-    .track           { height: 0.2rem; }          /* slightly slimmer on mobile */
-    .tick-labels     { margin: 2px 36px 0; }
-    .tick-label      { font-size: 0.68rem; }      /* all boundary labels visible */
-    /* mobile title = exactly two lines:
-         line 1 = era (full-width, font clamped so the longest era names
-                 like "Early/Middle Cambrian boundary" fit even on 320px)
-         line 2 = badge + age (share the row, centered via justify-content)
-       attempts to keep era + badge on one line failed on iPhone SE because
-       the longest era alone is ~260px and the SE only has ~282px available. */
-    .title { padding: 0 6px; gap: 2px 8px; }
-    .title .title-era {
-        flex-basis: 100%;
-        text-align: center;
-        font-size: clamp(0.82rem, 3.6vw, 1rem);
+    /* tighter cluster so title gets more room */
+    .timeline-chrome   { column-gap: 4px; }
+    .playback-controls { margin-left: 4px; }
+    /* inline text flow so era + age can share a wrapped line. #title in the
+       selector is required to beat the base rule's ID specificity.
+       text-wrap: pretty keeps wrapping greedy but avoids orphans like "Ma)"
+       on the last line. padding 0 to reclaim the 12px the base rule spent
+       on horizontal breathing room. */
+    #title, .title {
+        padding: 0;
+        display: block;
+        text-wrap: pretty;
+        text-align: left;
     }
-    .title .title-age { font-size: 0.78rem; }
+    .title .title-era { font-size: clamp(0.82rem, 3.6vw, 1rem); }
+    .title .title-age { font-size: 0.7rem; }
 }
+
+/* desktop ---------------------------------------------------------------- */
+/* two equal columns meeting at chrome-center. buttons end-aligned in col 1,
+   title start-aligned in col 2, so the column-gap straddles chrome-center. */
+@media (min-width: 601px) {
+    .timeline-chrome {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+    .playback-controls { grid-column: 1; justify-self: end;   }
+    #title, .title     { grid-column: 2; justify-self: start; }
+    .slider-row        { grid-column: 1 / -1; }
+}
+
 
 /* gone rn */
 /* links ------------------------------------------------------------------- */

@@ -133,12 +133,6 @@ document.addEventListener("DOMContentLoaded", () => {
     ["Cambrian/Precambrian boundary",  "541 Ma"],
   ];
 
-  // broader era follows stratigraphic convention:
-  // idx 13 (KT Boundary / Latest Maastrichtian) is still Mesozoic;
-  // idx 50 (P/T, 252 Ma) is the Paleozoic/Mesozoic break
-  const broaderEra = idx =>
-    idx < 13 ? "Cenozoic" : idx < 50 ? "Mesozoic" : "Paleozoic";
-
   // slider tick rendering --------------------------------------------------- /
   const MAP_MAX_IDX = 108;
   const pctFromIdx = i => (MAP_MAX_IDX - i) / MAP_MAX_IDX * 100;
@@ -192,28 +186,21 @@ document.addEventListener("DOMContentLoaded", () => {
   const nextBtn      = document.getElementById("next");
   const titleEra     = document.querySelector("#title .title-era");
   const titleAge     = document.querySelector("#title .title-age");
-  const titleBroader = document.querySelector("#title .title-broader");
 
   let displayedIdx = 0;
   let dragging = false;
 
   // full HUD paint from just an index (thumb position, arrow disabled
-  // state, title era/age/broader-era badge). called on drag, arrow click,
-  // and on the map-changed event from Rust.
+  // state, title era/age). called on drag, arrow click, and on the
+  // map-changed event from Rust.
   const paintHud = idx => {
     displayedIdx = idx;
     if (thumb)   thumb.style.left = pctFromIdx(idx) + "%";
     if (prevBtn) prevBtn.toggleAttribute("disabled", idx >= MAP_MAX_IDX);
     if (nextBtn) nextBtn.toggleAttribute("disabled", idx === 0);
     const [era, age] = MAP_NAMES[idx] || ["", ""];
-    const broader = broaderEra(idx);
     if (titleEra) titleEra.textContent = era;
     if (titleAge) titleAge.textContent = "(" + age + ")";
-    if (titleBroader) {
-      titleBroader.textContent = broader;
-      // class swap repaints the badge color (cenozoic/mesozoic/paleozoic)
-      titleBroader.className = "title-broader " + broader.toLowerCase();
-    }
   };
 
   // ask Bevy to move to a given index. we optimistically paint the HUD
@@ -319,17 +306,24 @@ document.addEventListener("DOMContentLoaded", () => {
   const directionBtn = document.getElementById("direction");
   const speedBtn     = document.getElementById("speed");
 
+  const PLAY_SVG   = '<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6,4 20,12 6,20" fill="currentColor"/></svg>';
+  const PAUSE_SVG  = '<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4" width="4" height="16" fill="currentColor"/><rect x="14" y="4" width="4" height="16" fill="currentColor"/></svg>';
+  const REWIND_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><polygon points="12,6 12,18 4,12" fill="currentColor"/><polygon points="20,6 20,18 12,12" fill="currentColor"/></svg>';
+  const FFWD_SVG   = '<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><polygon points="12,6 12,18 20,12" fill="currentColor"/><polygon points="4,6 4,18 12,12" fill="currentColor"/></svg>';
+
   let playDirection = +1;
   let playTimer = null;
 
   const updatePlayLabel = () => {
     if (!playPauseBtn) return;
-    playPauseBtn.textContent = playTimer ? "Pause" : "Play";
+    playPauseBtn.innerHTML = playTimer ? PAUSE_SVG : PLAY_SVG;
+    playPauseBtn.setAttribute("aria-label", playTimer ? "Pause" : "Play");
     playPauseBtn.classList.toggle("active", !!playTimer);
   };
   const updateDirectionLabel = () => {
     if (!directionBtn) return;
-    directionBtn.textContent = playDirection > 0 ? "Past" : "Present";
+    directionBtn.innerHTML = playDirection > 0 ? REWIND_SVG : FFWD_SVG;
+    directionBtn.setAttribute("aria-label", playDirection > 0 ? "Toward past" : "Toward present");
   };
   const updateSpeedLabel = () => {
     if (!speedBtn) return;
