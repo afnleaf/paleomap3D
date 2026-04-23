@@ -3,11 +3,14 @@
 pack:
   runtime:
     enabled: true
+    icon: false
   metadata:
     title: "PALEOMAP3D"
     author: "me"
     description: "packed by histos"
     keywords: "hello, from, yaml"
+  favicon: 
+    - "logo.svg"
   css:
     - "hud.css"
   html:
