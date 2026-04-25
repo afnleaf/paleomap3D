@@ -1,6 +1,12 @@
-<!-- pull down menu
-
--->
+<!-- top HUD dock: mirror of .hud-bottom, top-anchored. handle sits at the
+     bottom of the sheet so it stays flush with the viewport top edge when
+     the sheet is closed (translated up off-screen). body is empty for now. -->
+<div class="hud-top">
+  <div class="sheet sheet-top" id="sheet-top">
+    <div class="top-content" id="top-content"></div>
+    <button class="sheet-handle sheet-handle-top" id="sheet-handle-top" aria-label="Toggle top tray"></button>
+  </div>
+</div>
 
 
 <!-- bottom HUD dock: full-width fixed container. padding-bottom on the dock
@@ -9,6 +15,13 @@
      insets later if needed. -->
 
 <div class="hud-bottom">
+  <!-- sheet wraps the chrome so it can slide down to close. handle is the
+       only drag-affordance: dragging the chrome itself would conflict with
+       the slider's own pointer handling. tap = toggle, drag = follow,
+       release snaps to nearest state. wired in hud.js. -->
+  <div class="sheet" id="sheet">
+    <button class="sheet-handle" id="sheet-handle" aria-label="Toggle controls"></button>
+
   <!-- timeline chrome: title + slider fused into one unit. title used to
        be a top-left overlay; now it lives here so the era name and slider
        thumb position read together. PAST/PRESENT end-labels were redundant
@@ -50,6 +63,7 @@
         <div class="tick-labels" id="ticklabels"></div>
       </div>
     </div>
+  </div>
   </div>
 </div>
 

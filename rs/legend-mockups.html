@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Legend mockups</title>
+<style>
+:root {
+  --fg: #ededed;
+  --fg-dim: #aaa;
+}
+body {
+  margin: 0;
+  padding: 24px 0;
+  background: #1a1c20;
+  color: var(--fg);
+  font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+}
+h1 {
+  font-size: 0.9rem;
+  font-weight: 400;
+  opacity: 0.5;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0 24px;
+  margin: 0 0 16px;
+}
+.viewport {
+  position: relative;
+  margin: 0 auto 28px;
+  max-width: 100rem;
+  border-radius: 14px 14px 0 0;
+  border-top: 1px solid rgba(255,255,255,0.12);
+  border-left: 1px solid rgba(255,255,255,0.12);
+  border-right: 1px solid rgba(255,255,255,0.12);
+  background: rgba(20, 22, 26, 0.9);
+}
+.viewport.desktop { max-width: 60rem; }
+.viewport.mobile  { max-width: 24rem; }
+.tag {
+  position: absolute;
+  top: -22px;
+  left: 12px;
+  font-size: 0.7rem;
+  opacity: 0.45;
+  letter-spacing: 0.06em;
+}
+
+/* --- variant 0: current ---------------------------------------------- */
+.v0 {
+  padding: 14px 14px 12px;
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-auto-rows: 20px;
+  column-gap: 14px;
+  row-gap: 0;
+  justify-content: center;
+  align-items: center;
+}
+.v0 .swatch { width: 44px; height: 100%; }
+.v0 .label {
+  font-size: 0.9rem;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- variant 1: horizontal gradient strip ----------------------------- */
+/* horizontal padding sized to fit half of the widest edge label (-11 km / 5 km)
+   so first/last ticks don't hang off the sheet. */
+.v1 {
+  padding: 14px 28px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.v1 .strip {
+  display: flex;
+  height: 22px;
+  width: 100%;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.v1 .strip .swatch { flex: 1; height: 100%; }
+.v1 .ticks {
+  position: relative;
+  height: 14px;
+}
+.v1 .tick {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 0.7rem;
+  color: var(--fg-dim);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.v1 .tick::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  width: 1px;
+  height: 4px;
+  background: rgba(255,255,255,0.35);
+}
+/* staggered: row B's ::before mark would float in the gap, not reach the strip. */
+.v1s .tick::before { display: none; }
+.v1s .ticks { height: 12px; }
+
+/* --- variant 2: multi-column grid ------------------------------------- */
+.v2 {
+  padding: 14px;
+  display: grid;
+  grid-template-rows: repeat(5, 20px);
+  grid-auto-flow: column;
+  column-gap: 28px;
+  justify-content: center;
+  align-items: center;
+}
+.v2 .row { display: flex; align-items: center; gap: 8px; }
+.v2 .swatch { width: 30px; height: 16px; }
+.v2 .label {
+  font-size: 0.78rem;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- variant 3: land/sea split ---------------------------------------- */
+.v3 {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.v3 .strip-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.v3 .strip-name {
+  font-size: 0.7rem;
+  width: 36px;
+  text-align: right;
+  opacity: 0.55;
+  letter-spacing: 0.04em;
+}
+.v3 .strip {
+  flex: 1;
+  display: flex;
+  height: 18px;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.v3 .strip .swatch { flex: 1; height: 100%; }
+.v3 .ticks {
+  position: relative;
+  height: 12px;
+  margin: 1px 0 0 46px;
+}
+.v3 .tick {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 0.65rem;
+  color: var(--fg-dim);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.v3 .sea-line {
+  margin: 2px 0 2px 46px;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(255,255,255,0.18), transparent);
+}
+
+/* --- variant 4: vertical gradient ------------------------------------- */
+.v4 {
+  padding: 14px;
+  display: flex;
+  justify-content: center;
+}
+.v4 .stack {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+.v4 .vstrip {
+  display: flex;
+  flex-direction: column;
+  width: 8px;
+  height: 240px;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.v4 .vstrip .swatch { flex: 1; width: 100%; }
+.v4 .ticks {
+  position: relative;
+  height: 240px;
+  width: 70px;
+}
+.v4 .tick {
+  position: absolute;
+  transform: translateY(-50%);
+  font-size: 0.75rem;
+  color: var(--fg-dim);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.v4 .tick::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 50%;
+  width: 6px;
+  height: 1px;
+  background: rgba(255,255,255,0.35);
+}
+</style>
+</head>
+<body>
+
+<h1>0. current — desktop</h1>
+<div class="viewport desktop"><span class="tag">~60rem sheet</span><div class="content v0" data-variant="0"></div></div>
+<h1>0. current — mobile</h1>
+<div class="viewport mobile"><div class="content v0" data-variant="0"></div></div>
+
+<h1>1. horizontal gradient strip, all 13 boundaries — desktop</h1>
+<div class="viewport desktop"><span class="tag">~60rem sheet</span><div class="content v1" data-variant="1"></div></div>
+<h1>1. horizontal gradient strip, all 13 boundaries — mobile</h1>
+<div class="viewport mobile"><div class="content v1" data-variant="1"></div></div>
+
+<h1>1s. horizontal strip with staggered 2-row labels — desktop</h1>
+<div class="viewport desktop"><span class="tag">~60rem sheet</span><div class="content v1 v1s" data-variant="1s"></div></div>
+<h1>1s. horizontal strip with staggered 2-row labels — mobile</h1>
+<div class="viewport mobile"><div class="content v1 v1s" data-variant="1s"></div></div>
+
+<h1>2. multi-column grid (3 columns) — desktop</h1>
+<div class="viewport desktop"><span class="tag">~60rem sheet</span><div class="content v2" data-variant="2"></div></div>
+<h1>2. multi-column grid — mobile (falls back to current single-column)</h1>
+<div class="viewport mobile"><div class="content v2" data-variant="2"></div></div>
+
+<h1>3. land/sea split horizontal strips — desktop</h1>
+<div class="viewport desktop"><span class="tag">~60rem sheet</span><div class="content v3" data-variant="3"></div></div>
+<h1>3. land/sea split — mobile</h1>
+<div class="viewport mobile"><div class="content v3" data-variant="3"></div></div>
+
+<h1>4. vertical gradient + bracketed labels — desktop</h1>
+<div class="viewport desktop"><span class="tag">~60rem sheet</span><div class="content v4" data-variant="4"></div></div>
+<h1>4. vertical gradient + bracketed labels — mobile</h1>
+<div class="viewport mobile"><div class="content v4" data-variant="4"></div></div>
+
+<script>
+const BANDS = [
+  ["#eeeeee", "5 km+"],
+  ["#b6b5b5", "3.2 km to 5 km"],
+  ["#977944", "2 km to 3.2 km"],
+  ["#805411", "1 km to 2 km"],
+  ["#3d3704", "400 m to 1 km"],
+  ["#00530b", "150 m to 400 m"],
+  ["#347a2a", "75 m to 150 m"],
+  ["#4fa642", "0 m to 75 m"],
+  ["#5778b3", "-50 m to 0 m"],
+  ["#344b75", "-150 m to -50 m"],
+  ["#2a3c63", "-3 km to -150 m"],
+  ["#1f2d47", "-6 km to -3 km"],
+  ["#080e30", "-11 km to -6 km"],
+];
+
+// boundary index = how many bands sit above the boundary line.
+// e.g. boundary 1 = top of band 1 = 5km mark; boundary 13 = bottom of band 12 = -11km.
+const ALL_TICKS = [
+  { boundary: 1,  label: "5 km"   },
+  { boundary: 2,  label: "3.2 km" },
+  { boundary: 3,  label: "2 km"   },
+  { boundary: 4,  label: "1 km"   },
+  { boundary: 5,  label: "400 m"  },
+  { boundary: 6,  label: "150 m"  },
+  { boundary: 7,  label: "75 m"   },
+  { boundary: 8,  label: "0 m"    },
+  { boundary: 9,  label: "-50 m"  },
+  { boundary: 10, label: "-150 m" },
+  { boundary: 11, label: "-3 km"  },
+  { boundary: 12, label: "-6 km"  },
+  { boundary: 13, label: "-11 km" },
+];
+
+const LAND_BANDS = BANDS.slice(0, 8);
+const SEA_BANDS  = BANDS.slice(8);
+// land strip tick positions are out of 8 bands; right edge (8/8) = sea level.
+const LAND_TICKS = [
+  { boundary: 1, label: "5 km"   },
+  { boundary: 2, label: "3.2 km" },
+  { boundary: 3, label: "2 km"   },
+  { boundary: 4, label: "1 km"   },
+  { boundary: 5, label: "400 m"  },
+  { boundary: 6, label: "150 m"  },
+  { boundary: 7, label: "75 m"   },
+  { boundary: 8, label: "0 m"    },
+];
+// sea strip tick positions are out of 5 bands; left edge (0/5) = sea level.
+const SEA_TICKS = [
+  { boundary: 0, label: "0 m"    },
+  { boundary: 1, label: "-50 m"  },
+  { boundary: 2, label: "-150 m" },
+  { boundary: 3, label: "-3 km"  },
+  { boundary: 4, label: "-6 km"  },
+  { boundary: 5, label: "-11 km" },
+];
+
+const make = (tag, cls) => {
+  const el = document.createElement(tag);
+  if (cls) el.className = cls;
+  return el;
+};
+
+const renderV0 = host => {
+  BANDS.forEach(([c, l]) => {
+    const sw = make("span", "swatch");
+    sw.style.background = c;
+    const lb = make("span", "label");
+    lb.textContent = l;
+    host.appendChild(sw);
+    host.appendChild(lb);
+  });
+};
+
+const renderStrip = (host, bands) => {
+  const strip = make("div", "strip");
+  bands.forEach(([c]) => {
+    const sw = make("span", "swatch");
+    sw.style.background = c;
+    strip.appendChild(sw);
+  });
+  host.appendChild(strip);
+  return strip;
+};
+
+const renderTicks = (host, ticks, totalBands) => {
+  const t = make("div", "ticks");
+  ticks.forEach(({ boundary, label }) => {
+    const el = make("span", "tick");
+    el.style.left = (boundary / totalBands * 100) + "%";
+    el.textContent = label;
+    t.appendChild(el);
+  });
+  host.appendChild(t);
+};
+
+const renderV1 = host => {
+  renderStrip(host, BANDS);
+  renderTicks(host, ALL_TICKS, BANDS.length);
+};
+const renderV1stagger = host => {
+  renderStrip(host, BANDS);
+  // alternating up/down: even-index ticks render in row A, odd in row B.
+  const a = make("div", "ticks");
+  const b = make("div", "ticks");
+  ALL_TICKS.forEach((t, i) => {
+    const el = make("span", "tick");
+    el.style.left = (t.boundary / BANDS.length * 100) + "%";
+    el.textContent = t.label;
+    (i % 2 === 0 ? a : b).appendChild(el);
+  });
+  host.appendChild(a);
+  host.appendChild(b);
+};
+
+const renderV2 = host => {
+  BANDS.forEach(([c, l]) => {
+    const row = make("div", "row");
+    const sw = make("span", "swatch");
+    sw.style.background = c;
+    const lb = make("span", "label");
+    lb.textContent = l;
+    row.appendChild(sw);
+    row.appendChild(lb);
+    host.appendChild(row);
+  });
+};
+
+const renderV3 = host => {
+  const landRow = make("div", "strip-row");
+  const landName = make("span", "strip-name");
+  landName.textContent = "land";
+  landRow.appendChild(landName);
+  renderStrip(landRow, LAND_BANDS);
+  host.appendChild(landRow);
+  renderTicks(host, LAND_TICKS, LAND_BANDS.length);
+
+  const sea = make("div", "sea-line");
+  host.appendChild(sea);
+
+  const seaRow = make("div", "strip-row");
+  const seaName = make("span", "strip-name");
+  seaName.textContent = "sea";
+  seaRow.appendChild(seaName);
+  renderStrip(seaRow, SEA_BANDS);
+  host.appendChild(seaRow);
+  renderTicks(host, SEA_TICKS, SEA_BANDS.length);
+};
+
+const renderV4 = host => {
+  const stack = make("div", "stack");
+  const vstrip = make("div", "vstrip");
+  BANDS.forEach(([c]) => {
+    const sw = make("span", "swatch");
+    sw.style.background = c;
+    vstrip.appendChild(sw);
+  });
+  stack.appendChild(vstrip);
+
+  const ticks = make("div", "ticks");
+  ALL_TICKS.forEach(({ boundary, label }) => {
+    const el = make("span", "tick");
+    el.style.top = (boundary / BANDS.length * 100) + "%";
+    el.textContent = label;
+    ticks.appendChild(el);
+  });
+  stack.appendChild(ticks);
+  host.appendChild(stack);
+};
+
+const RENDERERS = {
+  0: renderV0,
+  1: renderV1,
+  "1s": renderV1stagger,
+  2: renderV2,
+  3: renderV3,
+  4: renderV4,
+};
+
+document.querySelectorAll("[data-variant]").forEach(host => {
+  const v = host.dataset.variant;
+  RENDERERS[v](host);
+});
+</script>
+
+</body>
+</html>

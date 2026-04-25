@@ -1,19 +1,27 @@
 document.addEventListener("DOMContentLoaded", () => {
   // elevation legend ------------------------------------------------------- /
   const ELEVATION_BANDS = [
-    ["#eeeeee", "5 km+"],
-    ["#b6b5b5", "3.2 km to 5 km"],
-    ["#977944", "2 km to 3.2 km"],
-    ["#805411", "1 km to 2 km"],
-    ["#3d3704", "400 m to 1 km"],
-    ["#00530b", "150 m to 400 m"],
-    ["#347a2a", "75 m to 150 m"],
-    ["#4fa642", "0 m to 75 m"],
-    ["#5778b3", "-50 m to 0 m"],
-    ["#344b75", "-150 m to -50 m"],
-    ["#2a3c63", "-3 km to -150 m"],
-    ["#1f2d47", "-6 km to -3 km"],
-    ["#080e30", "-11 km to -6 km"],
+    "#eeeeee", // 5 km+
+    "#b6b5b5", // 3.2 km to 5 km
+    "#977944", // 2 km to 3.2 km
+    "#805411", // 1 km to 2 km
+    "#3d3704", // 400 m to 1 km
+    "#00530b", // 150 m to 400 m
+    "#347a2a", // 75 m to 150 m
+    "#4fa642", // 0 m to 75 m
+    "#5778b3", // -50 m to 0 m
+    "#344b75", // -150 m to -50 m
+    "#2a3c63", // -3 km to -150 m
+    "#1f2d47", // -6 km to -3 km
+    "#080e30", // -11 km to -6 km
+  ];
+
+  // boundary labels for the elevation strip: the lower edge of each band, in
+  // order from highest to lowest. position i is at percentage (i+1) / length.
+  // length matches ELEVATION_BANDS so swatch boundaries align with these ticks.
+  const TICK_LABELS = [
+    "5 km", "3.2 km", "2 km", "1 km", "400 m", "150 m", "75 m", "0 m",
+    "-50 m", "-150 m", "-3 km", "-6 km", "-11 km",
   ];
 
   // map name table --------------------------------------------------------- /
@@ -391,6 +399,187 @@ document.addEventListener("DOMContentLoaded", () => {
   updatePlayLabel();
   updateDirectionLabel();
   updateSpeedLabel();
+
+  // sheet open/close ------------------------------------------------------- /
+  // pointer-driven drag on the handle. tap (no movement, short press) toggles;
+  // drag follows the finger between fully-open (offset 0) and fully-closed
+  // (offset = chrome height + .hud-bottom padding-bottom, so chrome clears
+  // the viewport edge); release snaps to whichever half the offset is in.
+  // we drag the handle, not the chrome, because the chrome already has its
+  // own slider pointer-listeners that would fight us.
+  const sheet       = document.getElementById("sheet");
+  const sheetHandle = document.getElementById("sheet-handle");
+  const chromeEl    = document.querySelector(".timeline-chrome");
+  const hudBottom   = document.querySelector(".hud-bottom");
+
+  let sheetClosed = false;
+  let dragStartY = 0;
+  let dragStartOffset = 0;
+  let dragOffset = 0;
+  let dragMoved = false;
+  let dragStartTime = 0;
+
+  const closedOffsetPx = () => {
+    if (!chromeEl || !hudBottom) return 0;
+    const padBottom = parseFloat(getComputedStyle(hudBottom).paddingBottom) || 0;
+    return chromeEl.offsetHeight + padBottom;
+  };
+  const setSheetY = px => {
+    if (sheet) sheet.style.setProperty("--sheet-y", px + "px");
+  };
+  const snapTo = closed => {
+    sheetClosed = closed;
+    setSheetY(closed ? closedOffsetPx() : 0);
+  };
+
+  if (sheet && sheetHandle) {
+    sheetHandle.addEventListener("pointerdown", e => {
+      e.preventDefault();
+      // capture so move/up still fire if the finger drifts off the handle
+      sheetHandle.setPointerCapture(e.pointerId);
+      dragStartY = e.clientY;
+      dragStartOffset = sheetClosed ? closedOffsetPx() : 0;
+      dragOffset = dragStartOffset;
+      dragMoved = false;
+      dragStartTime = performance.now();
+      sheet.classList.add("dragging");
+    });
+    sheetHandle.addEventListener("pointermove", e => {
+      if (!sheetHandle.hasPointerCapture(e.pointerId)) return;
+      const dy = e.clientY - dragStartY;
+      if (Math.abs(dy) > 3) dragMoved = true;
+      const max = closedOffsetPx();
+      dragOffset = Math.max(0, Math.min(max, dragStartOffset + dy));
+      setSheetY(dragOffset);
+    });
+    const endDrag = e => {
+      if (!sheetHandle.hasPointerCapture(e.pointerId)) return;
+      sheetHandle.releasePointerCapture(e.pointerId);
+      sheet.classList.remove("dragging");
+      const dt = performance.now() - dragStartTime;
+      // unmoved short press = tap, toggle; otherwise snap to nearest half
+      if (!dragMoved && dt < 400) { snapTo(!sheetClosed); return; }
+      snapTo(dragOffset > closedOffsetPx() / 2);
+    };
+    sheetHandle.addEventListener("pointerup", endDrag);
+    sheetHandle.addEventListener("pointercancel", endDrag);
+
+    // resize/orientation: chrome reflows (esp. mobile wrap), recompute so
+    // the closed offset still lands chrome exactly off-screen
+    window.addEventListener("resize", () => {
+      if (sheetClosed) setSheetY(closedOffsetPx());
+    });
+  }
+
+  // top sheet open/close --------------------------------------------------- /
+  // mirror of the bottom-sheet handler; closed offset is negative so the
+  // sheet slides up off-screen and the handle ends flush with viewport top.
+  // dragOffset is clamped to [closedOffset, 0] and snap tests against
+  // closedOffset/2 (which is itself negative).
+  const sheetTop       = document.getElementById("sheet-top");
+  const sheetHandleTop = document.getElementById("sheet-handle-top");
+  const topContent     = document.getElementById("top-content");
+  const hudTop         = document.querySelector(".hud-top");
+
+  let sheetTopClosed = true;
+  let dragTopStartY = 0;
+  let dragTopStartOffset = 0;
+  let dragTopOffset = 0;
+  let dragTopMoved = false;
+  let dragTopStartTime = 0;
+
+  const closedOffsetTopPx = () => {
+    if (!topContent || !hudTop) return 0;
+    const padTop = parseFloat(getComputedStyle(hudTop).paddingTop) || 0;
+    return -(topContent.offsetHeight + padTop);
+  };
+  const setSheetTopY = px => {
+    if (sheetTop) sheetTop.style.setProperty("--sheet-y", px + "px");
+  };
+  const snapTopTo = closed => {
+    sheetTopClosed = closed;
+    setSheetTopY(closed ? closedOffsetTopPx() : 0);
+  };
+
+  if (sheetTop && sheetHandleTop) {
+    // populate legend before computing the initial closed offset so the
+    // sheet retracts by exactly the legend's measured height. strip + tick
+    // row append as siblings of top-content; both stagger sub-rows are always
+    // rendered, and CSS overlaps them on desktop / stacks them on mobile.
+    if (topContent) {
+      const strip = document.createElement("div");
+      strip.className = "legend-strip";
+      ELEVATION_BANDS.forEach(color => {
+        const sw = document.createElement("span");
+        sw.className = "legend-swatch";
+        sw.style.background = color;
+        strip.appendChild(sw);
+      });
+      topContent.appendChild(strip);
+
+      const tickRow = document.createElement("div");
+      tickRow.className = "legend-tick-row";
+      const stagA = document.createElement("div");
+      stagA.className = "legend-tick-stagger-a";
+      const stagB = document.createElement("div");
+      stagB.className = "legend-tick-stagger-b";
+      tickRow.appendChild(stagA);
+      tickRow.appendChild(stagB);
+      // alternate ticks between rows so each row has ~half the labels at ~2x
+      // spacing on mobile; on desktop they overlap into a single visual row.
+      TICK_LABELS.forEach((label, i) => {
+        const tick = document.createElement("span");
+        tick.className = "legend-tick";
+        tick.style.left = ((i + 1) / TICK_LABELS.length * 100) + "%";
+        tick.textContent = label;
+        (i % 2 === 0 ? stagA : stagB).appendChild(tick);
+      });
+      topContent.appendChild(tickRow);
+    }
+
+    sheetHandleTop.addEventListener("pointerdown", e => {
+      e.preventDefault();
+      sheetHandleTop.setPointerCapture(e.pointerId);
+      dragTopStartY = e.clientY;
+      dragTopStartOffset = sheetTopClosed ? closedOffsetTopPx() : 0;
+      dragTopOffset = dragTopStartOffset;
+      dragTopMoved = false;
+      dragTopStartTime = performance.now();
+      sheetTop.classList.add("dragging");
+    });
+    sheetHandleTop.addEventListener("pointermove", e => {
+      if (!sheetHandleTop.hasPointerCapture(e.pointerId)) return;
+      const dy = e.clientY - dragTopStartY;
+      if (Math.abs(dy) > 3) dragTopMoved = true;
+      const min = closedOffsetTopPx();
+      dragTopOffset = Math.max(min, Math.min(0, dragTopStartOffset + dy));
+      setSheetTopY(dragTopOffset);
+    });
+    const endDragTop = e => {
+      if (!sheetHandleTop.hasPointerCapture(e.pointerId)) return;
+      sheetHandleTop.releasePointerCapture(e.pointerId);
+      sheetTop.classList.remove("dragging");
+      const dt = performance.now() - dragTopStartTime;
+      if (!dragTopMoved && dt < 400) { snapTopTo(!sheetTopClosed); return; }
+      // 25% commit threshold from either start state: a small flick
+      // dismisses (or opens), past that and we snap back to start.
+      const closed = closedOffsetTopPx();
+      const flipPoint = sheetTopClosed ? closed * 0.75 : closed * 0.25;
+      snapTopTo(dragTopOffset < flipPoint);
+    };
+    sheetHandleTop.addEventListener("pointerup", endDragTop);
+    sheetHandleTop.addEventListener("pointercancel", endDragTop);
+
+    window.addEventListener("resize", () => {
+      if (sheetTopClosed) setSheetTopY(closedOffsetTopPx());
+    });
+
+    // start closed without animating in: borrow .dragging to skip the
+    // transition for one frame, then drop it so user-initiated snaps animate.
+    sheetTop.classList.add("dragging");
+    setSheetTopY(closedOffsetTopPx());
+    requestAnimationFrame(() => sheetTop.classList.remove("dragging"));
+  }
 
   // repaint when Bevy (or Rust-side keyboard handler) says CurrentMap changed.
   // first firing doubles as the "wasm is ready" signal: wasm init calls

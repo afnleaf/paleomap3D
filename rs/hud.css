@@ -40,13 +40,18 @@ canvas {
 }
 
 /* title: flex item inside chrome, flex container for era + age. min-width:0
-   lets it shrink below content width on narrow viewports. */
+   lets it shrink below content width on narrow viewports. tight line-height
+   on the spans + align-content: center keep the title's vertical span
+   constant whether content is one or two wrapped lines, paired with the
+   mobile rule's min-height that's what stops the sheet from growing as
+   the era changes. */
 #title, .title {
     flex: 1;
     min-width: 0;
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
+    align-content: center;
     justify-content: flex-start;
     gap: 2px 10px;
     padding: 0 10px;
@@ -57,13 +62,14 @@ canvas {
 .title .title-era {
     font-size: 1.1rem;
     font-weight: 700;
-    line-height: 1.25;
+    line-height: 1.1;
 }
 .title .title-age {
     text-align: center;
     font-size: 0.85rem;
     font-weight: 400;
     opacity: 0.75;
+    line-height: 1.1;
     text-wrap: balance;
 }
 
@@ -83,6 +89,140 @@ canvas {
     z-index: 100;
     pointer-events: none;
 }
+
+/* top HUD dock: mirror of .hud-bottom, anchored to viewport top. */
+.hud-top {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    padding-top: 0.4rem;
+    display: flex;
+    justify-content: center;
+    z-index: 100;
+    pointer-events: none;
+}
+
+/* sheet: transform-driven container for the chrome. closed state slides
+   the sheet down by chrome-height + .hud-bottom padding-bottom (computed
+   in hud.js as --sheet-y), so chrome lands fully off-screen and the
+   handle ends flush with the viewport bottom edge as the only affordance.
+   --sheet-y is animated by a CSS transition when snapping; .dragging
+   disables the transition so the sheet follows the finger 1:1. */
+.sheet {
+    width: 100%;
+    max-width: 100rem;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    pointer-events: auto;
+    /* liquid-glass material: translucent fill + heavy backdrop blur so the
+       canvas behind shows through softened. saturate boost keeps colors
+       from going flat under blur. -webkit- prefix kept for Safari. */
+    background: rgba(20, 22, 26, 0.35);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px 14px 0 0;
+    box-shadow:
+        0 -8px 24px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    transform: translateY(var(--sheet-y, 0px));
+    transition: transform 220ms ease;
+}
+.sheet.dragging { transition: none; }
+
+/* top sheet variant: flip the bottom-anchored bits so the rounded edge,
+   border, and shadow all face into the viewport from the top. */
+.sheet-top {
+    border-top: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 0 0 14px 14px;
+    box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.4),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* elevation legend: horizontal gradient strip of 13 swatches with boundary
+   labels below. two stagger rows are always rendered; on desktop they overlap
+   into a single row, on mobile they stack so labels get ~2x per-row spacing.
+   horizontal padding is sized so the rightmost label (-11 km) at strip's
+   100% mark fits inside the sheet edge instead of half-hanging off. */
+.top-content {
+    padding: 14px 28px 12px;
+    display: flex;
+    flex-direction: column;
+}
+.legend-strip {
+    display: flex;
+    height: 22px;
+    width: 100%;
+    border-radius: 2px;
+    overflow: hidden;
+}
+.legend-swatch {
+    flex: 1;
+    height: 100%;
+}
+.legend-tick-row {
+    position: relative;
+    margin-top: 4px;
+    height: 14px;
+}
+.legend-tick-stagger-a,
+.legend-tick-stagger-b {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 14px;
+}
+.legend-tick {
+    position: absolute;
+    transform: translateX(-50%);
+    font-size: 0.85rem;
+    color: var(--fg-dim);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+.legend-tick::before {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: 50%;
+    width: 1px;
+    height: 4px;
+    background: rgba(255,255,255,0.35);
+}
+
+/* full-width hit zone across the sheet's top edge; visible pill (::before)
+   stays small, same trick as the slider's 4px track inside an 18px hit zone. */
+.sheet-handle {
+    width: 100%;
+    height: 16px;
+    padding: 0;
+    margin: 0 0 1px;
+    border: 0;
+    background: transparent;
+    cursor: grab;
+    -webkit-tap-highlight-color: transparent;
+    /* none so the browser doesn't steal the gesture for scroll/zoom */
+    touch-action: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.sheet-handle::before {
+    content: '';
+    width: 44px;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.35);
+    border-radius: 3px;
+}
+.sheet.dragging .sheet-handle { cursor: grabbing; }
+
+/* top-variant handle sits at the bottom of its sheet, flip the 1px gap. */
+.sheet-handle-top { margin: 1px 0 0; }
 
 /* mobile = flex (buttons left via order:-1, title right next to them).
    desktop = grid, see @media below. */
@@ -148,7 +288,7 @@ canvas {
 /* slider row: just the slider itself now, prev/next tips live inside
    .slider as part of .track-with-tips, not as flanking siblings. */
 .slider-row {
-    margin-top: 8px;
+    margin-top: 4px;
     display: flex;
     align-items: flex-start;
     flex-basis: 100%;
@@ -281,7 +421,7 @@ canvas {
     position: absolute;
     top: 0;
     transform: translateX(-50%);
-    font-size: 0.85rem;
+    font-size: 1rem;
     color: var(--fg-dim);
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
@@ -296,25 +436,40 @@ canvas {
     /* tighter cluster so title gets more room */
     .timeline-chrome   { column-gap: 4px; }
     .playback-controls { margin-left: 4px; }
-    /* inline text flow so era + age can share a wrapped line. #title in the
-       selector is required to beat the base rule's ID specificity.
-       text-wrap: pretty keeps wrapping greedy but avoids orphans like "Ma)"
-       on the last line. padding 0 to reclaim the 12px the base rule spent
-       on horizontal breathing room. */
+    /* min-height locks the title to its 2-line size so the chrome row (and
+       the sheet) doesn't grow when a long era name wraps, era and age stay
+       as separate flex items via the base rule so wrapping happens cleanly
+       between them rather than mid-age. #title in the selector is required
+       to beat the base rule's ID specificity. padding 0 reclaims the 12px
+       the base rule spent on horizontal breathing room. */
     #title, .title {
         padding: 0;
-        display: block;
-        text-wrap: pretty;
         text-align: left;
+        min-height: 2rem;
     }
     .title .title-era { font-size: clamp(0.82rem, 3.6vw, 1rem); }
     .title .title-age { font-size: 0.7rem; }
+
+    /* legend: stack the two stagger rows so labels at narrow widths arent
+       crammed into a single 13-label row. row Bs ::before mark would float
+       in the gap between rows, hide all tick-marks on mobile. */
+    .legend-tick-row { height: 30px; }
+    .legend-tick-stagger-b { top: 16px; }
+    .legend-tick::before { display: none; }
 }
 
 /* desktop ---------------------------------------------------------------- */
 /* two equal columns meeting at chrome-center. buttons end-aligned in col 1,
    title start-aligned in col 2, so the column-gap straddles chrome-center. */
 @media (min-width: 601px) {
+    /* desktop: card hugs the slider with breathing room, side borders match
+       the top to close the rounded shape. mobile still spans edge-to-edge. */
+    .sheet {
+        max-width: 60rem;
+        padding: 0 14px;
+        border-left: 1px solid rgba(255, 255, 255, 0.12);
+        border-right: 1px solid rgba(255, 255, 255, 0.12);
+    }
     .timeline-chrome {
         display: grid;
         grid-template-columns: 1fr 1fr;
