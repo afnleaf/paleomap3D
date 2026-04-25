@@ -6,16 +6,19 @@ the code that spawns and orbits the sun
 use bevy::{
     color::palettes::css::*,
     pbr::{
-        //CascadeShadowConfigBuilder, 
-        NotShadowCaster, 
+        //CascadeShadowConfigBuilder,
+        Material, NotShadowCaster,
         //NotShadowReceiver
     },
     render::{
         mesh::*,
         //extract_component::{ExtractComponent},
         extract_resource::{ExtractResource},
+        render_resource::{AsBindGroup, ShaderRef},
     },
     prelude::*,
+    asset::Asset,
+    reflect::TypePath,
 };
 use std::f32::consts::PI;
 
@@ -74,11 +77,27 @@ const DAY: f32 = PI / 256.0;
 const LUX: f32 = 3200.0;
 pub const INITIAL_SUN_POSITION: Vec3 = Vec3::new(149_000.0, 0.0, 0.0);
 
+// minimal unlit material for the sun: a single uniform color, fragment
+// shader returns it. swapped in for StandardMaterial because Firefox WebGL2
+// took ~2-3s to link the full PBR shader the first time the sun rotated
+// into the camera frustum.
+#[derive(Asset, AsBindGroup, TypePath, Clone)]
+pub struct SunMaterial {
+    #[uniform(0)]
+    pub color: LinearRgba,
+}
+
+impl Material for SunMaterial {
+    fn fragment_shader() -> ShaderRef {
+        "shaders/sun.wgsl".into()
+    }
+}
+
 // Startup system, create light and sun
 pub fn spawn_sun_geocentrism(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut sun_materials: ResMut<Assets<SunMaterial>>,
 ) {
     // Sun is 149 million km away from earth
     // geocentric model
@@ -113,16 +132,25 @@ pub fn spawn_sun_geocentrism(
     // earth is 6.738
     commands.spawn((
         Mesh3d(meshes.add(Sphere::new(696.34).mesh().uv(32, 18))),
-        MeshMaterial3d(materials.add(StandardMaterial {
-                base_color: WHITE.into(),
-                //emissive: YELLOW.into() * 1.5,// Make it glow
-                emissive: Color::srgb(1.0, 1.0, 0.0).into(),
-                ..default()
-            })),
+        MeshMaterial3d(sun_materials.add(SunMaterial {
+            color: LinearRgba::new(1.0, 1.0, 0.0, 1.0),
+        })),
         NotShadowCaster,
         Transform::from_translation(initial_light_position),
         Star,
         orbit.clone(),
+    ));
+
+    // pre-warm the SunMaterial pipeline at startup. without this the first
+    // shader compile happens the first time the actual sun rotates into the
+    // frustum, which is a small but noticeable hitch on Firefox. tiny sphere
+    // at origin is occluded by the earth cuboids so it's invisible.
+    commands.spawn((
+        Mesh3d(meshes.add(Sphere::new(0.001))),
+        MeshMaterial3d(sun_materials.add(SunMaterial {
+            color: LinearRgba::new(1.0, 1.0, 0.0, 1.0),
+        })),
+        Transform::from_xyz(0.0, 0.0, 0.0),
     ));
     
     // global sun position resource for shader

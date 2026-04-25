@@ -79,6 +79,10 @@ pub fn start_bevy() {
     // our custom render pipeline that enables instanced geometry
     // render_backend detects WebGPU vs WebGL2 and picks the right pipeline
     app.add_plugins(render_backend::RenderBackendPlugin);
+    // tiny unlit material for the sun, kept separate from the earth's
+    // pipeline so the freeze doesn't come back the first time the sun
+    // enters the frustum.
+    app.add_plugins(MaterialPlugin::<sun::SunMaterial>::default());
     
     //web_sys::console::log_1(&"TEST 1".into());
     // add rest
