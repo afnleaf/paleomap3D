@@ -70,18 +70,35 @@ pub struct OrbitState {
 }
 
 impl OrbitState {
-    const DEFAULT_DISTANCE: f32 = 22.0;
-    const DEFAULT_POSITION: Vec3 = Vec3::new(0.0, 0.0, Self::DEFAULT_DISTANCE);
+    const DEFAULT_DISTANCE: f32 = 23.0;
+    // pulled back so the globe still fits when the viewport is taller
+    // than it is wide (phones in portrait). picked by eyeball, tune freely.
+    const PORTRAIT_DISTANCE: f32 = 28.0;
+
+    // viewport-aware spawn/reset distance. read from web_sys (not Bevy's
+    // Window) because at PostStartup with fit_canvas_to_parent, Bevy's
+    // Window still reports WindowPlugin defaults; web_sys has the real dims.
+    fn initial_distance() -> f32 {
+        if let Some(window) = web_sys::window() {
+            let w = window.inner_width().ok().and_then(|v| v.as_f64()).unwrap_or(0.0);
+            let h = window.inner_height().ok().and_then(|v| v.as_f64()).unwrap_or(0.0);
+            if h > w {
+                return Self::PORTRAIT_DISTANCE;
+            }
+        }
+        Self::DEFAULT_DISTANCE
+    }
 }
 
 impl Default for OrbitState {
     fn default() -> Self {
+        let distance = Self::initial_distance();
         OrbitState {
             target: Vec3::ZERO,
-            position: Self::DEFAULT_POSITION,
+            position: Vec3::new(0.0, 0.0, distance),
             up: Vec3::Y,
             rotation_quat: Quat::IDENTITY,
-            distance: Self::DEFAULT_DISTANCE,
+            distance,
             moving: false,
             last_rotation_axis: None,
             last_rotation_angle: 0.0,
@@ -138,8 +155,10 @@ impl Default for OrbitSettings {
 }
 
 pub fn spawn_orbit_camera(mut commands: Commands) {
-    let mut camera = OrbitCameraBundle::default();
-    commands.spawn((camera, NoIndirectDrawing));
+    // viewport-aware distance lives in OrbitState::initial_distance(),
+    // so default() picks the right value. that also means the R-key
+    // reset (*state = OrbitState::default()) gets it without duplication.
+    commands.spawn((OrbitCameraBundle::default(), NoIndirectDrawing));
 }
 
 pub fn orbit_camera_system(
