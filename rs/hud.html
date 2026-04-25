@@ -1,9 +1,40 @@
 <!-- top HUD dock: mirror of .hud-bottom, top-anchored. handle sits at the
      bottom of the sheet so it stays flush with the viewport top edge when
-     the sheet is closed (translated up off-screen). body is empty for now. -->
+     the sheet is closed (translated up off-screen). top-content holds a
+     tab-bar + a carousel of panels; legend is built into panel 0 by hud.js. -->
 <div class="hud-top">
   <div class="sheet sheet-top" id="sheet-top">
-    <div class="top-content" id="top-content"></div>
+    <div class="top-content" id="top-content">
+      <div class="tab-bar" id="tab-bar" role="tablist">
+        <button class="tab-btn active" data-tab="0" role="tab" aria-selected="true">Elevation</button>
+        <button class="tab-btn" data-tab="1" role="tab" aria-selected="false">Info</button>
+        <button class="tab-btn" data-tab="2" role="tab" aria-selected="false">Instructions</button>
+      </div>
+      <!-- viewport clips the carousel; tab-panels is a flex row whose translateX
+           jumps in 100% increments to expose one panel at a time. height of the
+           viewport tracks the active panel's height so the closed sheet retracts
+           by exactly the right offset. -->
+      <div class="tab-viewport" id="tab-viewport">
+        <div class="tab-panels" id="tab-panels">
+          <div class="tab-panel" id="panel-elevation" data-panel="0" role="tabpanel"></div>
+          <!-- info panel: era heading + age subtext, written by hud.js's paintHud
+               on every map index change. placeholder for richer per-era copy. -->
+          <div class="tab-panel" id="panel-info" data-panel="1" role="tabpanel">
+            <h3 class="info-era">Present-day</h3>
+            <p class="info-age">Holocene, 0 Ma</p>
+          </div>
+          <div class="tab-panel" data-panel="2" role="tabpanel">
+            <ul class="instructions-list">
+              <li><b>Drag</b> to rotate the globe</li>
+              <li><b>Pinch</b> or <b>Scroll</b> to zoom</li>
+              <li><b>Slider</b> at the bottom moves through time</li>
+              <li><b>Arrow Keys</b> left (past) and right (present)</li>
+              <li><b>Play</b> animates through eras at the chosen speed</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
     <button class="sheet-handle sheet-handle-top" id="sheet-handle-top" aria-label="Toggle top tray"></button>
   </div>
 </div>

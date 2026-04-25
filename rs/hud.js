@@ -194,13 +194,19 @@ document.addEventListener("DOMContentLoaded", () => {
   const nextBtn      = document.getElementById("next");
   const titleEra     = document.querySelector("#title .title-era");
   const titleAge     = document.querySelector("#title .title-age");
+  const infoEra      = document.querySelector("#panel-info .info-era");
+  const infoAge      = document.querySelector("#panel-info .info-age");
 
   let displayedIdx = 0;
   let dragging = false;
+  // top-tray active tab index. hoisted so paintHud can refresh the viewport
+  // height when the info panel's content (era/age) changes; setActiveTab
+  // (defined further below in the top-sheet block) writes it.
+  let currentTab = 0;
 
   // full HUD paint from just an index (thumb position, arrow disabled
-  // state, title era/age). called on drag, arrow click, and on the
-  // map-changed event from Rust.
+  // state, title era/age, info panel era/age). called on drag, arrow click,
+  // and on the map-changed event from Rust.
   const paintHud = idx => {
     displayedIdx = idx;
     if (thumb)   thumb.style.left = pctFromIdx(idx) + "%";
@@ -209,6 +215,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const [era, age] = MAP_NAMES[idx] || ["", ""];
     if (titleEra) titleEra.textContent = era;
     if (titleAge) titleAge.textContent = "(" + age + ")";
+    if (infoEra) infoEra.textContent = era;
+    if (infoAge) infoAge.textContent = age;
+    // info panel content can change height (era names wrap differently across
+    // indices); when it's the active tab, retune the viewport so the closed
+    // offset stays accurate. tabPanels/tabViewport are declared lower in this
+    // closure but initialized by the time the first map-changed event fires.
+    if (currentTab === 1 && tabPanels && tabViewport) {
+      const active = tabPanels.children[1];
+      if (active) tabViewport.style.height = active.offsetHeight + "px";
+    }
   };
 
   // ask Bevy to move to a given index. we optimistically paint the HUD
@@ -476,10 +492,16 @@ document.addEventListener("DOMContentLoaded", () => {
   // sheet slides up off-screen and the handle ends flush with viewport top.
   // dragOffset is clamped to [closedOffset, 0] and snap tests against
   // closedOffset/2 (which is itself negative).
-  const sheetTop       = document.getElementById("sheet-top");
-  const sheetHandleTop = document.getElementById("sheet-handle-top");
-  const topContent     = document.getElementById("top-content");
-  const hudTop         = document.querySelector(".hud-top");
+  const sheetTop        = document.getElementById("sheet-top");
+  const sheetHandleTop  = document.getElementById("sheet-handle-top");
+  const topContent      = document.getElementById("top-content");
+  const hudTop          = document.querySelector(".hud-top");
+  const panelElevation  = document.getElementById("panel-elevation");
+  const tabBar          = document.getElementById("tab-bar");
+  const tabViewport     = document.getElementById("tab-viewport");
+  const tabPanels       = document.getElementById("tab-panels");
+  const tabBtns         = tabBar ? Array.from(tabBar.querySelectorAll(".tab-btn")) : [];
+  const TAB_COUNT       = tabBtns.length;
 
   let sheetTopClosed = true;
   let dragTopStartY = 0;
@@ -504,9 +526,10 @@ document.addEventListener("DOMContentLoaded", () => {
   if (sheetTop && sheetHandleTop) {
     // populate legend before computing the initial closed offset so the
     // sheet retracts by exactly the legend's measured height. strip + tick
-    // row append as siblings of top-content; both stagger sub-rows are always
-    // rendered, and CSS overlaps them on desktop / stacks them on mobile.
-    if (topContent) {
+    // row append into panel-elevation (the first tab panel); both stagger
+    // sub-rows are always rendered, and CSS overlaps them on desktop / stacks
+    // them on mobile.
+    if (panelElevation) {
       const strip = document.createElement("div");
       strip.className = "legend-strip";
       ELEVATION_BANDS.forEach(color => {
@@ -515,7 +538,7 @@ document.addEventListener("DOMContentLoaded", () => {
         sw.style.background = color;
         strip.appendChild(sw);
       });
-      topContent.appendChild(strip);
+      panelElevation.appendChild(strip);
 
       const tickRow = document.createElement("div");
       tickRow.className = "legend-tick-row";
@@ -534,8 +557,99 @@ document.addEventListener("DOMContentLoaded", () => {
         tick.textContent = label;
         (i % 2 === 0 ? stagA : stagB).appendChild(tick);
       });
-      topContent.appendChild(tickRow);
+      panelElevation.appendChild(tickRow);
     }
+
+    // tab carousel ---------------------------------------------------------- /
+    // tabs change which panel is exposed by translating .tab-panels in 100%
+    // increments. activation paths: click a tab button, or horizontal swipe
+    // inside the viewport. viewport height tracks the active panel so the
+    // closed-sheet offset retracts by exactly the right amount per tab.
+    // currentTab itself is declared at outer scope so paintHud can read it.
+
+    const setActiveTab = idx => {
+      currentTab = Math.max(0, Math.min(TAB_COUNT - 1, idx | 0));
+      if (tabPanels) tabPanels.style.transform = "translateX(" + (-currentTab * 100) + "%)";
+      tabBtns.forEach((b, i) => {
+        b.classList.toggle("active", i === currentTab);
+        b.setAttribute("aria-selected", i === currentTab ? "true" : "false");
+      });
+      const active = tabPanels && tabPanels.children[currentTab];
+      if (active && tabViewport) tabViewport.style.height = active.offsetHeight + "px";
+      // re-snap to the new closed offset so reopening from this tab lands
+      // chrome exactly at viewport edge instead of leaking the previous tab's
+      // height through.
+      if (sheetTopClosed) setSheetTopY(closedOffsetTopPx());
+    };
+
+    tabBtns.forEach((b, i) => b.addEventListener("click", () => setActiveTab(i)));
+
+    // pointer-driven horizontal swipe. axis is locked on the first ~6px of
+    // motion, vertical drags are ignored so they don't fight the sheet handle
+    // (which lives outside the viewport anyway). during the drag we follow
+    // the finger 1:1 by composing the base translateX with the live dx.
+    let swipeActive = false;
+    let swipeStartX = 0;
+    let swipeStartY = 0;
+    let swipeAxis   = null;
+    let swipeDx     = 0;
+
+    if (tabViewport && tabPanels) {
+      tabViewport.addEventListener("pointerdown", e => {
+        if (e.pointerType === "mouse" && e.button !== 0) return;
+        tabViewport.setPointerCapture(e.pointerId);
+        swipeActive = true;
+        swipeStartX = e.clientX;
+        swipeStartY = e.clientY;
+        swipeAxis   = null;
+        swipeDx     = 0;
+      });
+      tabViewport.addEventListener("pointermove", e => {
+        if (!swipeActive) return;
+        const dx = e.clientX - swipeStartX;
+        const dy = e.clientY - swipeStartY;
+        if (swipeAxis === null) {
+          if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+          swipeAxis = Math.abs(dx) > Math.abs(dy) ? "h" : "v";
+          if (swipeAxis === "h") tabPanels.classList.add("dragging");
+        }
+        if (swipeAxis !== "h") return;
+        // elastic resistance past the first/last tab so the user feels the
+        // boundary instead of dragging into empty viewport space.
+        const overshoot = (currentTab === 0 && dx > 0) ||
+                          (currentTab === TAB_COUNT - 1 && dx < 0);
+        swipeDx = overshoot ? dx * 0.25 : dx;
+        tabPanels.style.transform =
+          "translateX(calc(" + (-currentTab * 100) + "% + " + swipeDx + "px))";
+      });
+      const endSwipe = e => {
+        if (!swipeActive) return;
+        swipeActive = false;
+        if (tabViewport.hasPointerCapture(e.pointerId)) {
+          tabViewport.releasePointerCapture(e.pointerId);
+        }
+        tabPanels.classList.remove("dragging");
+        if (swipeAxis !== "h") return;
+        // snap if past 20% of viewport width or 50px, whichever is greater
+        const w = tabViewport.offsetWidth;
+        const threshold = Math.max(50, w * 0.2);
+        let target = currentTab;
+        if (swipeDx < -threshold) target = currentTab + 1;
+        else if (swipeDx > threshold) target = currentTab - 1;
+        setActiveTab(target);
+      };
+      tabViewport.addEventListener("pointerup", endSwipe);
+      tabViewport.addEventListener("pointercancel", endSwipe);
+    }
+
+    // resize: panel content can reflow (legend stagger stack on mobile etc),
+    // so re-measure the active panel on resize so the viewport tracks it.
+    // registered before the sheet's own resize listener so closedOffsetTopPx()
+    // there reads the post-resize topContent height.
+    window.addEventListener("resize", () => {
+      const active = tabPanels && tabPanels.children[currentTab];
+      if (active && tabViewport) tabViewport.style.height = active.offsetHeight + "px";
+    });
 
     sheetHandleTop.addEventListener("pointerdown", e => {
       e.preventDefault();
@@ -576,8 +690,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // start closed without animating in: borrow .dragging to skip the
     // transition for one frame, then drop it so user-initiated snaps animate.
+    // setActiveTab paints transforms + viewport height + (since the sheet is
+    // closed) the closed-offset, all under .dragging so none of it transitions.
     sheetTop.classList.add("dragging");
-    setSheetTopY(closedOffsetTopPx());
+    setActiveTab(0);
     requestAnimationFrame(() => sheetTop.classList.remove("dragging"));
   }
 
