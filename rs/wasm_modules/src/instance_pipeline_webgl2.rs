@@ -46,6 +46,7 @@ use crate::earth::{
     AllMapData,
     InstanceData,
     InstanceMaterialData,
+    ResolutionMode,
 };
 use crate::sun::SunPosition;
 use crate::mapupdate::CurrentMap;
@@ -393,8 +394,16 @@ fn queue_custom(
     map_selection: Option<Res<MapSelectionUniformBuffer>>,
     sun_position: Option<Res<SunPositionUniformBuffer>>,
     existing_bind_group: Option<Res<ElevationBindGroup>>,
+    resolution_mode: Option<Res<ResolutionMode>>,
     mut commands: Commands,
 ) {
+    // skip queueing 1deg cubes when the user is viewing 6min. avoids
+    // z-fighting between 1deg and 6min instances on toggle. the bind group
+    // we already created stays resident, so toggling back to 1deg is free.
+    if let Some(mode) = resolution_mode.as_deref() {
+        if mode.mode != 0 { return; }
+    }
+
     // create bind group with texture view instead of storage buffer
     if let (Some(elevation_texture), Some(map_selection), Some(sun_position)) =
     (elevation_texture, map_selection, sun_position) {

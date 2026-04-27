@@ -13,11 +13,13 @@ use wasm_bindgen::prelude::*;
 use bevy::{
     prelude::*,
     color::palettes::basic::SILVER,
+    render::view::NoFrustumCulling,
     time::{Timer, TimerMode},
 };
 use bevy_embedded_assets::{EmbeddedAssetPlugin, EmbeddedAssetReader, PluginMode};
 
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::sync::atomic::Ordering;
 
 use crate::mapupdate::KeyRepeatTimer;
@@ -31,6 +33,7 @@ mod mapupdate;
 
 mod instance_pipeline_webgpu;
 mod instance_pipeline_webgl2;
+mod instance_pipeline_6min_webgl2;
 mod render_backend;
 
 
@@ -113,6 +116,10 @@ pub fn start_bevy() {
     app.add_plugins(bevy::diagnostic::FrameTimeDiagnosticsPlugin::default());
     //web_sys::console::log_1(&"TEST 3".into());
     app.init_resource::<crate::mapupdate::CurrentMap>();
+    // ResolutionMode starts at 0 (1deg). poll_resolution_change rewrites it
+    // when the JS toggle button fires; queue_custom (1deg) early-returns
+    // when mode != 0; the 6min pipeline gates its upload + queue on mode == 1.
+    app.init_resource::<earth::ResolutionMode>();
     
     app.add_systems(Startup,(
         sun::spawn_sun_geocentrism,
@@ -189,34 +196,68 @@ fn kick_off_6min_decode() {
 }
 
 // update: every frame, take ownership of any decoded buffer the JS listener
-// has stashed in BIG6MIN_RAW. when present, install as a Big6minData
-// resource and tell hud.js to reveal the toggle button. cheap no-op every
-// other frame (lock + take of an empty Option).
-fn poll_big6min_decoded(mut commands: Commands) {
+// has stashed in BIG6MIN_RAW. when present, install Big6minData (Arc-wrapped
+// so render-world extract is a refcount bump, not a 1.41 GB clone), build
+// the lat LUT, spawn the 6min mesh entity, and tell hud.js to reveal the
+// toggle button. cheap no-op every other frame (lock + take of an empty
+// Option).
+fn poll_big6min_decoded(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+) {
     let bytes = match dom::BIG6MIN_RAW.lock() {
         Ok(mut guard) => guard.take(),
         Err(_) => return,
     };
     if let Some(bytes) = bytes {
         let len = bytes.len();
-        commands.insert_resource(earth::Big6minData { bytes });
+        commands.insert_resource(earth::Big6minData {
+            bytes: Arc::new(bytes),
+        });
+
+        let lut = earth::build_lat_lut(
+            earth::BASE_SCALE_6MIN,
+            earth::MIN_LON_SCALE_6MIN,
+        );
         web_sys::console::log_2(
-            &"paleomap3d: 6min decoded, Big6minData inserted, bytes =".into(),
+            &"paleomap3d: 6min LUT built, rows =".into(),
+            &JsValue::from(lut.len() as u32),
+        );
+        commands.insert_resource(earth::LatLutData { rows: lut });
+
+        // 6min entity: same prism mesh as 1deg, but no instance buffer.
+        // shader derives (i, j) from @builtin(instance_index). NoFrustumCulling
+        // because the base mesh sits at the origin while the shader scatters
+        // 6.5M instances across the sphere - bevy can't see them.
+        commands.spawn((
+            Mesh3d(meshes.add(Cuboid::new(1.0, 5.0, 1.0))),
+            earth::Earth6min,
+            NoFrustumCulling,
+        ));
+
+        web_sys::console::log_2(
+            &"paleomap3d: 6min entity spawned, Big6minData inserted, bytes =".into(),
             &JsValue::from(len as u32),
         );
         dom::notify_6min_ready();
     }
 }
 
-// update: read+clear the resolution-toggle atomic. data swap is not yet
-// wired; for now we just log so the bridge is observable end-to-end.
-fn poll_resolution_change() {
+// update: read+clear the resolution-toggle atomic and promote any pending
+// change to the ResolutionMode resource. Extracted into the render world
+// each frame; queue_custom (1deg) early-returns on mode != 0 and the 6min
+// pipeline gates upload + queue on mode == 1.
+fn poll_resolution_change(mut resolution: ResMut<earth::ResolutionMode>) {
     let mode = dom::DOM_RESOLUTION_MODE.swap(-1, Ordering::Relaxed);
     if mode < 0 { return; }
+    let new_mode = mode.clamp(0, 1) as u8;
     web_sys::console::log_2(
         &"paleomap3d: resolution change consumed, mode =".into(),
-        &JsValue::from(mode),
+        &JsValue::from(new_mode as i32),
     );
+    if resolution.mode != new_mode {
+        resolution.mode = new_mode;
+    }
 }
 
 fn ground_plane(

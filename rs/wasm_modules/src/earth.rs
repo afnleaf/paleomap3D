@@ -8,6 +8,7 @@ create static instance geometry
 
 
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use bevy::{
     prelude::*,
@@ -18,7 +19,7 @@ use bevy::{
         extract_resource::ExtractResource,
         extract_component::ExtractComponent,
         view::{
-            NoFrustumCulling, 
+            NoFrustumCulling,
         },
     },
 };
@@ -72,9 +73,75 @@ pub fn load_elevation_buffers(mut commands: Commands) {
 // 6,485,401 elevations per map, ~12.97 MB raw, ~1.41 GB total). kept as
 // Vec<u8> because R16Sint texture upload wants raw LE i16 bytes anyway, no
 // need to widen on the cpu side.
-#[derive(Resource, Clone)]
+// Arc so ExtractResource clone is a refcount bump, not a 1.41 GB memcpy.
+#[derive(Resource, Clone, ExtractResource)]
 pub struct Big6minData {
-    pub bytes: Vec<u8>,
+    pub bytes: Arc<Vec<u8>>,
+}
+
+// markers for the two earth entities.
+// Earth1deg is documentation-only; the 1deg pipeline still queries by
+// InstanceMaterialData. Earth6min is the queue handle for the 6min pipeline,
+// extracted into the render world via ExtractComponent.
+#[derive(Component, Clone, Copy)]
+pub struct Earth1deg;
+
+#[derive(Component, Clone, Copy)]
+pub struct Earth6min;
+
+impl ExtractComponent for Earth6min {
+    type QueryData = &'static Earth6min;
+    type QueryFilter = ();
+    type Out = Self;
+
+    fn extract_component(_item: QueryItem<'_, Self::QueryData>) -> Option<Self> {
+        Some(Earth6min)
+    }
+}
+
+// 1801-row LUT, each entry [sin_lat, cos_lat, lon_scale, _].
+// uploaded once into a 1801x1 RGBA32F texture. shader reads via
+// textureLoad(lat_lut, vec2<i32>(i, 0), 0).
+#[derive(Resource, Clone, ExtractResource)]
+pub struct LatLutData {
+    pub rows: Vec<[f32; 4]>,
+}
+
+// 0 = 1deg path, 1 = 6min path. driven by the JS toggle button via
+// poll_resolution_change in lib.rs.
+#[derive(Resource, Clone, Default, ExtractResource)]
+pub struct ResolutionMode {
+    pub mode: u8,
+}
+
+// 6min cube sizing: lon_scale ~ 0.012 to 0.016 covers the 6-minute grid step
+// at the equator (~0.011 world units between cells). matches 1deg path's
+// 0.16 base by being exactly 1/10. tuning value, adjust if cubes overlap or
+// gap.
+pub const BASE_SCALE_6MIN: f32 = 0.016;
+pub const MIN_LON_SCALE_6MIN: f32 = 0.75;
+pub const LAT_ROWS_6MIN: usize = 1801;
+pub const LON_COLS_6MIN: usize = 3601;
+
+// build the lat LUT once when Big6minData arrives. mirrors the 1deg
+// CPU-side scale formula (cos(lat) shrunk longitudinally toward poles, with
+// a min_lon_scale floor so polar cells don't collapse to a sliver).
+// 6min data row 0 is the north pole (lat=+90), so i=0 maps to +pi/2 and
+// i=1800 maps to -pi/2 - opposite direction from the 1deg CPU code.
+pub fn build_lat_lut(base_scale: f32, min_lon_scale: f32) -> Vec<[f32; 4]> {
+    let pi = std::f64::consts::PI;
+    let h = LAT_ROWS_6MIN;
+    let mut rows = Vec::with_capacity(h);
+    for i in 0..h {
+        let lat_rad = pi / 2.0 - i as f64 * pi / (h as f64 - 1.0);
+        let sin_lat = lat_rad.sin() as f32;
+        let cos_lat = lat_rad.cos() as f32;
+        let lat_scale = cos_lat.abs();
+        let lon_scale =
+            base_scale * (min_lon_scale + (1.0 - min_lon_scale) * lat_scale);
+        rows.push([sin_lat, cos_lat, lon_scale, 0.0]);
+    }
+    rows
 }
 
 // returns empty vec on failure
@@ -266,6 +333,7 @@ pub fn setup_instance_geometries(
         //Mesh3d(meshes.add(Tetrahedron::default())),
         InstanceMaterialData(instance_data),
         NoFrustumCulling,
+        Earth1deg,
     ));
 }
 

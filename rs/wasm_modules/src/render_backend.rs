@@ -22,6 +22,7 @@ use bevy::{
 
 use crate::instance_pipeline_webgpu;
 use crate::instance_pipeline_webgl2;
+use crate::instance_pipeline_6min_webgl2;
 
 pub struct RenderBackendPlugin;
 
@@ -44,10 +45,15 @@ impl Plugin for RenderBackendPlugin {
             println!("Render backend: WebGPU (storage buffers)");
             instance_pipeline_webgpu::CustomMaterialPlugin.build(app);
             instance_pipeline_webgpu::CustomMaterialPlugin.finish(app);
+            // 6min path is WebGL2-only for now (the texture-LUT design
+            // depends on the texture-fallback bind layout). WebGPU stays
+            // 1deg-only this pass.
         } else {
             println!("Render backend: WebGL2 (texture fallback)");
             instance_pipeline_webgl2::CustomMaterialPlugin.build(app);
             instance_pipeline_webgl2::CustomMaterialPlugin.finish(app);
+            instance_pipeline_6min_webgl2::CustomMaterialPlugin.build(app);
+            instance_pipeline_6min_webgl2::CustomMaterialPlugin.finish(app);
         }
     }
 }
