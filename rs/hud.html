@@ -1,3 +1,10 @@
+<!-- resolution toggle: floating fixed-position button outside the sheets.
+     hidden at boot; revealed once Rust dispatches paleomap3d:6min-ready
+     after the worker finishes decoding big6min.br. style intentionally
+     minimal, placement and visuals will move once the data path is in. -->
+<button id="resolution-toggle" style="display:none;position:fixed;top:10px;right:10px;z-index:200;padding:8px 14px;background:#222;color:#eee;border:1px solid #555;border-radius:4px;cursor:pointer;font:inherit;pointer-events:auto;">1deg</button>
+
+
 <!-- top HUD dock: mirror of .hud-bottom, top-anchored. handle sits at the
      bottom of the sheet so it stays flush with the viewport top edge when
      the sheet is closed (translated up off-screen). top-content holds a

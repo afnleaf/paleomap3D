@@ -24,4 +24,10 @@ Cargo.lock
 
 /target
 
+# Pipeline outputs - keep raw/compressed elevation data out of git.
+/*.br
+/*.bin
+/*.7z
+/output/
+/output_name/
 

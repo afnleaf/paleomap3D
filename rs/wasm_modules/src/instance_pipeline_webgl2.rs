@@ -165,14 +165,13 @@ fn prepare_instance_buffers(
             let total_pixels = TEXTURE_WIDTH * texture_height;
 
             println!(
-                "Creating elevation texture {}x{} for {} maps ({} total points)",
-                TEXTURE_WIDTH, texture_height, all_maps.maps.len(), total_points
+                "Creating elevation texture {}x{} ({} total points)",
+                TEXTURE_WIDTH, texture_height, total_points
             );
 
-            // flatten all elevation data to f32 and pad to fill texture
-            let mut elevation_f32: Vec<f32> = all_maps.maps
+            // widen the flat i32 buffer to f32 and pad to fill texture
+            let mut elevation_f32: Vec<f32> = all_maps.buffer
                 .iter()
-                .flat_map(|map| &map.buffer)
                 .map(|&v| v as f32)
                 .collect();
             // pad remainder of last row with zeros

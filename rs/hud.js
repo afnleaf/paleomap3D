@@ -697,6 +697,131 @@ document.addEventListener("DOMContentLoaded", () => {
     requestAnimationFrame(() => sheetTop.classList.remove("dragging"));
   }
 
+  // resolution toggle ----------------------------------------------------- /
+  // 0 = 1deg (default, all 109 maps in one texture), 1 = 6min (per-map
+  // streaming, decoded once at app boot then sliced to GPU on map change).
+  // Rust receives via "paleomap3d:set-resolution" and stashes in an atomic.
+  // button starts hidden (display:none in hud.html) and is revealed by the
+  // paleomap3d:6min-ready handler below once the worker finishes decoding.
+  const resolutionBtn = document.getElementById("resolution-toggle");
+  let resolutionMode = 0;
+  const RES_LABELS = ["1deg", "6min"];
+  if (resolutionBtn) {
+    resolutionBtn.addEventListener("click", () => {
+      resolutionMode = resolutionMode === 0 ? 1 : 0;
+      resolutionBtn.textContent = RES_LABELS[resolutionMode];
+      window.dispatchEvent(new CustomEvent("paleomap3d:set-resolution", {
+        detail: resolutionMode,
+      }));
+    });
+  }
+
+  // 6min decoder worker --------------------------------------------------- /
+  // Rust dispatches paleomap3d:start-decode at startup with the embedded
+  // big6min.br bytes (~118 MB) as detail. we offload the decode to a Worker
+  // by spinning up another instance of OUR OWN wasm_modules binary inside
+  // the worker and calling its exported brotli_decode. wasm_modules's
+  // start() bails when window is None (worker context), so no Bevy code
+  // runs over there; the worker only ever calls brotli_decode and idles.
+  //
+  // bootstrap shopping list:
+  //   1. raw wasm_modules WASM bytes - extracted from the histos
+  //      <pre id="bin-wasm-app">. brotli-compressed + base64 in there;
+  //      we use main-thread wasm_bindgen.brotli_decode to inflate it.
+  //   2. wasm-bindgen JS shim source - the inline <script> with the global
+  //      function and __wbg_init. found by searching script bodies.
+  //   3. worker glue - a tiny onmessage handler that calls into the shim.
+  // shim source + glue go into a Blob URL, new Worker(blobURL), then we
+  // postMessage wasmBytes (init) and then compressed (decode work).
+  async function getWasmModulesBytes() {
+    const preEl = document.getElementById("bin-wasm-app");
+    if (!preEl) throw new Error("could not find <pre id=bin-wasm-app>");
+    const base64 = preEl.textContent.trim();
+    const binStr = atob(base64);
+    const compressed = new Uint8Array(binStr.length);
+    for (let i = 0; i < binStr.length; i++) compressed[i] = binStr.charCodeAt(i);
+    // wasm_bindgen here is the global from wasm-pack --target no-modules.
+    return wasm_bindgen.brotli_decode(compressed);
+  }
+  function findWasmShimSource() {
+    // marker has to be unique to the wasm_modules shim. hud.js itself
+    // contains "__wbg_init" and "__wbindgen_start" as string literals
+    // (this very comment notwithstanding) because it greps for them, and
+    // hud.js comes before the shim in document order. histos's bundled
+    // wasm_decoder.js also has __wbg_init but uses `wasm_decoder = Object.assign`,
+    // so anchoring on the wasm_modules-specific assignment works.
+    const marker = "wasm_bindgen" + " = Object.assign";
+    for (const s of document.scripts) {
+      if (s.textContent.includes(marker)) return s.textContent;
+    }
+    throw new Error("could not find wasm-bindgen shim script");
+  }
+  const decoderWorkerGlue = `
+let initialized = false;
+let pending = null;
+self.onmessage = async (e) => {
+  try {
+    if (e.data.wasmBytes) {
+      await wasm_bindgen(e.data.wasmBytes);
+      initialized = true;
+      if (pending) {
+        const c = pending; pending = null;
+        const out = wasm_bindgen.brotli_decode(c);
+        self.postMessage({ decoded: out }, [out.buffer]);
+      }
+      return;
+    }
+    if (e.data.compressed) {
+      if (!initialized) { pending = e.data.compressed; return; }
+      const out = wasm_bindgen.brotli_decode(e.data.compressed);
+      self.postMessage({ decoded: out }, [out.buffer]);
+    }
+  } catch (err) {
+    self.postMessage({ error: err && err.message ? err.message : String(err) });
+  }
+};
+`;
+  let decoderWorker = null;
+  window.addEventListener("paleomap3d:start-decode", async e => {
+    const compressed = e.detail;
+    if (!compressed) return;
+    if (decoderWorker) decoderWorker.terminate();
+
+    let wasmBytes, shimSource;
+    try {
+      wasmBytes = await getWasmModulesBytes();
+      shimSource = findWasmShimSource();
+    } catch (err) {
+      console.error("paleomap3d: worker bootstrap failed:", err.message);
+      return;
+    }
+
+    const blob = new Blob([shimSource + "\n" + decoderWorkerGlue], {
+      type: "application/javascript",
+    });
+    decoderWorker = new Worker(URL.createObjectURL(blob));
+    decoderWorker.onmessage = msg => {
+      if (msg.data && msg.data.error) {
+        console.error("paleomap3d: decoder worker failed:", msg.data.error);
+        return;
+      }
+      window.dispatchEvent(new CustomEvent("paleomap3d:big6min-decoded", {
+        detail: msg.data.decoded,
+      }));
+    };
+    decoderWorker.onerror = err => {
+      console.error("paleomap3d: decoder worker error:", err.message || err);
+    };
+
+    decoderWorker.postMessage({ wasmBytes }, [wasmBytes.buffer]);
+    decoderWorker.postMessage({ compressed }, [compressed.buffer]);
+  });
+
+  // reveal the toggle button once 6min is loaded into a Bevy resource.
+  window.addEventListener("paleomap3d:6min-ready", () => {
+    if (resolutionBtn) resolutionBtn.style.display = "";
+  });
+
   // repaint when Bevy (or Rust-side keyboard handler) says CurrentMap changed.
   // first firing doubles as the "wasm is ready" signal: wasm init calls
   // notify_map_changed(0) right after installing its set-speed listener, so

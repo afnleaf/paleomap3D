@@ -15,7 +15,10 @@ use bevy::{
     color::palettes::basic::SILVER,
     time::{Timer, TimerMode},
 };
-use bevy_embedded_assets::{EmbeddedAssetPlugin, PluginMode};
+use bevy_embedded_assets::{EmbeddedAssetPlugin, EmbeddedAssetReader, PluginMode};
+
+use std::path::PathBuf;
+use std::sync::atomic::Ordering;
 
 use crate::mapupdate::KeyRepeatTimer;
 
@@ -39,9 +42,12 @@ mod render_backend;
 // entry point for WASM
 #[wasm_bindgen(start)]
 pub fn start() {
-    // panic hook = better error messages
+    // panic hook helps in both main and worker contexts
     console_error_panic_hook::set_once();
-    // log start point
+    // the offload decoder worker (hud.js) instantiates this same binary so
+    // it can call brotli_decode below. workers have no window, bail before
+    // any DOM-touching setup.
+    if web_sys::window().is_none() { return; }
     web_sys::console::log_1(&"Starting Bevy WASM application".into());
     // create canvas and add to document
     dom::create_canvas().expect("Failed to create canvas");
@@ -50,6 +56,20 @@ pub fn start() {
     //todo!();
     // start app
     start_bevy();
+}
+
+// exposed so the offload worker (spawned by hud.js) can decompress brotli
+// on a separate browser thread. touches no globals or DOM, safe in any
+// context.
+#[wasm_bindgen]
+pub fn brotli_decode(input: &[u8]) -> Vec<u8> {
+    let mut decoder = brotli::Decompressor::new(
+        std::io::Cursor::new(input),
+        4096,
+    );
+    let mut output = Vec::new();
+    let _ = std::io::Read::read_to_end(&mut decoder, &mut output);
+    output
 }
 
 pub fn start_bevy() {
@@ -101,6 +121,7 @@ pub fn start_bevy() {
             earth::setup_instance_geometries,
         ).chain(),
         initial_setup,
+        kick_off_6min_decode,
     ).chain());
 
     //web_sys::console::log_1(&"TEST 4".into());
@@ -119,6 +140,8 @@ pub fn start_bevy() {
                     mapupdate::map_update_system,
                     mapupdate::update_map_text_display,
                 ).chain(),
+                poll_big6min_decoded,
+                poll_resolution_change,
             ),
         );
     //web_sys::console::log_1(&"TEST 6".into());
@@ -136,10 +159,64 @@ fn initial_setup(
     // ground -----------------------------------------------------------------
     //ground_plane(&mut commands, &mut meshes, &mut materials);
     //sphere(&mut commands, &mut meshes, &mut materials);
-    
+
     //sun::ambient_light(&mut commands);
     //tools::fps_widget(&mut commands);
     //mapupdate::current_map_widget(&mut commands);
+}
+
+// startup: hand the embedded big6min.br bytes to hud.js so a Worker can
+// brotli-decompress them off the main thread. fires once at boot. the
+// decoded bytes come back via the BIG6MIN_RAW Mutex (paleomap3d:big6min-decoded
+// JS->Rust event) and are picked up by poll_big6min_decoded below.
+fn kick_off_6min_decode() {
+    let embedded = EmbeddedAssetReader::preloaded();
+    match embedded.load_path_sync(&PathBuf::from("big6min.br")) {
+        Ok(reader) => {
+            web_sys::console::log_2(
+                &"paleomap3d: kicking off 6min decode, compressed bytes =".into(),
+                &JsValue::from(reader.0.len() as u32),
+            );
+            dom::notify_start_decode(reader.0);
+        }
+        Err(err) => {
+            web_sys::console::log_2(
+                &"paleomap3d: failed to load big6min.br".into(),
+                &JsValue::from_str(&format!("{:?}", err)),
+            );
+        }
+    }
+}
+
+// update: every frame, take ownership of any decoded buffer the JS listener
+// has stashed in BIG6MIN_RAW. when present, install as a Big6minData
+// resource and tell hud.js to reveal the toggle button. cheap no-op every
+// other frame (lock + take of an empty Option).
+fn poll_big6min_decoded(mut commands: Commands) {
+    let bytes = match dom::BIG6MIN_RAW.lock() {
+        Ok(mut guard) => guard.take(),
+        Err(_) => return,
+    };
+    if let Some(bytes) = bytes {
+        let len = bytes.len();
+        commands.insert_resource(earth::Big6minData { bytes });
+        web_sys::console::log_2(
+            &"paleomap3d: 6min decoded, Big6minData inserted, bytes =".into(),
+            &JsValue::from(len as u32),
+        );
+        dom::notify_6min_ready();
+    }
+}
+
+// update: read+clear the resolution-toggle atomic. data swap is not yet
+// wired; for now we just log so the bridge is observable end-to-end.
+fn poll_resolution_change() {
+    let mode = dom::DOM_RESOLUTION_MODE.swap(-1, Ordering::Relaxed);
+    if mode < 0 { return; }
+    web_sys::console::log_2(
+        &"paleomap3d: resolution change consumed, mode =".into(),
+        &JsValue::from(mode),
+    );
 }
 
 fn ground_plane(

@@ -179,20 +179,14 @@ fn prepare_instance_buffers(
         });
     }
 
-    // flatten storage buffer
+    // upload storage buffer (already flat from big1deg.br)
     if let Some(all_maps) = all_maps {
         if existing_elevation.is_none() {
-            println!("Creating elevation storage buffer with {} maps", all_maps.maps.len());
-            let all_elevations: Vec<i32> = all_maps.maps
-                .iter()
-                .flat_map(|map| &map.buffer)
-                .copied()
-                .collect();
-            println!("Total elevation points: {}", all_elevations.len());
+            println!("Total elevation points: {}", all_maps.buffer.len());
             let elevation_buffer =
             render_device.create_buffer_with_data(&BufferInitDescriptor {
                 label: Some("elevation storage buffer"),
-                contents: bytemuck::cast_slice(&all_elevations),
+                contents: bytemuck::cast_slice(&all_maps.buffer),
                 usage: BufferUsages::STORAGE,
             });
             commands.insert_resource(ElevationStorageBuffer {

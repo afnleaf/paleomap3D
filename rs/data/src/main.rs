@@ -13,6 +13,9 @@
 * outer for 0 to 181 
 * inner for 0 to 361
 *
+* ok update, we will flatten to one big brotli file rather than 109 little
+* ones that then get combined in the actual program.
+*
 */
 
 #![allow(unused_variables)]
@@ -20,17 +23,24 @@
 
 use std::fs;
 use std::path::PathBuf;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::time::Instant;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let dir = PathBuf::from("../../data_raw/netcdf_1");
+    let dir = PathBuf::from("../../data_raw/deg06");
 
-    let file_names: Vec<String> = fs::read_dir(dir)?
+    let mut file_names: Vec<String> = fs::read_dir(dir)?
         .filter_map(|f| f.ok())
         .filter(|f| f.path().is_file())
         .filter_map(|f| f.file_name().into_string().ok())
         .filter(|f| f.ends_with(".nc"))
         .collect();
-    
+    file_names.sort();
+
+    // big flat data
+    let mut big = Vec::new();
+    // loop through each file we have
     for (count, map_file) in file_names.iter().enumerate() {
         println!("{}: {}", count, map_file);
         let u = map_file
@@ -39,18 +49,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .filter(|(_, c)| *c == '_')
             .map(|(i, _)| i)
             .collect::<Vec<_>>();
-        //println!("{:?}", u);
+        println!("{:?}", u);
         let s = &map_file[u[2]+1..map_file.len()-3];
         let f1 = &s.replace(" ", "_");
         let f2 = &s.replace("_", " ");
-        //println!("{}", f2);
+        println!("{}", f2);
         //let new_file_name = PathBuf::from(format!("{}_{}", count+1, f1));
-        let new_file_name = PathBuf::from(format!("{}", count+1));
-        println!("{:?}", &new_file_name);
-
-        main2(map_file, new_file_name)?;
+        //let new_file_name = PathBuf::from(format!("{}", count+1));
+        //println!("processing: {:?}", &new_file_name);
+        println!("processing: {:?}", &map_file);
+        let fp = PathBuf::from(format!("../../data_raw/deg06/{}", map_file));
+        let file = netcdf::open(fp).unwrap();
+        //print_file_content(&file);
+        let (data, height, width) = get_data(&file).unwrap();
+        // then concat in memory
+        big.extend(data);
+        //main2(map_file, new_file_name)?;
     }
-    
+
+    // now compress
+    compress_and_write(&PathBuf::from("big6min"), &big).unwrap();
+
     Ok(())
 }
 
@@ -105,25 +124,41 @@ fn get_data(
 fn compress_and_write(
     path: &PathBuf,
     data: &Vec<i16>,
-) -> Result<(), Box<dyn std::error::Error>>{
+) -> Result<(), Box<dyn std::error::Error>> {
+    let n_in = data.len() * 2;
     let mut compressed_buffer = Vec::new();
     let bytes: Vec<u8> = data.iter()
         .flat_map(|&x| x.to_le_bytes())
         .collect();
-    let mut input = std::io::Cursor::new(bytes);
+    let counter = Arc::new(AtomicUsize::new(0));
+    let mut input = CountingRead {
+        inner: std::io::Cursor::new(bytes),
+        counter: counter.clone(),
+    };
 
-    brotli::BrotliCompress(
-        &mut input,
-        &mut compressed_buffer,
-        &brotli::enc::BrotliEncoderParams {
-            quality: 11,
-            lgwin: 22,
-            ..Default::default()
-        }
-    ).unwrap();
-    println!("brotli compressed.");
+    let t0 = Instant::now();
+    with_progress(
+        &format!("compressing {:?} + brotli q11", path),
+        n_in,
+        counter,
+        || {
+            brotli::BrotliCompress(
+                &mut input,
+                &mut compressed_buffer,
+                &brotli::enc::BrotliEncoderParams {
+                    quality: 11,
+                    lgwin: 24,
+                    ..Default::default()
+                }
+            ).unwrap();
+        },
+    );
+    println!("compressed: {} bytes ({:.1} MiB) in {:.1}s",
+             compressed_buffer.len(),
+             compressed_buffer.len() as f64 / 1048576.0,
+             t0.elapsed().as_secs_f64());
 
-    let mut out_file = std::fs::File::create(format!("./output/{}.br", path.display())).unwrap();
+    let mut out_file = std::fs::File::create(format!("./{}.br", path.display())).unwrap();
     std::io::Write::write_all(&mut out_file, &mut compressed_buffer).unwrap();
     println!("file out");
 
@@ -212,6 +247,58 @@ fn print_file_content(file: &netcdf::File) {
         }
     }
 
+}
+
+// wraps a Read so we can watch how much brotli has pulled in from the main thread
+struct CountingRead<R: std::io::Read> {
+    inner: R,
+    counter: Arc<AtomicUsize>,
+}
+
+impl<R: std::io::Read> std::io::Read for CountingRead<R> {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        let n = self.inner.read(buf)?;
+        self.counter.fetch_add(n, Ordering::Relaxed);
+        Ok(n)
+    }
+}
+
+// run f() while a ticker thread renders "XX.X% (n.n / n.n MiB)" in place using \r,
+// driven by `counter` which the wrapped reader bumps as brotli pulls bytes.
+// caveat: this is input-consumed, not output-emitted. brotli reads ahead and may
+// sit at ~100% while it finalizes the last block.
+fn with_progress<F, R>(label: &str, total: usize, counter: Arc<AtomicUsize>, f: F) -> R
+where
+    F: FnOnce() -> R,
+{
+    use std::io::Write;
+    use std::thread;
+    use std::time::Duration;
+
+    let stop = Arc::new(AtomicBool::new(false));
+    let stop_t = stop.clone();
+    let counter_t = counter.clone();
+    let label_owned = label.to_string();
+    let total_mib = total as f64 / 1048576.0;
+
+    let handle = thread::spawn(move || {
+        loop {
+            if stop_t.load(Ordering::Relaxed) { break; }
+            let read = counter_t.load(Ordering::Relaxed);
+            let pct = ((read as f64) / (total as f64) * 100.0).min(100.0);
+            let mib = read as f64 / 1048576.0;
+            print!("\r{}  {:5.1}% ({:6.1} / {:6.1} MiB)", label_owned, pct, mib, total_mib);
+            std::io::stdout().flush().ok();
+            thread::sleep(Duration::from_millis(250));
+        }
+    });
+    let r = f();
+    stop.store(true, Ordering::Relaxed);
+    handle.join().ok();
+    // wipe the in-place progress line so the caller's println starts fresh
+    print!("\r{}\r", " ".repeat(120));
+    std::io::stdout().flush().ok();
+    r
 }
 
 fn check_file(

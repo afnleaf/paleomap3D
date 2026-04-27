@@ -4,5 +4,5 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-netcdf = { version= "0.11.0", features = ["ndarray"]}
+netcdf = { version= "0.12.0", features = ["ndarray", "static"]}
 brotli = "7.0.0"

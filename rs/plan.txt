@@ -1,0 +1,417 @@
+plan.txt: 6min render path via LUT precompute
+==============================================
+
+scope
+-----
+- new shader for 6min mode. 1deg shader (instancing_webgl2.wgsl)
+  stays untouched.
+- WebGL2 only. WebGPU path not in scope.
+- end-to-end: data transformation, render-pipeline wiring, and the
+  resolution toggle. enough to actually see 6min on screen and toggle
+  back to 1deg.
+
+
+the problem we are solving
+--------------------------
+the 1deg path pre-computes per-instance position/scale/rotation on
+the CPU into an InstanceData buffer (80 B/instance). at 6min that
+buffer would be:
+
+  1801 lat rows * 3601 lon cols * 80 B = 519 MB CPU vec
+  + 519 MB extracted clone in render world (ExtractComponent)
+  + 519 MB GPU buffer
+
+total ~1.56 GB just for instance geometry, before elevation
+(another 1.41 GB for Big6minData raw). wasm32 caps at 4 GiB linear
+memory. too tight.
+
+
+the decision
+------------
+drop the per-instance geometry buffer entirely for 6min mode.
+
+derive (i, j) in the vertex shader from @builtin(instance_index):
+  i = instance_index / 3601
+  j = instance_index % 3601
+
+the j (longitude) trig stays per-vertex.
+the i (latitude) trig moves into a tiny precomputed LUT, since lat
+is constant across all 3601 columns of a row.
+
+memory budget for 6min, after this change:
+  instance buffer:  0 B           (was 519 MB)
+  lat LUT:          ~29 KB        (new)
+  active elevation: ~13 MB GPU    (3601x1801 R16Sint, one map)
+  upload scratch:   ~13.4 MB CPU  (heap, allocated once, reused)
+  Big6minData:      1.41 GB CPU   (already on heap, unchanged)
+
+
+data shapes
+-----------
+
+1) lat LUT  (built once when big6min decode finishes, uploaded once)
+
+  GPU shape: texture_2d<f32>, 1801 wide x 1 tall, RGBA32F.
+  per-row vec4 layout in shader:
+      .r = sin_lat
+      .g = cos_lat
+      .b = lon_scale  (base_scale * (min_lon_scale + ...))
+      .a = unused
+
+  size:  1801 * 16 B = 28,816 B  (~29 KB)
+
+  build: helper fn in earth.rs, single pass over i in 0..1801:
+    lat_rad   = -PI/2 + i * PI / 1800
+    sin_lat   = sin(lat_rad)
+    cos_lat   = cos(lat_rad)
+    lat_scale = abs(cos_lat)
+    lon_scale = base_scale * (min_lon_scale
+                              + (1 - min_lon_scale) * lat_scale)
+
+  trigger: same system that inserts Big6minData. once we have the
+  decompressed bytes, build the LUT, spawn the 6min entity, hand
+  the LUT to the render world. never rebuilt.
+
+  base_scale and min_lon_scale are 6min-specific constants baked
+  into the LUT at build time; not duplicated in the shader.
+
+
+2) active elevation texture  (re-uploaded on map change)
+
+  source: Big6minData.bytes is laid out as 109 maps of
+          1801 * 3601 i16 LE, contiguous, no padding.
+          per-map slice size: 1801 * 3601 * 2 B = 12,970,802 B.
+
+  GPU shape: R16Sint 2D texture, NATURAL dimensions.
+
+    width  = 3601 (lon)
+    height = 1801 (lat)
+    format = R16Sint
+    GPU size = 3601 * 1801 * 2 B = 12,970,802 B (~12.97 MB)
+
+  why R16Sint:
+    - source is already i16 LE. no widen on CPU side.
+    - WebGL2 supports R16I textures via WebGL 2.0 core (texelFetch
+      returns ivec4). naga compiles texture_2d<i32> to this.
+    - half the size of R32Float used by the 1deg path.
+
+  the alignment constraint, narrowly:
+    wgpu requires TexelCopyBufferLayout.bytes_per_row to be a
+    multiple of 256. that constraint applies to the SOURCE BUFFER
+    stride only. it does NOT apply to Extent3d.width. the texture
+    can be 3601 wide; only the source rows must be padded.
+
+    natural source row    = 3601 * 2 B = 7202 B   (NOT 256-aligned)
+    padded source row     = 7424 B                 (next 256 multiple)
+    padding per row       = 222 B                  (skipped by upload)
+
+    write_texture consumes 7202 B of useful data per row from the
+    source (because Extent3d.width = 3601, format = R16Sint = 2 B),
+    then jumps bytes_per_row = 7424 B to land on the next row.
+
+  CPU-side scratch buffer (allocated once at 6min-entity spawn,
+  reused for every map change):
+
+    scratch_size = 1801 * 7424 = 13,376,224 B (~13.4 MB)
+    layout per row: 7202 B of map data, then 222 B left as zero
+
+  per-map-change copy:
+    let map_off = active_map_id * 12_970_802;
+    for i in 0..1801 {
+        let dst = i * 7424;
+        let src = map_off + i * 7202;
+        scratch[dst .. dst + 7202]
+            .copy_from_slice(&big6min_bytes[src .. src + 7202]);
+    }
+    write_texture(scratch, bytes_per_row = 7424, size = 3601x1801);
+
+    1801 memcpys of 7202 B each = ~13 MB total moved per map change.
+    same byte volume as a single contiguous copy. perf-neutral.
+
+  index math in shader (clean, no div/mod for elevation lookup):
+    let elev = textureLoad(active_elev,
+                           vec2<i32>(i32(j), i32(i)), 0).r;
+
+  trigger for re-upload:
+    happens only when (resolution == 6min) AND
+                      (CurrentMap.is_changed OR first entry into 6min mode)
+    track this in render world via an Active6minMapId: Option<u32>.
+
+
+3) instance buffer  (does not exist)
+
+  6min entity is spawned with:
+    Mesh3d(Cuboid::new(small, small, small))   // size TBD
+    NoFrustumCulling
+    NO InstanceMaterialData component
+
+  draw call: pass.draw_indexed(.., 0..6_485_401 instances)
+  instance count source: a constant for now. could become a uniform
+  later if we want to share the pipeline with 1deg, but not needed
+  in this pass.
+
+
+what the new shader needs
+-------------------------
+file: assets/shaders/instancing_6min_webgl2.wgsl  (parallel to the
+existing instancing_webgl2.wgsl)
+
+bind group layout (group 2):
+  binding 0: lat_lut          (texture_2d<f32>, RGBA32F, 1801x1, vertex)
+  binding 1: active_elev      (texture_2d<i32>, R16Sint, 3601x1801, vertex)
+  binding 2: sun_position     (uniform, fragment)
+
+vertex inputs:
+  @builtin(instance_index) inst: u32
+  @location(0) position: vec3<f32>      // base cube vertex
+  @location(1) normal:   vec3<f32>
+  @location(2) uv:       vec2<f32>
+  // no @location(3..7), no instance buffer
+
+vertex shader pseudocode:
+  let i = inst / 3601u;
+  let j = inst % 3601u;
+
+  // .r = sin_lat, .g = cos_lat, .b = lon_scale
+  let row = textureLoad(lat_lut, vec2<i32>(i32(i), 0), 0);
+  let sin_lat = row.r;
+  let cos_lat = row.g;
+  let lon_scale = row.b;
+
+  let lon = -PI + f32(j) * (2.0 * PI / 3600.0);
+  let cos_lon = cos(lon);
+  let sin_lon = sin(lon);                          // 2 trig
+
+  // surface basis, no quaternion
+  let up    = vec3(cos_lat * sin_lon, sin_lat, cos_lat * cos_lon);
+  let east  = vec3(cos_lon, 0.0, -sin_lon);
+  let north = cross(up, east);
+
+  let scale = vec3(lon_scale, BASE_SCALE, lon_scale);
+  let scaled = position * scale;
+  let rotated = scaled.x * east + scaled.y * up + scaled.z * north;
+
+  let elev = f32(textureLoad(active_elev,
+                             vec2<i32>(i32(j), i32(i)), 0).r);
+  let sphere_pos = up * (6.378 + elev * 0.00005);
+  let final_position = rotated + sphere_pos;
+
+  // clip space, world normal, color from elevation: same as 1deg
+
+fragment shader: identical to 1deg (sun direction, ambient, rim).
+suggest a shared #import for the lighting + getColorFromElevation
+once both shaders are in place; out of scope for this plan.
+
+
+redundant trig accounting
+-------------------------
+per-instance work today (in the CPU pre-compute) runs once per
+instance.  in the shader path it runs per VERTEX of the cube. the
+cube has 24 vertices (8 unique positions, but normals split per
+face). that's a 24x amplification of the trig.
+
+with the LUT:
+  - lat trig (sin, cos): replaced by 1 buffer fetch per vertex
+  - lon trig (sin, cos): 2 trig per vertex, redundant 24x per instance
+
+at 6.5M instances * 24 vertices * 2 trig/vertex = ~310M trig ops/frame.
+fine on desktop. mobile WebGL2 is the question; profile when running.
+
+if mobile is a problem, next lever (out of scope for this plan): a
+compute-style precompute on CPU that fills a per-instance vec4 with
+(cos_lon, sin_lon, elev_idx_packed) and uploads as a texture, but
+that brings instance memory back. we will not pre-optimize for
+this; ship the LUT version, measure, then revisit.
+
+
+what stays unchanged
+--------------------
+- instancing_webgl2.wgsl (1deg shader): not touched.
+- the 1deg entity's InstanceMaterialData, AllMapData, the
+  ElevationTextureResource, MapSelectionUniformBuffer, and bind
+  group layout: not touched.
+- the worker decode pipeline (lib.rs kick_off + dom.rs listener):
+  not touched.
+
+what gets touched in 1deg code
+------------------------------
+- instance_pipeline_webgl2.rs::queue_custom: one early-return added
+  to skip when ResolutionMode != 0. one-line surgical change. no
+  refactor of the data path.
+- earth.rs::setup_instance_geometries: Earth1deg marker component
+  added to the spawn.
+- earth.rs::Big6minData: bytes Vec<u8> -> Arc<Vec<u8>> so that
+  ExtractResource is an incref instead of a 1.41 GB clone.
+- lib.rs::poll_big6min_decoded: extended (build LUT, spawn 6min
+  entity, insert resources). still a single function.
+- lib.rs::poll_resolution_change: stops being log-only, writes the
+  atomic value into a ResolutionMode resource.
+
+
+the wiring (how this actually puts pixels on screen)
+====================================================
+
+new components and resources
+----------------------------
+Earth1deg                  (Component, marker on the 1deg entity)
+Earth6min                  (Component, marker on the 6min entity)
+LatLutData                 (Resource, ExtractResource):
+                              rows: Vec<[f32; 4]>, 1801 entries.
+                              built once when big6min decode finishes.
+ResolutionMode             (Resource, ExtractResource):
+                              mode: u8, default 0. set by
+                              poll_resolution_change.
+Active6minMapId            (Resource, RENDER WORLD ONLY):
+                              Option<u32>. tracks which map is
+                              currently sitting in the active-elev
+                              texture so we know when to re-upload.
+LatLutTexture              (Resource, RENDER WORLD ONLY):
+                              TextureView, RGBA32F 1801x1.
+ActiveElevTexture          (Resource, RENDER WORLD ONLY):
+                              TextureView, R16Sint 3601x1801.
+
+main-world systems (Update schedule unless noted)
+-------------------------------------------------
+poll_big6min_decoded (lib.rs, extended):
+  - take BIG6MIN_RAW bytes (existing)
+  - wrap in Arc, insert Big6minData                          (new)
+  - build LUT via earth::build_lat_lut(BASE_SCALE_6MIN)      (new)
+  - insert LatLutData                                        (new)
+  - spawn 6min entity: Mesh3d(Cuboid::new(...small...)),
+      Earth6min, NoFrustumCulling                            (new)
+  - notify hud (existing notify_6min_ready)
+
+poll_resolution_change (lib.rs, extended):
+  - read DOM_RESOLUTION_MODE atomic (existing)
+  - on change, write to ResolutionMode resource              (new)
+
+setup_instance_geometries (earth.rs, minor edit):
+  - existing 1deg entity spawn gains an Earth1deg marker.
+
+render-world systems  (new file: instance_pipeline_6min_webgl2.rs)
+------------------------------------------------------------------
+plugin registers:
+  ExtractResourcePlugin::<LatLutData>
+  ExtractResourcePlugin::<ResolutionMode>
+  ExtractResourcePlugin::<Big6minData>     (cheap, Arc clone)
+  (CurrentMap and SunPosition are already extracted by the 1deg
+   plugin; both plugins can share an extracted resource.)
+
+prepare_6min_resources (RenderSet::PrepareResources):
+  state: Local<Vec<u8>> upload_scratch, sized 13,376,224 B once
+         on first run.
+  one-shot creates (skipped if resource already present):
+    - LatLutTexture: RGBA32F 1801x1 + write_texture with the
+      LatLutData rows packed as f32x4.
+    - ActiveElevTexture: R16Sint 3601x1801, allocated only.
+    - Active6minMapId: None.
+  per-frame work, only if mode == 1:
+    let want = current_map.index as u32;
+    if Active6minMapId != Some(want):
+        let off = want as usize * 12_970_802;
+        for i in 0..1801:
+            scratch[i*7424 .. i*7424 + 7202]
+                .copy_from_slice(
+                    &big6min_data.bytes[off + i*7202 ..
+                                        off + (i+1)*7202]);
+        write_texture(active_elev_tex,
+                      &scratch[..],
+                      bytes_per_row = 7424,
+                      size = 3601x1801);
+        Active6minMapId = Some(want);
+
+queue_custom_6min (RenderSet::QueueMeshes):
+  if ResolutionMode.mode != 1, return.
+  if any of LatLutTexture / ActiveElevTexture / SunPositionUniformBuffer
+    is missing, return.
+  build/cache the bind group:
+    binding 0: LatLutTexture view
+    binding 1: ActiveElevTexture view
+    binding 2: SunPositionUniformBuffer (reuse from 1deg pipeline)
+  query: entities With<Earth6min>. iterate, specialize, add to
+  transparent phase. same shape as 1deg's queue_custom.
+
+DrawMeshInstanced6min (render command):
+  identical to the 1deg DrawMeshInstanced except:
+    - no instance vertex buffer is bound (only the base mesh's
+      vertex buffer at slot 0).
+    - draw_indexed instance range is hardcoded 0..6_485_401u32.
+
+surgical change in 1deg pipeline
+--------------------------------
+instance_pipeline_webgl2.rs::queue_custom: at the top, early-return
+if extracted ResolutionMode.mode != 0. one line. keeps the toggle
+working without visibility gymnastics or despawn/respawn.
+
+render_backend.rs: WebGL2 branch registers BOTH
+instance_pipeline_webgl2::CustomMaterialPlugin AND
+instance_pipeline_6min_webgl2::CustomMaterialPlugin. WebGPU branch
+unchanged (6min not implemented for WebGPU in this pass).
+
+
+testability checkpoints (what we expect to see)
+-----------------------------------------------
+checkpoint A. compile, app loads:
+  - 1deg cubes render as today.
+  - console: "Big6minData inserted, bytes = ...", "LUT built, 1801
+    rows", "6min entity spawned".
+  - the resolution toggle button appears once 6min-ready fires.
+
+checkpoint B. click the toggle (mode 0 -> 1):
+  - console: "resolution change consumed, mode = 1",
+            "6min active-elev uploaded for map N".
+  - 1deg cubes vanish (1deg queue_custom returns early).
+  - 6min cubes appear, 6.5M of them.
+  - if nothing visible: most likely cube size or per-row stride
+    bug. see fail modes below.
+
+checkpoint C. arrow keys / slider in 6min mode:
+  - console per change: "6min active-elev re-uploaded for map N".
+  - terrain morphs at 6min detail.
+
+checkpoint D. toggle back to 1deg (mode 1 -> 0):
+  - 1deg cubes return, 6min cubes vanish. no GPU resources freed
+    yet (we keep the active-elev resident for fast re-toggle).
+
+likely fail modes to watch for
+------------------------------
+- per-row memcpy off by 222 bytes -> diagonal terrain smearing
+  (source stride mismatch with dest stride).
+- LUT vec4 component order mismatch -> earth turns inside out or
+  collapses to a flat disk (sin_lat vs cos_lat swap).
+- mode early-return missing on 1deg side -> 6min cubes z-fight
+  inside 1deg cubes when toggled.
+- ExtractResource on Big6minData without Arc -> a single 1+ second
+  freeze on first extract, possibly OOM on lower-mem browsers.
+- forgetting NoFrustumCulling on the 6min entity -> Bevy culls
+  based on the small base mesh's AABB and the whole earth disappears.
+
+
+resolved decisions
+------------------
+- format: R16Sint, texture is natural 3601x1801.
+- upload path: padded source stride (7424 B/row) into a reusable
+  CPU scratch buffer; texture itself is unpadded.
+- shader elevation lookup: textureLoad(vec2(j, i), 0). no div/mod
+  on the elevation lookup side.
+- LUT shape: texture_2d<f32>, 1801x1, RGBA32F. shader:
+  textureLoad(lat_lut, vec2<i32>(i32(i), 0), 0) returns vec4 with
+  (sin_lat, cos_lat, lon_scale, _) in the components.
+- LUT build trigger: same point Big6minData arrives. helper fn in
+  earth.rs returns Vec<[f32; 4]>, called from the same system that
+  inserts Big6minData. that system also spawns the 6min entity.
+- 6min entity spawn timing: on Big6minData arrival, NOT at app
+  start. queue_custom never sees the entity until the elevation
+  texture is also present, so no late-entity tolerance needed.
+- cube size: tuning value, base_scale = 0.016 as the starting point,
+  adjusted during implementation. not a planning decision.
+
+
+deferred to a future pass
+-------------------------
+- 6min on the WebGPU backend (storage buffer instead of texture).
+- shared shader imports for color/lighting (currently duplicated).
+- freeing the active-elev texture when toggled back to 1deg, if
+  GPU memory pressure ever becomes a problem.
+- async upload via a staging-buffer ring if 13 MB synchronous
+  write_texture stutters become noticeable on map drag.

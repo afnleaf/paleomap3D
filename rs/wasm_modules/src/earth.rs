@@ -51,28 +51,35 @@ now instance can read elevation grid based on (181, 361) * n
 
 // internal representation
 //#[derive(Resource, Clone)]
-#[derive(Clone, Default)]
-pub struct ElevationBuffer {
+// every map's elevations concatenated end-to-end (109 * 181 * 361 i16s,
+// widened to i32 for the storage buffer). produced by data/src/main.
+#[derive(Resource, Default, Clone, ExtractResource)]
+pub struct AllMapData {
     pub buffer: Vec<i32>,
     //pub height: usize, // latitude 180
     //pub width: usize, // longitude 360
 }
 
-#[derive(Resource, Default, Clone, ExtractResource)]
-pub struct AllMapData {
-    pub maps: Vec<ElevationBuffer>,
-}
-
 // load elevation from assets folder
 pub fn load_elevation_buffers(mut commands: Commands) {
-    let maps = load_and_parse_maps_deg1();
+    let buffer = load_and_parse_big1deg();
     println!("loading all map data");
-    commands.insert_resource(AllMapData { maps });
+    commands.insert_resource(AllMapData { buffer });
+}
+
+// raw 6min elevation bytes after worker brotli decode. layout is the same
+// as on disk: 109 maps concatenated, each 1801*3601 i16 little-endian (so
+// 6,485,401 elevations per map, ~12.97 MB raw, ~1.41 GB total). kept as
+// Vec<u8> because R16Sint texture upload wants raw LE i16 bytes anyway, no
+// need to widen on the cpu side.
+#[derive(Resource, Clone)]
+pub struct Big6minData {
+    pub bytes: Vec<u8>,
 }
 
 // returns empty vec on failure
 fn decompress_elevation(data: &[u8]) -> Vec<u8> {
-    let mut decompressor = 
+    let mut decompressor =
         brotli::Decompressor::new(
             std::io::Cursor::new(data), 4096);
     let mut decompressed = Vec::new();
@@ -90,36 +97,26 @@ fn bytes_to_i16_vec(bytes: &[u8]) -> Vec<i32> {
         .collect()
 }
 
-// parse all the elevation data files here
-// we need an asset reader to read the "asset/deg1/{filepath}"
-// read all maps in 1 by 1
-pub fn load_and_parse_maps_deg1() -> Vec<ElevationBuffer> {
+// parse all the elevation data here
+// big1deg.br is data/src/main's flattened output: 109 maps already
+// concatenated before brotli, so one decompress replaces 109
+//println!("i16len: {}", elevation_buffer.len());
+// on len small or len big switch between 1deg and 6min?
+pub fn load_and_parse_big1deg() -> Vec<i32> {
     let embedded = EmbeddedAssetReader::preloaded();
-    let mut map_data: Vec<ElevationBuffer> = Vec::with_capacity(109);
-    for i in 1..=109 {
-        let file_path = format!("deg1/{}.br", i);
-        match embedded.load_path_sync(&PathBuf::from(&file_path)) {
-            Ok(reader) => {
-                // decompress datafile
-                // convert to elevation vec of i16s
-                let elevation_buffer_raw = decompress_elevation(reader.0);
-                let elevation_buffer = bytes_to_i16_vec(&elevation_buffer_raw);
-                //println!("i16len: {}", elevation_buffer.len());
-                // on len small or len big switch between 1deg and 6min?
-                let e = ElevationBuffer {
-                    buffer: elevation_buffer,
-                    //height: 181,
-                    //width: 361,
-                };
-                map_data.push(e);
-            },
-            Err(err) => {
-                println!("Failed to load file {}: {:?}", i, err);
-            }
+    let file_path = "big1deg.br";
+    match embedded.load_path_sync(&PathBuf::from(file_path)) {
+        Ok(reader) => {
+            // decompress datafile
+            // convert to elevation vec of i16s
+            let elevation_buffer_raw = decompress_elevation(reader.0);
+            bytes_to_i16_vec(&elevation_buffer_raw)
+        },
+        Err(err) => {
+            println!("Failed to load file {}: {:?}", file_path, err);
+            Vec::new()
         }
     }
-
-    map_data
 }
 
 

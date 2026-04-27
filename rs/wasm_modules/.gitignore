@@ -1,1 +1,9 @@
 archive
+
+# Elevation data binaries - consolidated into rs/data/big1deg.br instead.
+assets/deg1/
+__assets/*.br
+__assets/*.bin
+
+# 117MB, over GitHub's 100MB push limit
+assets/big6min.br
