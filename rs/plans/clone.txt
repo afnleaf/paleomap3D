@@ -1,0 +1,61 @@
+AllMapData is doing a 28.5 MB main-thread memcpy every frame.
+
+Vec::clone vs Arc::clone
+========================
+
+Vec::clone() is a deep copy. It allocates a new buffer and memcpys every
+element. Vec does not share storage between clones.
+
+Arc::clone() is an atomic refcount bump. Nothing is copied; both Arcs point
+at the same allocation.
+
+ExtractResource default impl
+============================
+
+#[derive(ExtractResource)] uses this default:
+
+    fn extract_resource(source: &Self::Source) -> Self {
+        source.clone()
+    }
+
+So whatever Clone does for your struct, that runs every frame on the main
+thread to hand the resource to the render world.
+
+AllMapData (current, in earth.rs)
+=================================
+
+    #[derive(Resource, Default, Clone, ExtractResource)]
+    pub struct AllMapData {
+        pub buffer: Vec<i32>,
+    }
+
+derive(Clone) clones field-by-field. The field is Vec<i32>, so every frame:
+
+    109 maps * 65341 points * 4 bytes = ~28.5 MB
+
+is allocated and memcpyd, just to hand the same static data to the render
+world.
+
+Big6minData got it right
+========================
+
+    #[derive(Resource, Clone, ExtractResource)]
+    pub struct Big6minData {
+        pub bytes: Arc<Vec<u8>>,
+    }
+
+derive(Clone) on Arc<Vec<u8>> is a single atomic increment. The 1.41 GB
+buffer is never copied. Per-frame extract is essentially free.
+
+Fix
+===
+
+Wrap AllMapData.buffer in Arc:
+
+    pub struct AllMapData {
+        pub buffer: Arc<Vec<i32>>,
+    }
+
+Or Arc<[i32]> if we want to drop the Vec capacity overhead. The pipeline
+reads the slice once at startup to upload the elevation texture, so nothing
+downstream needs to change beyond a deref.

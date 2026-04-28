@@ -1,0 +1,98 @@
+Plan to fix the 6min lighting bug
+=================================
+
+The bug
+-------
+
+In assets/shaders/instancing_6min_webgl2.wgsl the basis is built as:
+
+    let up    = vec3<f32>(cos_lat * sin_lon, sin_lat, cos_lat * cos_lon);
+    let east  = vec3<f32>(cos_lon, 0.0, -sin_lon);
+    let north = cross(up, east);
+
+Compute east x up:
+
+    east x up = (sin_lon * sin_lat, -cos_lat, sin_lat * cos_lon)
+              = -north
+
+For (east, up, north) to be right-handed we need east x up = +north. We
+have east x up = -north, so det([east | up | north]) = -1. The basis is
+left-handed.
+
+When the shader maps cube-local (x, y, z) through this basis:
+
+    rotated = scaled.x * east + scaled.y * up + scaled.z * north
+
+every cube comes out mirrored. Triangle winding flips: faces that were
+CCW from outside in cube space are CW from outside in world space.
+Bevy's MeshPipeline default is cull_mode = Some(Face::Back), so the cube's
+real outside faces get culled and the back faces draw instead. The shader
+hands the fragment shader normals computed for the geometric face, but
+the face the user actually sees is the opposite face, with the opposite
+normal. n . L collapses to zero on the visible top, so cubes look unlit.
+
+1deg uses Quat::from_rotation_arc(Y, normal), which is a proper rotation
+(det +1), so winding is preserved and lighting is correct.
+
+The fix
+-------
+
+Flip one cube axis when applying the basis. Easiest is to negate the Z
+mapping in both the position and normal transforms in
+assets/shaders/instancing_6min_webgl2.wgsl:
+
+    let rotated = scaled.x * east + scaled.y * up - scaled.z * north;
+    ...
+    let rotated_normal =
+        vertex.normal.x * east + vertex.normal.y * up - vertex.normal.z * north;
+
+This is equivalent to using basis (east, up, -north), whose determinant
+is +1. Cube +Z then points geographically south instead of north. The
+cube is symmetric (1 x 5 x 1, isotropic in X and Z) so this is invisible.
+
+Edits
+-----
+
+File: rs/wasm_modules/assets/shaders/instancing_6min_webgl2.wgsl
+
+  1. Around line 101, change
+        let rotated = scaled.x * east + scaled.y * up + scaled.z * north;
+     to
+        let rotated = scaled.x * east + scaled.y * up - scaled.z * north;
+
+  2. Around line 115, change
+        let rotated_normal =
+            vertex.normal.x * east + vertex.normal.y * up + vertex.normal.z * north;
+     to
+        let rotated_normal =
+            vertex.normal.x * east + vertex.normal.y * up - vertex.normal.z * north;
+
+No Rust changes. No data changes. No bind group changes. WGSL only.
+
+Build/run
+---------
+
+    wasm-pack build wasm_modules --target no-modules
+    histos paleomap3d.yaml
+
+Verification
+------------
+
+  - Toggle to 6min, position the camera so a cube is between the camera
+    and the sun. The top of the cube should now be lit.
+  - Scrub maps; coloring stays correct (color is from elevation, not
+    affected by the fix).
+  - Compare a side-by-side region with 1deg: lit/unlit faces should
+    match the 1deg cube on the same point of the sphere.
+  - Spin the sun (or wait through one orbit cycle): diffuse should track
+    n . L the same way 1deg does, with no whole-sphere darkness.
+
+Followups (not part of this fix)
+--------------------------------
+
+  - The component-wise scale-then-rotate in the 1deg shader (scale applied
+    in world axes after rotation) is a separate, mild distortion bug that
+    has nothing to do with the chirality issue here.
+  - view_dir = normalize(-world_position) in both fragment shaders assumes
+    camera at origin; rim term is consequently inverted on the lit hemisphere.
+    Shared bug, separate fix.

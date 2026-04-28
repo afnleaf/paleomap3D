@@ -98,7 +98,7 @@ fn vertex(vertex: Vertex) -> CustomVertexOutput {
     // scale-then-rotate (cube-local space first, then into the basis).
     let scale = vec3<f32>(lon_scale, BASE_SCALE, lon_scale);
     let scaled = vertex.position * scale;
-    let rotated = scaled.x * east + scaled.y * up + scaled.z * north;
+    let rotated = scaled.x * east + scaled.y * up - scaled.z * north;
 
     let elev_i = textureLoad(active_elev, vec2<i32>(i32(j), i32(i)), 0).r;
     let elev = f32(elev_i);
@@ -112,7 +112,7 @@ fn vertex(vertex: Vertex) -> CustomVertexOutput {
     );
 
     let rotated_normal =
-        vertex.normal.x * east + vertex.normal.y * up + vertex.normal.z * north;
+        vertex.normal.x * east + vertex.normal.y * up - vertex.normal.z * north;
     out.world_normal =
         normalize((world_from_local * vec4<f32>(rotated_normal, 0.0)).xyz);
     out.world_position =
