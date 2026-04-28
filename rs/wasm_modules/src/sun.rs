@@ -4,7 +4,7 @@ sun.rs
 the code that spawns and orbits the sun
 */
 use bevy::{
-    color::palettes::css::*,
+    //color::palettes::css::*,
     pbr::{
         //CascadeShadowConfigBuilder,
         Material, NotShadowCaster,
@@ -75,6 +75,9 @@ pub struct Orbit {
 
 const DAY: f32 = PI / 256.0;
 const LUX: f32 = 3200.0;
+// earth's axial tilt: sun's daily circle sits 23.4 deg above the equator
+// (frozen at june solstice; flip sign for december)
+const DECLINATION_DEG: f32 = 23.4;
 pub const INITIAL_SUN_POSITION: Vec3 = Vec3::new(149_000.0, 0.0, 0.0);
 
 // minimal unlit material for the sun: a single uniform color, fragment
@@ -173,12 +176,15 @@ pub fn orbit_geocentrism(
         // how far away sun is from earth
         let radius = 149_000.0;
         let angle = orbit.speed * total_time;
+        let declination = DECLINATION_DEG.to_radians();
+        let r_eq = radius * declination.cos();
         // calc new position in orbit directly using sine and cosine
-        let new_x = radius * angle.cos();
-        let new_z = radius * angle.sin();
-        
+        let new_x = r_eq * angle.cos();
+        let new_z = r_eq * angle.sin();
+        let new_y = radius * declination.sin();
+
         // set new position and point at 0,0,0
-        let new_position = Vec3::new(new_x, 0.0, new_z);
+        let new_position = Vec3::new(new_x, new_y, new_z);
         transform.translation = new_position;
         transform.look_at(Vec3::ZERO, Vec3::Y);
 

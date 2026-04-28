@@ -28,15 +28,37 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::time::Instant;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let dir = PathBuf::from("../../data_raw/deg06");
+    // cargo run [-- 6 | 1]  - no arg = both
+    let arg = std::env::args().nth(1);
+    match arg.as_deref() {
+        Some("6") => process("../../data_raw/deg06", "big6min")?,
+        Some("1") => process("../../data_raw/deg1",  "big1deg")?,
+        _ => {
+            process("../../data_raw/deg06", "big6min")?;
+            process("../../data_raw/deg1",  "big1deg")?;
+        }
+    }
+    Ok(())
+}
 
-    let mut file_names: Vec<String> = fs::read_dir(dir)?
+// "...<age>Ma.nc" -> age as f64 (handles ints, "385.2", "390.5")
+fn age_ma(name: &str) -> f64 {
+    let i = name.rfind('_').unwrap();
+    name[i + 1 .. name.len() - 5].parse::<f64>().unwrap()
+}
+
+fn process(dir_str: &str, out: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let dir = PathBuf::from(dir_str);
+    println!("=== {} -> {}.br ===", dir_str, out);
+
+    let mut file_names: Vec<String> = fs::read_dir(&dir)?
         .filter_map(|f| f.ok())
         .filter(|f| f.path().is_file())
         .filter_map(|f| f.file_name().into_string().ok())
         .filter(|f| f.ends_with(".nc"))
         .collect();
-    file_names.sort();
+    // chronological by Ma. lexicographic put Map43.5 before Map43 ('.' < '_')
+    file_names.sort_by(|a, b| age_ma(a).partial_cmp(&age_ma(b)).unwrap());
 
     // big flat data
     let mut big = Vec::new();
@@ -58,7 +80,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         //let new_file_name = PathBuf::from(format!("{}", count+1));
         //println!("processing: {:?}", &new_file_name);
         println!("processing: {:?}", &map_file);
-        let fp = PathBuf::from(format!("../../data_raw/deg06/{}", map_file));
+        let fp = dir.join(map_file);
         let file = netcdf::open(fp).unwrap();
         //print_file_content(&file);
         let (data, height, width) = get_data(&file).unwrap();
@@ -68,7 +90,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // now compress
-    compress_and_write(&PathBuf::from("big6min"), &big).unwrap();
+    compress_and_write(&PathBuf::from(out), &big).unwrap();
 
     Ok(())
 }

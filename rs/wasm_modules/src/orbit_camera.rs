@@ -118,6 +118,7 @@ pub struct OrbitSettings {
     pub damping_factor: f32,  // For non-static movement (lower = more damping)
     pub min_distance: f32,    // Minimum distance from target
     pub max_distance: f32,    // Maximum distance from target
+    pub surface_radius: f32,  // zoom step scales with altitude above this (0 = scale with full distance)
     pub no_rotate: Option<bool>,
     pub no_zoom: Option<bool>,
     pub no_pan: Option<bool>,
@@ -138,6 +139,7 @@ impl Default for OrbitSettings {
             damping_factor: 0.2,
             min_distance: 0.0001,
             max_distance: f32::INFINITY,
+            surface_radius: 0.0,
             no_rotate: Some(false),
             no_zoom: Some(false),
             no_pan: Some(false),
@@ -158,7 +160,19 @@ pub fn spawn_orbit_camera(mut commands: Commands) {
     // viewport-aware distance lives in OrbitState::initial_distance(),
     // so default() picks the right value. that also means the R-key
     // reset (*state = OrbitState::default()) gets it without duplication.
-    commands.spawn((OrbitCameraBundle::default(), NoIndirectDrawing));
+    // surface_radius matches earth.rs (6.378); min_distance sits a hair
+    // above so you can't crash through the surface.
+    commands.spawn((
+        OrbitCameraBundle {
+            settings: OrbitSettings {
+                surface_radius: 6.378,
+                min_distance: 6.4,
+                ..default()
+            },
+            ..default()
+        },
+        NoIndirectDrawing,
+    ));
 }
 
 pub fn orbit_camera_system(
@@ -341,10 +355,13 @@ pub fn orbit_camera_system(
         }
 
         // Zoom on mouse wheel scroll (direct, no damping)
+        // Google-Earth feel: scale altitude above surface_radius, not full
+        // distance, so steps shrink as you approach the surface.
         if zoom_active && scroll_delta != 0.0 {
             let factor = 1.0 + scroll_delta * settings.zoom_speed;
-            state.distance = 
-                (state.distance * factor)
+            let altitude = (state.distance - settings.surface_radius).max(0.0);
+            state.distance =
+                (settings.surface_radius + altitude * factor)
                 .clamp(settings.min_distance, settings.max_distance);
         }
 

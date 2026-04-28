@@ -54,16 +54,17 @@ now instance can read elevation grid based on (181, 361) * n
 //#[derive(Resource, Clone)]
 // every map's elevations concatenated end-to-end (109 * 181 * 361 i16s,
 // widened to i32 for the storage buffer). produced by data/src/main.
+// Arc so ExtractResource clone is a refcount bump, not a 28.5 MB memcpy.
 #[derive(Resource, Default, Clone, ExtractResource)]
 pub struct AllMapData {
-    pub buffer: Vec<i32>,
+    pub buffer: Arc<Vec<i32>>,
     //pub height: usize, // latitude 180
     //pub width: usize, // longitude 360
 }
 
 // load elevation from assets folder
 pub fn load_elevation_buffers(mut commands: Commands) {
-    let buffer = load_and_parse_big1deg();
+    let buffer = Arc::new(load_and_parse_big1deg());
     println!("loading all map data");
     commands.insert_resource(AllMapData { buffer });
 }

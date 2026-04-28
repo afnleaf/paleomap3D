@@ -260,7 +260,7 @@ canvas {
 }
 .legend-tick {
     position: absolute;
-    transform: translateX(-50%);
+    transform: translateX(-100%);
     font-size: 0.75rem;
     color: var(--fg-dim);
     white-space: nowrap;
@@ -270,7 +270,7 @@ canvas {
     content: '';
     position: absolute;
     top: -4px;
-    left: 50%;
+    left: 100%;
     width: 1px;
     height: 4px;
     background: rgba(255,255,255,0.35);
