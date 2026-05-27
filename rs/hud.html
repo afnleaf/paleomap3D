@@ -24,11 +24,14 @@
       <div class="tab-viewport" id="tab-viewport">
         <div class="tab-panels" id="tab-panels">
           <div class="tab-panel" id="panel-elevation" data-panel="0" role="tabpanel"></div>
-          <!-- info panel: era heading + age subtext, written by hud.js's paintHud
-               on every map index change. placeholder for richer per-era copy. -->
+          <!-- info panel: era + age + blurb + Wikipedia link, all written by
+               hud.js's paintHud on every map index change. data source is
+               window.PALEOMAP_INFO (text.js), aligned by index with MAP_NAMES. -->
           <div class="tab-panel" id="panel-info" data-panel="1" role="tabpanel">
             <h3 class="info-era">Present-day</h3>
             <p class="info-age">Holocene, 0 Ma</p>
+            <p class="info-blurb"></p>
+            <a class="info-link" href="" target="_blank" rel="noopener noreferrer">Read more on Wikipedia &rarr;</a>
           </div>
           <div class="tab-panel" data-panel="2" role="tabpanel">
             <ul class="instructions-list">

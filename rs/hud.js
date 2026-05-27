@@ -196,6 +196,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const titleAge     = document.querySelector("#title .title-age");
   const infoEra      = document.querySelector("#panel-info .info-era");
   const infoAge      = document.querySelector("#panel-info .info-age");
+  const infoBlurb    = document.querySelector("#panel-info .info-blurb");
+  const infoLink     = document.querySelector("#panel-info .info-link");
 
   let displayedIdx = 0;
   let dragging = false;
@@ -215,8 +217,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const [era, age] = MAP_NAMES[idx] || ["", ""];
     if (titleEra) titleEra.textContent = era;
     if (titleAge) titleAge.textContent = "(" + age + ")";
-    if (infoEra) infoEra.textContent = era;
-    if (infoAge) infoAge.textContent = age;
+    // info panel: text.js is the source of truth (richer formatting + blurb +
+    // url). fall back to MAP_NAMES if PALEOMAP_INFO somehow isn't loaded.
+    const info = (window.PALEOMAP_INFO && window.PALEOMAP_INFO[idx]) || null;
+    if (infoEra)   infoEra.textContent   = info ? info.era  : era;
+    if (infoAge)   infoAge.textContent   = info ? info.age  : age;
+    if (infoBlurb) infoBlurb.textContent = info ? info.blurb : "";
+    if (infoLink) {
+      infoLink.href = info ? info.url : "";
+      infoLink.style.display = info ? "" : "none";
+    }
     // info panel content can change height (era names wrap differently across
     // indices); when it's the active tab, retune the viewport so the closed
     // offset stays accurate. tabPanels/tabViewport are declared lower in this
@@ -567,6 +577,34 @@ document.addEventListener("DOMContentLoaded", () => {
     // closed-sheet offset retracts by exactly the right amount per tab.
     // currentTab itself is declared at outer scope so paintHud can read it.
 
+    // info panel height lock: render every PALEOMAP_INFO entry into the live
+    // panel, take the tallest measured height, and pin that as min-height so
+    // the sheet doesn't grow/shrink as the user drags through eras with
+    // longer/shorter blurbs (or wider era names that wrap differently). re-runs
+    // on resize and once webfonts settle (system-fallback metrics differ).
+    const panelInfo = document.getElementById("panel-info");
+    const lockInfoPanelHeight = () => {
+      if (!panelInfo || !infoEra || !infoAge || !infoBlurb || !window.PALEOMAP_INFO) return;
+      const orig = {
+        era: infoEra.textContent,
+        age: infoAge.textContent,
+        blurb: infoBlurb.textContent,
+      };
+      panelInfo.style.minHeight = "";
+      let max = 0;
+      for (const entry of window.PALEOMAP_INFO) {
+        infoEra.textContent   = entry.era;
+        infoAge.textContent   = entry.age;
+        infoBlurb.textContent = entry.blurb;
+        const h = panelInfo.offsetHeight;
+        if (h > max) max = h;
+      }
+      infoEra.textContent   = orig.era;
+      infoAge.textContent   = orig.age;
+      infoBlurb.textContent = orig.blurb;
+      panelInfo.style.minHeight = max + "px";
+    };
+
     const setActiveTab = idx => {
       currentTab = Math.max(0, Math.min(TAB_COUNT - 1, idx | 0));
       if (tabPanels) tabPanels.style.transform = "translateX(" + (-currentTab * 100) + "%)";
@@ -597,6 +635,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (tabViewport && tabPanels) {
       tabViewport.addEventListener("pointerdown", e => {
         if (e.pointerType === "mouse" && e.button !== 0) return;
+        // skip swipe init when pressing an interactive child (info-link etc):
+        // setPointerCapture would redirect the click away from the link.
+        if (e.target.closest("a, button")) return;
         tabViewport.setPointerCapture(e.pointerId);
         swipeActive = true;
         swipeStartX = e.clientX;
@@ -645,11 +686,23 @@ document.addEventListener("DOMContentLoaded", () => {
     // resize: panel content can reflow (legend stagger stack on mobile etc),
     // so re-measure the active panel on resize so the viewport tracks it.
     // registered before the sheet's own resize listener so closedOffsetTopPx()
-    // there reads the post-resize topContent height.
+    // there reads the post-resize topContent height. relock the info panel
+    // first since the sheet's narrower/wider width changes blurb wrapping.
     window.addEventListener("resize", () => {
+      lockInfoPanelHeight();
       const active = tabPanels && tabPanels.children[currentTab];
       if (active && tabViewport) tabViewport.style.height = active.offsetHeight + "px";
     });
+
+    // webfont metrics differ from the system fallback used at first paint,
+    // so the initial lock can be too short. relock once fonts settle.
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => {
+        lockInfoPanelHeight();
+        const active = tabPanels && tabPanels.children[currentTab];
+        if (active && tabViewport) tabViewport.style.height = active.offsetHeight + "px";
+      });
+    }
 
     sheetHandleTop.addEventListener("pointerdown", e => {
       e.preventDefault();
@@ -692,7 +745,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // transition for one frame, then drop it so user-initiated snaps animate.
     // setActiveTab paints transforms + viewport height + (since the sheet is
     // closed) the closed-offset, all under .dragging so none of it transitions.
+    // lock info panel height first so setActiveTab's measurements use the
+    // pinned height, not the current entry's natural height.
     sheetTop.classList.add("dragging");
+    lockInfoPanelHeight();
     setActiveTab(0);
     requestAnimationFrame(() => sheetTop.classList.remove("dragging"));
   }
@@ -766,14 +822,14 @@ self.onmessage = async (e) => {
       initialized = true;
       if (pending) {
         const c = pending; pending = null;
-        const out = wasm_bindgen.brotli_decode(c);
+        const out = wasm_bindgen.brotli_decode_big6min(c);
         self.postMessage({ decoded: out }, [out.buffer]);
       }
       return;
     }
     if (e.data.compressed) {
       if (!initialized) { pending = e.data.compressed; return; }
-      const out = wasm_bindgen.brotli_decode(e.data.compressed);
+      const out = wasm_bindgen.brotli_decode_big6min(e.data.compressed);
       self.postMessage({ decoded: out }, [out.buffer]);
     }
   } catch (err) {

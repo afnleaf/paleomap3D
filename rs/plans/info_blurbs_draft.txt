@@ -1,0 +1,443 @@
+info tab blurbs (rough draft v2)
+================================
+one blurb per map index (109 total). short, event-dense, no taxa.
+each entry: index, era + stage + age (verbatim from MAP_NAMES in hud.js),
+1-2 sentences of geological/oceanographic/tectonic events, wikipedia url.
+URLs are best-guess; a few may need verification (especially Silurian epochs).
+
+
+0  Present-day  |  Holocene, 0 Ma
+   Modern continental configuration; Greenland and Antarctic ice sheets are the only major remnants of Pleistocene glaciation, the Mediterranean is fully open, and the Isthmus of Panama is closed.
+   https://en.wikipedia.org/wiki/Holocene
+
+1  Early Pliocene  |  Zanclean, 4.47 Ma
+   The Zanclean megaflood refills the Mediterranean after ~700 ka of evaporite deposition (Messinian salinity crisis); the Isthmus of Panama is shoaling, beginning to redirect global ocean circulation.
+   https://en.wikipedia.org/wiki/Zanclean
+
+2  Middle/Late Miocene  |  Serravallian & Tortonian, 10.5 Ma
+   The Mediterranean is being progressively cut off as Africa and Iberia close the Betic and Rifian gateways. C4 grasslands expand worldwide and the East Antarctic Ice Sheet is now permanent.
+   https://en.wikipedia.org/wiki/Tortonian
+
+3  Middle Miocene  |  Langhian, 14.9 Ma
+   The Miocene Climatic Optimum peaks then collapses; the East Antarctic Ice Sheet expands sharply. The Paratethys begins fragmenting into the Black, Caspian, and Aral basins.
+   https://en.wikipedia.org/wiki/Langhian
+
+4  Early Miocene  |  Aquitanian & Burdigalian, 19.5 Ma
+   Africa-Eurasia contact closes the Tethys Seaway, ending circumglobal equatorial circulation. The Red Sea begins opening as Arabia rifts away; the Alps and Himalayas rise rapidly.
+   https://en.wikipedia.org/wiki/Burdigalian
+
+5  Late Oligocene  |  Chattian, 25.6 Ma
+   Drake Passage is fully open; the Antarctic Circumpolar Current isolates Antarctica thermally. Antarctic ice sheets oscillate through obliquity-driven cycles.
+   https://en.wikipedia.org/wiki/Chattian
+
+6  Early Oligocene  |  Rupelian, 31 Ma
+   The Eocene-Oligocene transition (Oi-1) crashes global temperatures; permanent Antarctic ice forms for the first time since the Mesozoic. Sea level drops ~70 m.
+   https://en.wikipedia.org/wiki/Rupelian
+
+7  Late Eocene  |  Priabonian, 35.9 Ma
+   The Popigai (Siberia) and Chesapeake Bay impact craters form within a few hundred ka of each other. Tropical Tethyan circulation is breaking down as the Indian-Asian collision steepens.
+   https://en.wikipedia.org/wiki/Priabonian
+
+8  Late Middle Eocene  |  Bartonian, 39.5 Ma
+   The Azolla event of the Arctic, where dense freshwater fern blooms drew down massive CO2, has finished its ~800 ka pulse. India-Asia collision intensifies, building the proto-Himalayas.
+   https://en.wikipedia.org/wiki/Bartonian
+
+9  Early Middle Eocene  |  Lutetian, 44.5 Ma
+   Tropical-style climates reach Canada and Antarctica; the planet remains effectively ice-free. The Australian Plate accelerates northward as it separates from Antarctica.
+   https://en.wikipedia.org/wiki/Lutetian
+
+10 Early Eocene  |  Ypresian, 51.9 Ma
+   The Early Eocene Climatic Optimum, the warmest sustained interval of the Cenozoic. Multiple smaller hyperthermals (ETM-2, H-events) punctuate an otherwise hot, ice-free world.
+   https://en.wikipedia.org/wiki/Ypresian
+
+11 Paleocene/Eocene Boundary  |  PETM, 56 Ma
+   The Paleocene-Eocene Thermal Maximum: ~5 to 8 °C global warming over a few thousand years from a massive carbon release; deep-sea benthic foraminifera suffer the largest extinction of the Cenozoic; Arctic land bridges open as warming peaks.
+   https://en.wikipedia.org/wiki/Paleocene%E2%80%93Eocene_Thermal_Maximum
+
+12 Paleocene  |  Danian & Thanetian, 61 Ma
+   Recovery interval after the K-Pg extinction. The Dan-C2 hyperthermal (~65.2 Ma) and the Latest Danian Event (~62.2 Ma) are smaller carbon-cycle pulses preceding the PETM.
+   https://en.wikipedia.org/wiki/Danian
+
+13 KT Boundary  |  Latest Maastrichtian, 66 Ma
+   The Chicxulub asteroid impact in Yucatán, combined with the climax of Deccan Traps volcanism, drives the Cretaceous-Paleogene mass extinction; ~75% of species vanish geologically instantly.
+   https://en.wikipedia.org/wiki/Cretaceous%E2%80%93Paleogene_extinction_event
+
+14 Late Cretaceous  |  Maastrichtian, 69 Ma
+   The Western Interior Seaway is draining as the Laramide orogeny lifts the Rocky Mountains; Deccan Traps volcanism in India ramps up toward the K-Pg climax.
+   https://en.wikipedia.org/wiki/Maastrichtian
+
+15 Late Cretaceous  |  Late Campanian, 75 Ma
+   The Western Interior Seaway approaches maximum extent, splitting North America into Laramidia and Appalachia. The Pacific Farallon Plate subducts rapidly under western North America, building the Sevier fold-and-thrust belt.
+   https://en.wikipedia.org/wiki/Campanian
+
+16 Late Cretaceous  |  Early Campanian, 80.8 Ma
+   The Laramide orogeny begins flat-slab subduction along western North America. India is still south of the equator, racing northward at unusually fast plate-tectonic speeds (~15 cm/yr).
+   https://en.wikipedia.org/wiki/Campanian
+
+17 Late Cretaceous  |  Santonian & Coniacian, 86.7 Ma
+   Sea level approaches its Phanerozoic peak (~250 m above today). Madagascar separates from India; the Caribbean Plate begins forming over the Galápagos hotspot.
+   https://en.wikipedia.org/wiki/Santonian
+
+18 Mid-Cretaceous  |  Turonian, 91.9 Ma
+   The hottest sustained interval of the Phanerozoic; tropical sea-surface temperatures reach 35 to 37 °C. OAE 2 (Bonarelli event) buries vast organic carbon, sourcing many modern oil reservoirs.
+   https://en.wikipedia.org/wiki/Turonian
+
+19 Mid-Cretaceous  |  Cenomanian, 97.2 Ma
+   The Western Interior Seaway connects the Arctic and Gulf of Mexico across North America. The Caribbean Large Igneous Province begins erupting on the Pacific seafloor.
+   https://en.wikipedia.org/wiki/Cenomanian
+
+20 Early Cretaceous  |  Late Albian, 102.6 Ma
+   The South and North Atlantic finally link as Africa and South America fully separate; OAE 1d marks another carbon burial event. Madagascar-India is still attached to Antarctica-Australia.
+   https://en.wikipedia.org/wiki/Albian
+
+21 Early Cretaceous  |  Middle Albian, 107 Ma
+   The Kerguelen Plateau LIP erupts beneath the southern Indian Ocean. The Tethys is closing in the east as India accelerates north; carbonate platforms ring its margins.
+   https://en.wikipedia.org/wiki/Albian
+
+22 Early Cretaceous  |  Early Albian, 111 Ma
+   Australia-Antarctica is rifting; the South Atlantic remains a young narrow seaway. OAE 1b records oxygen-poor conditions in the Tethys and proto-Atlantic.
+   https://en.wikipedia.org/wiki/Albian
+
+23 Early Cretaceous  |  Late Aptian, 115.8 Ma
+   The Nigeria-Brazil rift breaches its restriction; thick salt deposits accumulate in the proto-South Atlantic, forming today's pre-salt oil reservoirs off Brazil and Angola.
+   https://en.wikipedia.org/wiki/Aptian
+
+24 Early Cretaceous  |  Early Aptian, 121.8 Ma
+   OAE 1a (Selli event), one of the largest Mesozoic carbon perturbations, driven by Ontong Java Plateau volcanism in the Pacific (the largest LIP in Earth history by volume).
+   https://en.wikipedia.org/wiki/Aptian
+
+25 Early Cretaceous  |  Barremian, 127.2 Ma
+   The South Atlantic begins opening at its southern tip as Africa and South America rift apart. The Faraoni event records short-lived oceanic anoxia in the Tethys.
+   https://en.wikipedia.org/wiki/Barremian
+
+26 Early Cretaceous  |  Hauterivian, 131.2 Ma
+   The Weissert event's cooling tail continues; the central Atlantic widens steadily. The Sundance Sea has fully retreated from western North America.
+   https://en.wikipedia.org/wiki/Hauterivian
+
+27 Early Cretaceous  |  Valanginian, 136.4 Ma
+   The Weissert event: a sharp negative carbon isotope excursion driven by Paraná-Etendeka LIP volcanism, which is also opening the southern South Atlantic.
+   https://en.wikipedia.org/wiki/Valanginian
+
+28 Early Cretaceous  |  Berriasian, 142.4 Ma
+   Pangaea has clearly split into Laurasia and Gondwana; the central Atlantic continues to widen. Iberia is rotating, opening the Bay of Biscay.
+   https://en.wikipedia.org/wiki/Berriasian
+
+29 Jurassic/Cretaceous Boundary  |  145 Ma
+   A poorly defined boundary with regional turnover but no clear global mass extinction. The Tithonian-Berriasian transition remains the last unresolved system boundary in the Phanerozoic.
+   https://en.wikipedia.org/wiki/Tithonian
+
+30 Late Jurassic  |  Tithonian, 148.6 Ma
+   The Solnhofen lagoonal limestones (Bavaria) and Morrison floodplains (western US) accumulate. The Hispanic Corridor links the Tethys and Pacific across what is now the Caribbean.
+   https://en.wikipedia.org/wiki/Tithonian
+
+31 Late Jurassic  |  Kimmeridgian, 154.7 Ma
+   The Kimmeridge Clay (today's North Sea oil source rock) accumulates in restricted, anoxic epicontinental seas; sea level is at a Late Jurassic peak.
+   https://en.wikipedia.org/wiki/Kimmeridgian
+
+32 Late Jurassic  |  Oxfordian, 160.4 Ma
+   Pangaea has clearly split into Laurasia and Gondwana; the Hispanic Corridor opens between them. Madagascar separates from the African mainland.
+   https://en.wikipedia.org/wiki/Oxfordian_(stage)
+
+33 Middle Jurassic  |  Callovian, 164.8 Ma
+   Atlantic spreading propagates north toward Iberia. The Sundance Sea floods western North America from the Arctic; carbonate platforms ring the western Tethys.
+   https://en.wikipedia.org/wiki/Callovian
+
+34 Middle Jurassic  |  Bajocian & Bathonian, 168.2 Ma
+   The Karoo-Ferrar LIP aftermath continues to drive Pangaea apart; Gondwana begins to fragment. The Central Atlantic now hosts a true mid-ocean ridge.
+   https://en.wikipedia.org/wiki/Bajocian
+
+35 Middle Jurassic  |  Aalenian, 172.2 Ma
+   Spreading begins between East and West Gondwana along the proto-Indian Ocean. Sea level rises through a long Jurassic transgression after the Toarcian crisis.
+   https://en.wikipedia.org/wiki/Aalenian
+
+36 Early Jurassic  |  Toarcian, 178.4 Ma
+   The Toarcian Oceanic Anoxic Event (TOAE), driven by Karoo-Ferrar LIP volcanism in southern Gondwana; black shales accumulate widely with ~3 °C ocean warming.
+   https://en.wikipedia.org/wiki/Toarcian
+
+37 Early Jurassic  |  Pliensbachian, 186.8 Ma
+   Cooler interval following the Sinemurian-Pliensbachian boundary event. The Central Atlantic Magmatic Province has finished erupting; Gondwana is just beginning to break.
+   https://en.wikipedia.org/wiki/Pliensbachian
+
+38 Early Jurassic  |  Sinemurian/Pliensbachian, 190.8 Ma
+   The Sinemurian-Pliensbachian boundary event records a brief carbon-cycle perturbation. Tethys Ocean shelves deposit thick carbonate platforms.
+   https://en.wikipedia.org/wiki/Sinemurian
+
+39 Early Jurassic  |  Hettangian & Sinemurian, 196 Ma
+   Sea levels rise sharply after the end-Triassic regression. Reefs, which had collapsed at the boundary, slowly rebuild on Tethyan margins.
+   https://en.wikipedia.org/wiki/Hettangian
+
+40 Late Triassic  |  Rhaetian/Hettangian, 201.3 Ma
+   The end-Triassic mass extinction. The Central Atlantic Magmatic Province (CAMP) is the largest known LIP by area, ripping Pangaea open and devastating reefs and conodont faunas.
+   https://en.wikipedia.org/wiki/Triassic%E2%80%93Jurassic_extinction_event
+
+41 Late Triassic  |  Rhaetian, 204.9 Ma
+   Pangaea is at maximum assembly and just starting to crack along the future Atlantic; CAMP eruptions are imminent. Sea level rises after the prolonged Triassic regression.
+   https://en.wikipedia.org/wiki/Rhaetian
+
+42 Late Triassic  |  Late Norian, 213.2 Ma
+   The Manicouagan impact (Quebec) leaves a 100 km crater. Pangaea's interior is hyperarid; widespread evaporites accumulate in restricted basins.
+   https://en.wikipedia.org/wiki/Norian
+
+43 Late Triassic  |  Mid Norian, 217.8 Ma
+   The Wrangellia LIP erupts on what is now the Pacific margin of North America. Tethyan reef ecosystems are still recovering from the Carnian Pluvial collapse.
+   https://en.wikipedia.org/wiki/Norian
+
+44 Late Triassic  |  Early Norian, 222.4 Ma
+   Aftermath of the Carnian Pluvial Event; arid conditions return to Pangaea's interior. The Newark Supergroup rift basins of eastern North America accumulate thick lacustrine sequences.
+   https://en.wikipedia.org/wiki/Norian
+
+45 Late Triassic  |  Carnian/Norian, 227 Ma
+   Aftermath of the Carnian Pluvial Event drives global ecosystem reorganization. Calcareous nannoplankton (coccoliths) appear in the rock record, beginning a transformation of ocean chemistry.
+   https://en.wikipedia.org/wiki/Carnian
+
+46 Late Triassic  |  Carnian, 232 Ma
+   The Carnian Pluvial Event: a ~1 Myr humid interval likely tied to Wrangellia LIP volcanism; reef ecosystems collapse and arid red beds give way to coal-forming wetlands.
+   https://en.wikipedia.org/wiki/Carnian
+
+47 Late Triassic  |  Early Carnian, 233.6 Ma
+   Onset of the Carnian Pluvial Event. Pangaea remains assembled but with monsoonal climates intensifying; the carbonate reefs of the Tethys (Dolomites) thrive just before collapse.
+   https://en.wikipedia.org/wiki/Carnian
+
+48 Middle Triassic  |  Ladinian, 239.5 Ma
+   Conifers replace lycopsid relics as the dominant flora in many regions. Carbonate platforms continue building along the western Tethys.
+   https://en.wikipedia.org/wiki/Ladinian
+
+49 Middle Triassic  |  Anisian, 244.6 Ma
+   Recovery from the Permian-Triassic extinction is well underway; reefs return after a ~10 Myr "reef gap." Pangaea remains fully assembled with the Tethys wedged into its eastern flank.
+   https://en.wikipedia.org/wiki/Anisian
+
+50 Permo-Triassic Boundary  |  252 Ma
+   The Great Dying. Siberian Traps volcanism erupts millions of cubic kilometers of basalt, acidifies the oceans, and strips ozone; ~96% of marine species and ~70% of terrestrial vertebrate genera disappear.
+   https://en.wikipedia.org/wiki/Permian%E2%80%93Triassic_extinction_event
+
+51 Late Permian  |  Lopingian, 256 Ma
+   The world just before the Great Dying. Pangaea is fully assembled, the interior is hyperarid, and the Siberian Traps are about to erupt at the easternmost margin of the supercontinent.
+   https://en.wikipedia.org/wiki/Lopingian
+
+52 Late Middle Permian  |  Capitanian, 262.5 Ma
+   The Capitanian (Olson's) extinction, driven by Emeishan Traps volcanism in what is now South China; reefs of the Permian Basin (West Texas) thrive on the opposite side of Pangaea.
+   https://en.wikipedia.org/wiki/Capitanian
+
+53 Middle Permian  |  Wordian/Capitanian Boundary, 265.1 Ma
+   The Permian Basin reefs of West Texas (Capitan Reef) accumulate huge carbonate platforms. Glaciation has fully retreated from Gondwana.
+   https://en.wikipedia.org/wiki/Wordian
+
+54 Middle Permian  |  Roadian & Wordian, 268.7 Ma
+   Pangaea is fully assembled with the Tethys wedged into its eastern flank. The Late Paleozoic Ice Age has ended; Earth enters a new greenhouse state.
+   https://en.wikipedia.org/wiki/Roadian
+
+55 Early Permian  |  Late Kungurian, 275 Ma
+   The Late Paleozoic Ice Age is in retreat; glaciers vanishing from Gondwana. Hyperarid evaporite basins (Zechstein, Russian Platform) accumulate vast salt and gypsum deposits.
+   https://en.wikipedia.org/wiki/Kungurian
+
+56 Early Permian  |  Early Kungurian, 280 Ma
+   Walchian conifer forests of the seasonally dry Pangaean interior signal the end of the great Carboniferous coal swamps. Glaciation is in retreat over Gondwana.
+   https://en.wikipedia.org/wiki/Kungurian
+
+57 Early Permian  |  Artinskian, 286.8 Ma
+   The Cisuralian icehouse loosens; ice sheets retreat from Australia and South America. Permian red beds (Texas, Russia) record drying continental interiors.
+   https://en.wikipedia.org/wiki/Artinskian
+
+58 Early Permian  |  Sakmarian, 292.6 Ma
+   Pangaea fully assembled; the Late Paleozoic Ice Age is still at high intensity over Gondwana. Glossopteris flora dominates southern continents.
+   https://en.wikipedia.org/wiki/Sakmarian
+
+59 Early Permian  |  Asselian, 297 Ma
+   The Carboniferous-Permian boundary. The Late Paleozoic Ice Age is near its peak; cyclothems record glacioeustatic sea-level swings across Euramerica.
+   https://en.wikipedia.org/wiki/Asselian
+
+60 Late Pennsylvanian  |  Gzhelian, 301.3 Ma
+   Pangaea is essentially assembled; the Variscan, Alleghenian, and Hercynian orogenies have welded its central spine. Gondwanan ice sheets are at maximum.
+   https://en.wikipedia.org/wiki/Gzhelian
+
+61 Late Pennsylvanian  |  Kasimovian, 305.4 Ma
+   The Carboniferous Rainforest Collapse: equatorial coal swamps fragment as climates dry. Gondwanan glaciation pulses to peak intensity.
+   https://en.wikipedia.org/wiki/Kasimovian
+
+62 Middle Pennsylvanian  |  Moscovian, 311.1 Ma
+   Equatorial coal swamps blanket Euramerica at maximum extent. Glacioeustatic cyclothems leave the alternating coal-shale-limestone sequences of the American Midwest.
+   https://en.wikipedia.org/wiki/Moscovian_(Carboniferous)
+
+63 Early/Middle Carboniferous  |  Bashkirian/Moscovian boundary, 314.6 Ma
+   The Mississippian-Pennsylvanian transition. Gondwana ice sheets pulse strongly; sea-level cyclothems record the glacial-interglacial swings.
+   https://en.wikipedia.org/wiki/Bashkirian
+
+64 Early Pennsylvanian  |  Bashkirian, 319.2 Ma
+   The Variscan-Alleghenian orogeny is actively suturing Gondwana to Euramerica, building Pangaea. Tropical coal swamps continue to expand across the equator.
+   https://en.wikipedia.org/wiki/Bashkirian
+
+65 Late Mississippian  |  Serpukhovian, 327 Ma
+   Glaciation intensifies in southern Gondwana; the Late Paleozoic Ice Age is now in full force. Sea-level cyclothems begin to dominate carbonate platforms.
+   https://en.wikipedia.org/wiki/Serpukhovian
+
+66 Late Mississippian  |  Visean/Serpukhovian boundary, 330.9 Ma
+   The Mid-Carboniferous boundary. The Variscan orogeny is welding southern Europe and northern Africa together as Gondwana approaches Euramerica.
+   https://en.wikipedia.org/wiki/Serpukhovian
+
+67 Middle Mississippian  |  Late Visean, 333 Ma
+   Mississippian limestones of Britain, Belgium, and the American Midwest accumulate on broad shallow shelves. Glaciation begins building over high-latitude Gondwana.
+   https://en.wikipedia.org/wiki/Visean
+
+68 Middle Mississippian  |  Middle Visean, 338.8 Ma
+   The first widespread coal-forming environments appear in Donbass and the British Midlands. Cratonic seas blanket much of Euramerica.
+   https://en.wikipedia.org/wiki/Visean
+
+69 Middle Mississippian  |  Early Visean, 344 Ma
+   The Old Red Sandstone continent (Euramerica) is being eroded into the Carboniferous limestone shelves. Reef-building has shifted from stromatoporoid-coral systems to microbial mounds.
+   https://en.wikipedia.org/wiki/Visean
+
+70 Early Mississippian  |  Late Tournaisian, 349 Ma
+   Middle of "Romer's Gap," a fossil-poor interval after the Hangenberg event. Sea level rebounds from the Devonian-Carboniferous lowstand.
+   https://en.wikipedia.org/wiki/Tournaisian
+
+71 Early Mississippian  |  Early Tournaisian, 354 Ma
+   Recovery from the Hangenberg event; ocean anoxia eases. Atmospheric oxygen begins its long Carboniferous climb toward ~30%.
+   https://en.wikipedia.org/wiki/Tournaisian
+
+72 Devono-Carboniferous Boundary  |  358.9 Ma
+   The Hangenberg event: anoxia, cooling, and a brief Gondwanan glaciation finish the Late Devonian extinctions. Sea levels crash and recover.
+   https://en.wikipedia.org/wiki/Hangenberg_event
+
+73 Late Devonian  |  Middle Famennian, 365.6 Ma
+   Recovery interval between the Kellwasser and Hangenberg events. Greening of the continents drives soil formation and atmospheric CO2 drawdown.
+   https://en.wikipedia.org/wiki/Famennian
+
+74 Late Devonian  |  Early Famennian, 370 Ma
+   Aftermath of the Kellwasser event; stromatoporoid-coral reefs are largely gone. The Antler orogeny begins along western Laurentia.
+   https://en.wikipedia.org/wiki/Famennian
+
+75 Late Devonian  |  Late Frasnian, 375 Ma
+   The Kellwasser event, a two-pulse mass extinction tied to oceanic anoxia and cooling; Devonian reef ecosystems collapse globally.
+   https://en.wikipedia.org/wiki/Frasnian
+
+76 Late Devonian  |  Early Frasnian, 380 Ma
+   Devonian reefs reach their Phanerozoic peak: the Canning Basin (Australia) and Alberta preserve massive stromatoporoid-coral structures just before collapse.
+   https://en.wikipedia.org/wiki/Frasnian
+
+77 Middle Devonian  |  Givetian, 385.2 Ma
+   The Acadian orogeny continues to build the Appalachians as Avalonia collides with Laurussia. The first widespread forests sharply increase continental weathering.
+   https://en.wikipedia.org/wiki/Givetian
+
+78 Middle Devonian  |  Eifelian, 390.5 Ma
+   The Choteč and Kačák events record short carbon-cycle perturbations and reef stress. Reef systems and forests both expand toward their late-Devonian peaks.
+   https://en.wikipedia.org/wiki/Eifelian
+
+79 Early Devonian  |  Late Emsian, 395 Ma
+   The Daleje event records oceanic anoxia in the Tethys. Continental weathering accelerates as land plants spread inland from coastal margins.
+   https://en.wikipedia.org/wiki/Emsian
+
+80 Early Devonian  |  Middle Emsian, 400 Ma
+   The Acadian orogeny is welding Avalonia to Laurussia, building eastern North America's Appalachian system. Old Red Sandstone deposition dominates Euramerican lowlands.
+   https://en.wikipedia.org/wiki/Emsian
+
+81 Early Devonian  |  Early Emsian, 405 Ma
+   The proto-Atlantic Iapetus Ocean has closed; the Caledonian and Acadian orogenies are still actively building mountains. Vascular land plants develop secondary growth and lignin.
+   https://en.wikipedia.org/wiki/Emsian
+
+82 Early Devonian  |  Pragian, 409.2 Ma
+   The Rhynie Chert (Scotland), dated to ~407 Ma, preserves an exceptional terrestrial ecosystem in volcanic hot-spring sinters. Land plants are still mostly small (<50 cm).
+   https://en.wikipedia.org/wiki/Pragian
+
+83 Early Devonian  |  Lochkovian, 415 Ma
+   The opening of the Devonian, just after the Klonk event near the Silurian-Devonian boundary. The Caledonian orogeny continues to weld Laurentia, Baltica, and Avalonia.
+   https://en.wikipedia.org/wiki/Lochkovian
+
+84 Late Silurian  |  Pridoli, 421.1 Ma
+   The Caledonian orogeny is at its peak as Avalonia fully docks with Laurussia. The Iapetus Ocean closes; the proto-Atlantic disappears.
+   https://en.wikipedia.org/wiki/Pridoli_epoch
+
+85 Late Silurian  |  Ludlow, 425.2 Ma
+   The Lau event records oceanic anoxia and a positive carbon isotope excursion. Tethyan and Laurussian shelves continue to host coral-stromatoporoid reefs.
+   https://en.wikipedia.org/wiki/Ludlow_(epoch)
+
+86 Middle Silurian  |  Wenlock, 430.4 Ma
+   The Mulde event, a positive carbon isotope excursion paired with graptolite extinctions. Coral-stromatoporoid reefs flourish in the warm Wenlock seas.
+   https://en.wikipedia.org/wiki/Wenlock_epoch
+
+87 Early Silurian  |  Late Llandovery, 436 Ma
+   The Ireviken event, a positive carbon excursion and conodont-graptolite turnover, closes the early Silurian recovery. Reefs continue to rebuild.
+   https://en.wikipedia.org/wiki/Llandovery_epoch
+
+88 Early Silurian  |  Early Llandovery, 441.2 Ma
+   Aftermath of the end-Ordovician glaciation. Sea levels rise rapidly, drowning continental margins; the first vascular land plants appear in the rock record.
+   https://en.wikipedia.org/wiki/Llandovery_epoch
+
+89 Late Ordovician  |  Hirnantian, 444.5 Ma
+   The Hirnantian glaciation, the most intense glaciation of the early Phanerozoic, drives the second-largest mass extinction in Earth's history; ~85% of marine species perish.
+   https://en.wikipedia.org/wiki/Hirnantian
+
+90 Late Ordovician  |  Katian, 449.1 Ma
+   Sea levels approach Phanerozoic peaks; cratonic seas blanket Laurentia, Baltica, and northern Gondwana. The Taconic orogeny continues building eastern Laurentia.
+   https://en.wikipedia.org/wiki/Katian
+
+91 Late Ordovician  |  Sandbian, 455.7 Ma
+   The Great Ordovician Biodiversification Event (GOBE) reaches its zenith. The Taconic orogeny begins as an island arc collides with eastern Laurentia.
+   https://en.wikipedia.org/wiki/Sandbian
+
+92 Middle Ordovician  |  Late Darriwilian, 460 Ma
+   GOBE in full swing. The Iapetus Ocean reaches maximum width as Avalonia drifts north of Gondwana toward Baltica.
+   https://en.wikipedia.org/wiki/Darriwilian
+
+93 Middle Ordovician  |  Early Darriwilian, 465 Ma
+   Reef-building shifts from microbial to skeletal as the first stromatoporoid- and coral-built reefs appear. Cratonic seas blanket much of the continents.
+   https://en.wikipedia.org/wiki/Darriwilian
+
+94 Early Ordovician  |  Floian/Dapingian boundary, 470 Ma
+   The Lower-Middle Ordovician transition. Sea levels rise broadly, flooding cratonic interiors; the GOBE accelerates.
+   https://en.wikipedia.org/wiki/Floian
+
+95 Early Ordovician  |  Late Early Floian, 475 Ma
+   Continental positions are dominated by Gondwana over the south pole. Cratonic shallow seas continue to expand across Laurentia, Baltica, and Siberia.
+   https://en.wikipedia.org/wiki/Floian
+
+96 Early Ordovician  |  Tremadoc, 481.6 Ma
+   The opening of the Ordovician. Sea level continues to rise after the Cambrian extinction pulses; the Iapetus and Rheic oceans are widening.
+   https://en.wikipedia.org/wiki/Tremadocian
+
+97 Cambro-Ordovician Boundary  |  485.4 Ma
+   A series of late Cambrian extinction pulses end the period. Conodont and graptolite faunas reset; the stage is set for the Great Ordovician Biodiversification Event.
+   https://en.wikipedia.org/wiki/Cambrian%E2%80%93Ordovician_extinction_event
+
+98 Late Cambrian  |  Jiangshanian, 491.8 Ma
+   The Furongian epoch. The SPICE event records a global positive carbon isotope excursion tied to widespread organic carbon burial.
+   https://en.wikipedia.org/wiki/Jiangshanian
+
+99 Late Cambrian  |  Paibian, 495.5 Ma
+   The Paibian opens with another extinction pulse. Cratonic shelves are flooded by warm shallow seas across most of Gondwana, Laurentia, and Baltica.
+   https://en.wikipedia.org/wiki/Paibian
+
+100 Late Middle Cambrian  |  Guzhangian, 498.8 Ma
+    Time of the Burgess Shale (British Columbia) and similar lagerstätten. Cratonic seas remain widespread; reefs are dominated by microbialites.
+    https://en.wikipedia.org/wiki/Guzhangian
+
+101 Late Middle Cambrian  |  Early Epoch 3, 505 Ma
+    Archaeocyathid reefs are gone; microbialites and rare metazoan structures dominate reef-building. Sea levels remain high across most cratons.
+    https://en.wikipedia.org/wiki/Wuliuan
+
+102 Early Middle Cambrian  |  Late Epoch 2, 510 Ma
+    The Sinsk event, an oceanic anoxic event in the Tethyan-Iapetus realm, ends archaeocyathid reefs. Time of the Chengjiang and Sirius Passet biotas.
+    https://en.wikipedia.org/wiki/Cambrian_Series_2
+
+103 Early Middle Cambrian  |  Middle Epoch 2, 515 Ma
+    The Cambrian explosion is in full swing. Archaeocyathid reefs ring the warm shallow margins of Gondwana, Laurentia, and Siberia.
+    https://en.wikipedia.org/wiki/Cambrian_Series_2
+
+104 Early/Middle Cambrian boundary  |  520 Ma
+    Peak of the Cambrian explosion. Bioturbation transforms seafloor sediments globally, ending the "Ediacaran substrate revolution."
+    https://en.wikipedia.org/wiki/Cambrian_Series_2
+
+105 Early Cambrian  |  Late Terreneuvian, 525 Ma
+    The first archaeocyathid reefs build along Siberian and Gondwanan margins. Small shelly fossils proliferate in the rock record.
+    https://en.wikipedia.org/wiki/Terreneuvian
+
+106 Early Cambrian  |  Middle Terreneuvian, 530 Ma
+    The "small shelly fossil" radiation. Complex burrows show animals with hydrostatic skeletons; the seafloor "matground" of the Ediacaran is being broken up.
+    https://en.wikipedia.org/wiki/Terreneuvian
+
+107 Early Cambrian  |  Early Terreneuvian, 535 Ma
+    The opening pulse of the Cambrian. Trace fossils become deeper and more complex (Treptichnus pedum); biomineralized small shelly fossils first appear.
+    https://en.wikipedia.org/wiki/Fortunian
+
+108 Cambrian/Precambrian boundary  |  541 Ma
+    The base of the Phanerozoic. The soft-bodied Ediacaran biota gives way to a world of skeletons and complex behavior; Treptichnus pedum is the GSSP marker at Fortune Head, Newfoundland.
+    https://en.wikipedia.org/wiki/Fortunian

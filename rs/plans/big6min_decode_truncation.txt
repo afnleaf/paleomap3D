@@ -1,0 +1,163 @@
+big6min_decode_truncation.txt: fix silent 2^30 clip in worker brotli_decode
+============================================================================
+
+scope
+-----
+- worker-side decode of big6min.br only.
+- minimum-change fix: avoid Vec doubling-grow OOM and surface any
+  future decode error.
+- no asset-format changes, no per-map streaming rework.
+
+
+the problem
+-----------
+big6min.br decompresses to 1,413,817,418 B (109 * 1801 * 3601 * 2),
+verified with `brotli --decompress data/big6min.br | wc -c`. but the
+Big6minData resource installed on the main thread holds exactly
+1,073,741,824 B = 2^30 = 1 GiB. log line at lib.rs:240 confirms.
+
+upload path in instance_pipeline_6min_webgl2.rs:227 reads bytes per
+map at off = map_index * 12,970,802. only 82.78 maps fit. scrubbing
+through maps 0..82 works; map 82 partially works; any later map
+panics with `range start index N out of range for slice of length
+1073741824`.
+
+observed panics:
+  map 82 row 1407 -> end index 1,073,746,180
+  map 87        -> start index 1,128,459,774 (= 87 * 12,970,802)
+
+
+root cause
+----------
+wasm_modules/src/lib.rs:68
+
+  pub fn brotli_decode(input: &[u8]) -> Vec<u8> {
+      let mut decoder = brotli::Decompressor::new(
+          std::io::Cursor::new(input), 4096,
+      );
+      let mut output = Vec::new();
+      let _ = std::io::Read::read_to_end(&mut decoder, &mut output);
+      output
+  }
+
+two compounding things:
+
+1. Vec::new() + read_to_end grows by doubling: ..., 256 MiB,
+   512 MiB, 1 GiB, 2 GiB. the 1 GiB -> 2 GiB realloc needs both
+   buffers live simultaneously (~3 GiB transient peak). dlmalloc in
+   the worker's wasm32 linear memory cannot satisfy that, so the
+   realloc returns AllocError and read_to_end propagates Err.
+
+2. `let _ = ...` discards the Err. output is left at len ==
+   capacity == 2^30, fully populated up to that boundary, no error
+   anywhere. caller has no signal that anything went wrong - it
+   only manifests as a panic 80+ map-toggles later when the user
+   scrubs past the truncation boundary.
+
+the perfect-power-of-two byte count is the fingerprint: Vec doubling
+sizes are powers of two, and the last grow that succeeded was 2^30.
+
+
+the decision
+------------
+add a second exported function `brotli_decode_big6min` that
+pre-allocates the full expected size up front, and switch the worker
+to it. keep the original `brotli_decode` for the small-payload main-
+thread call site so we don't pay a 1.41 GB up-front allocation when
+inflating the boot-time wasm-bindgen decoder payload.
+
+rejected alternatives:
+- single function with `expected: usize` parameter: needs JS-side
+  numeric constant, more touch points.
+- decoded-size header in big6min.br: requires re-packing the asset
+  for a behavior change that is orthogonal to the bug. defer.
+- per-map split + on-demand decode: real fix for main-thread memory
+  ceiling but much larger change. defer; tracked separately.
+
+
+changes
+-------
+wasm_modules/src/lib.rs
+
+  add (next to existing brotli_decode):
+
+      #[wasm_bindgen]
+      pub fn brotli_decode_big6min(input: &[u8]) -> Vec<u8> {
+          const EXPECTED: usize = 109 * 1801 * 3601 * 2;
+          let mut decoder = brotli::Decompressor::new(
+              std::io::Cursor::new(input), 4096,
+          );
+          let mut output = Vec::with_capacity(EXPECTED);
+          if let Err(e) = std::io::Read::read_to_end(
+              &mut decoder, &mut output,
+          ) {
+              web_sys::console::error_1(
+                  &format!("brotli_decode_big6min: {:?}", e).into(),
+              );
+          }
+          output
+      }
+
+  why pre-allocate: with_capacity does a single 1.41 GB allocation
+  up front. read_to_end then fills it without ever calling reserve,
+  so the doubling-grow path never runs and the 1 GiB -> 2 GiB OOM
+  cannot happen.
+
+  why surface the error: the only reason this bug existed was the
+  swallowed Err. cheap defensive log so the next silent truncation
+  is loud.
+
+  why hardcode 109/1801/3601: data layout owned by data/src/main
+  and the renderer (instance_pipeline_6min_webgl2.rs:65 already has
+  PER_MAP_SIZE = 1801 * 3601 * 2). adding a shared constant in
+  earth.rs is fine if preferred but not load-bearing.
+
+rs/hud.js
+
+  inside `decoderWorkerGlue` (lines 759..783), change the two calls
+  that decode big6min.br data:
+
+      line 769: wasm_bindgen.brotli_decode(c)            ->
+                wasm_bindgen.brotli_decode_big6min(c)
+      line 776: wasm_bindgen.brotli_decode(e.data.compressed) ->
+                wasm_bindgen.brotli_decode_big6min(e.data.compressed)
+
+  leave line 744 alone. that one is the main-thread call inflating
+  the worker's own wasm-bindgen payload, which is small.
+
+
+what is not changing
+--------------------
+- dom.rs, earth.rs, instance_pipeline_6min_webgl2.rs: the panic at
+  line 227 is a downstream symptom and goes away when the source
+  buffer is the correct size.
+- big6min.br: file is fine. `brotli --decompress` produces the full
+  1,413,817,418 bytes.
+- main-thread `array.to_vec()` in dom.rs:208: still allocates 1.41
+  GB into the main wasm linear memory after the fix. this is a
+  single allocation (vec![0; len]), not doubling, so it should fit
+  on the 4 GiB cap alongside Bevy's working set. flagging it as the
+  next memory frontier; not changing it here.
+
+
+verification
+------------
+1. wasm-pack build wasm_modules --target no-modules && histos
+   paleomap3d.yaml
+2. reload, watch console for the spawn log:
+     paleomap3d: 6min entity spawned, Big6minData inserted, bytes = ...
+   expected: 1413817418 (was 1073741824).
+3. toggle to 6min, scrub through maps 0..108. expected: no panic.
+4. if any future regression re-introduces an alloc failure, the
+   `brotli_decode_big6min: ...` console.error will fire instead of
+   a silent truncation.
+
+
+follow-ups (not in this plan)
+-----------------------------
+- main-thread 1.41 GB Vec footprint: per-map streaming or worker-
+  held buffer + per-map slice posting would drop it to ~13 MB.
+  worth doing if we ever exceed 4 GiB total wasm memory.
+- brotli_decode error path is still `let _ = ...`. trivial to
+  unify with brotli_decode_big6min if/when a second large-payload
+  caller appears.

@@ -75,6 +75,27 @@ pub fn brotli_decode(input: &[u8]) -> Vec<u8> {
     output
 }
 
+// big6min variant: pre-allocates the full expected 1.41 GB up front so
+// read_to_end never hits Vec's doubling-grow path. without this, the last
+// successful grow lands at 2^30 = 1 GiB and the next reserve (1 GiB -> 2 GiB)
+// fails dlmalloc in the worker's wasm32 linear memory; the original
+// `let _ = ...` swallowed that Err and silently returned a truncated buffer.
+#[wasm_bindgen]
+pub fn brotli_decode_big6min(input: &[u8]) -> Vec<u8> {
+    const EXPECTED: usize = 109 * 1801 * 3601 * 2;
+    let mut decoder = brotli::Decompressor::new(
+        std::io::Cursor::new(input),
+        4096,
+    );
+    let mut output = Vec::with_capacity(EXPECTED);
+    if let Err(e) = std::io::Read::read_to_end(&mut decoder, &mut output) {
+        web_sys::console::error_1(
+            &format!("brotli_decode_big6min: {:?}", e).into(),
+        );
+    }
+    output
+}
+
 pub fn start_bevy() {
     // initialize Bevy
     let mut app = App::new();

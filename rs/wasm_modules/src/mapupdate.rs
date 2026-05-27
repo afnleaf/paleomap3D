@@ -57,6 +57,8 @@ pub fn update_map_text_display(
     if current_map.is_changed() {
         // tell hud.js to repaint slider thumb + title text
         dom::notify_map_changed(current_map.index);
+        // DEBUG
+        web_sys::console::log_1(&format!("current map: {}", current_map.index).into());
     }
 }
 

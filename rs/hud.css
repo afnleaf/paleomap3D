@@ -219,9 +219,9 @@ canvas {
 .instructions-list li { margin: 0 0 4px; }
 .instructions-list li:last-child { margin-bottom: 0; }
 
-/* info panel: era heading + age subtext. text values are written by paintHud
-   on every map index change; the structure is a placeholder for future per-era
-   copy. */
+/* info panel: era heading + age subtext + blurb + Wikipedia link. text values
+   are written by paintHud on every map index change; data comes from
+   window.PALEOMAP_INFO (text.js), aligned by index with MAP_NAMES. */
 .info-era {
     margin: 0 0 4px;
     font-size: 1rem;
@@ -234,6 +234,27 @@ canvas {
     color: var(--fg-dim);
     line-height: 1.4;
 }
+.info-blurb {
+    margin: 8px 0 6px;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    text-wrap: pretty;
+}
+.info-link {
+    align-self: flex-start;
+    /* panel min-height is locked to the worst-case entry by hud.js, so for
+       shorter entries margin-top:auto absorbs the slack and pins the link to
+       the bottom edge instead of leaving dead space below it. */
+    margin-top: auto;
+    padding-top: 8px;
+    color: var(--thumb);
+    text-decoration: none;
+    font-size: 0.85rem;
+    /* anchor lives inside .tab-viewport, which captures pointer for swipe;
+       auto here so the click still routes to the link's navigation. */
+    pointer-events: auto;
+}
+.info-link:hover { text-decoration: underline; }
 .legend-strip {
     display: flex;
     height: 22px;

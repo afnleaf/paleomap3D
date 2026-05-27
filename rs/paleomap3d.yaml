@@ -17,6 +17,7 @@ pack:
     - "hud.html"
   scripts:
     - "rightclick.js"
+    - "text.js"
     - "hud.js"
   wasm:
     module:
