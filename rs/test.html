@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HUD Test</title>
+<link rel="stylesheet" href="hud.css">
+<script src="text.js"></script>
+</head>
+<body>
+
+<button id="resolution-toggle" class="loading" disabled>1deg</button>
+
+<div class="hud-top">
+  <div class="sheet sheet-top" id="sheet-top">
+    <div class="top-content" id="top-content">
+      <div class="tab-bar" id="tab-bar" role="tablist">
+        <button class="tab-btn active" data-tab="0" role="tab" aria-selected="true">Elevation</button>
+        <button class="tab-btn" data-tab="1" role="tab" aria-selected="false">Info</button>
+        <button class="tab-btn" data-tab="2" role="tab" aria-selected="false">Instructions</button>
+      </div>
+      <div class="tab-viewport" id="tab-viewport">
+        <div class="tab-panels" id="tab-panels">
+          <div class="tab-panel" id="panel-elevation" data-panel="0" role="tabpanel"></div>
+          <div class="tab-panel" id="panel-info" data-panel="1" role="tabpanel">
+            <h3 class="info-era">Present-day</h3>
+            <p class="info-age">Holocene, 0 Ma</p>
+            <p class="info-blurb"></p>
+            <a class="info-link" href="" target="_blank" rel="noopener noreferrer">Read more on Wikipedia &rarr;</a>
+          </div>
+          <div class="tab-panel" data-panel="2" role="tabpanel">
+            <ul class="instructions-list">
+              <li><b>Drag</b> to rotate the globe</li>
+              <li><b>Pinch</b> or <b>Scroll</b> to zoom</li>
+              <li><b>Slider</b> at the bottom moves through time</li>
+              <li><b>Arrow Keys</b> left (past) and right (present)</li>
+              <li><b>Play</b> animates through eras at the chosen speed</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button class="sheet-handle sheet-handle-top" id="sheet-handle-top" aria-label="Toggle top tray"></button>
+  </div>
+</div>
+
+<div class="hud-bottom">
+  <div class="sheet" id="sheet">
+    <button class="sheet-handle" id="sheet-handle" aria-label="Toggle controls"></button>
+    <div class="timeline-chrome">
+      <p class="title" id="title">
+        <span class="title-era">Present-day</span>
+        <span class="title-age">(Holocene, 0 Ma)</span>
+      </p>
+      <div class="playback-controls">
+        <button class="pb-btn" id="playpause" aria-label="Play"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6,4 20,12 6,20" fill="currentColor"/></svg></button>
+        <button class="pb-btn" id="direction" aria-label="Toward past"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><polygon points="12,6 12,18 4,12" fill="currentColor"/><polygon points="20,6 20,18 12,12" fill="currentColor"/></svg></button>
+        <button class="pb-btn" id="speed">1&times;</button>
+      </div>
+      <div class="slider-row">
+        <div class="slider" id="slider">
+          <div class="track-with-tips">
+            <button class="track-tip" id="prev" aria-label="older"></button>
+            <div class="track-wrap" id="track-wrap">
+              <div class="track"></div>
+              <div class="thumb" id="thumb"></div>
+            </div>
+            <button class="track-tip" id="next" aria-label="newer"></button>
+          </div>
+          <div class="tick-labels" id="ticklabels"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="hud.js"></script>
+<script>
+// hud.js starts the top sheet closed; force it open for test harness
+requestAnimationFrame(() => {
+  const s = document.getElementById("sheet-top");
+  if (s) s.style.setProperty("--sheet-y", "0px");
+});
+</script>
+</body>
+</html>

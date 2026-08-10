@@ -766,6 +766,7 @@ document.addEventListener("DOMContentLoaded", () => {
     resolutionBtn.addEventListener("click", () => {
       resolutionMode = resolutionMode === 0 ? 1 : 0;
       resolutionBtn.textContent = RES_LABELS[resolutionMode];
+      resolutionBtn.classList.toggle("active", resolutionMode === 1);
       window.dispatchEvent(new CustomEvent("paleomap3d:set-resolution", {
         detail: resolutionMode,
       }));
@@ -873,9 +874,12 @@ self.onmessage = async (e) => {
     decoderWorker.postMessage({ compressed }, [compressed.buffer]);
   });
 
-  // reveal the toggle button once 6min is loaded into a Bevy resource.
+  // enable the toggle button once 6min is loaded into a Bevy resource.
   window.addEventListener("paleomap3d:6min-ready", () => {
-    if (resolutionBtn) resolutionBtn.style.display = "";
+    if (resolutionBtn) {
+      resolutionBtn.classList.remove("loading");
+      resolutionBtn.disabled = false;
+    }
   });
 
   // repaint when Bevy (or Rust-side keyboard handler) says CurrentMap changed.

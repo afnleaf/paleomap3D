@@ -3,7 +3,7 @@
 /* design tokens ---------------------------------------------------------- */
 :root {
     --fg:            #ededed;
-    --fg-dim:        #666;
+    --fg-dim:        #bbb;
 
     /* slider color palette */
     --track:         #2a2a2a;
@@ -12,6 +12,57 @@
     --cenozoic:      #c3a961;
     --mesozoic:      #4a8a52;
     --paleozoic:     #4a6b8a;
+}
+
+/* utility: fast show/hide without inline style. */
+.hidden { display: none !important; }
+
+/* resolution toggle: standalone fixed button, VCR-bevel treatment matching
+   .pb-btn. starts in .loading state (dimmed, non-interactive) while 6min
+   data decodes; JS removes .loading + disabled once ready. blue .active
+   state indicates 6min mode is on. */
+#resolution-toggle {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    z-index: 200;
+    background: linear-gradient(to bottom, #4a4a4a 0%, var(--track) 100%);
+    color: var(--fg);
+    border: 1px solid #0a0a0a;
+    padding: 5px 14px;
+    border-radius: 3px;
+    font: inherit;
+    font-size: 0.82rem;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    pointer-events: auto;
+    -webkit-tap-highlight-color: transparent;
+    /* box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.10),
+        inset 0 -1px 1px rgba(0,0,0,0.25),
+        0 1px 0 #0a0a0a,
+        0 2px 3px rgba(0,0,0,0.30); */
+    transition: transform 60ms ease-out, box-shadow 60ms ease-out,
+                background 80ms ease-out, opacity 300ms ease;
+}
+#resolution-toggle.loading {
+    opacity: 0.35;
+    cursor: default;
+    pointer-events: none;
+}
+#resolution-toggle:hover:not(:disabled) { filter: brightness(1.12); }
+#resolution-toggle:active:not(:disabled),
+#resolution-toggle.active {
+    transform: translateY(2px);
+    box-shadow:
+        inset 0 2px 3px rgba(0,0,0,0.6),
+        inset 0 -1px 0 rgba(255,255,255,0.05);
+}
+#resolution-toggle:active:not(:disabled) {
+    background: linear-gradient(to bottom, #1e1e1e 0%, var(--track) 100%);
+}
+#resolution-toggle.active {
+    background: linear-gradient(to bottom, #23386e 0%, var(--thumb) 100%);
 }
 
 /* general ----------------------------------------------------------------- */
