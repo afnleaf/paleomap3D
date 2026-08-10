@@ -1,8 +1,3 @@
-<!-- resolution toggle: floating button outside the sheets. starts disabled
-     (dimmed, no pointer) while 6min data decodes; paleomap3d:6min-ready
-     removes the loading class to make it interactive. -->
-<button id="resolution-toggle" class="loading" disabled>1deg</button>
-
 
 <!-- top HUD dock: mirror of .hud-bottom, top-anchored. handle sits at the
      bottom of the sheet so it stays flush with the viewport top edge when
@@ -16,16 +11,9 @@
         <button class="tab-btn" data-tab="1" role="tab" aria-selected="false">Info</button>
         <button class="tab-btn" data-tab="2" role="tab" aria-selected="false">Instructions</button>
       </div>
-      <!-- viewport clips the carousel; tab-panels is a flex row whose translateX
-           jumps in 100% increments to expose one panel at a time. height of the
-           viewport tracks the active panel's height so the closed sheet retracts
-           by exactly the right offset. -->
       <div class="tab-viewport" id="tab-viewport">
         <div class="tab-panels" id="tab-panels">
           <div class="tab-panel" id="panel-elevation" data-panel="0" role="tabpanel"></div>
-          <!-- info panel: era + age + blurb + Wikipedia link, all written by
-               hud.js's paintHud on every map index change. data source is
-               window.PALEOMAP_INFO (text.js), aligned by index with MAP_NAMES. -->
           <div class="tab-panel" id="panel-info" data-panel="1" role="tabpanel">
             <h3 class="info-era">Present-day</h3>
             <p class="info-age">Holocene, 0 Ma</p>
@@ -44,6 +32,7 @@
         </div>
       </div>
     </div>
+    <button id="resolution-toggle" class="loading" disabled>HD</button>
     <button class="sheet-handle sheet-handle-top" id="sheet-handle-top" aria-label="Toggle top tray"></button>
   </div>
 </div>

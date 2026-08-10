@@ -761,12 +761,11 @@ document.addEventListener("DOMContentLoaded", () => {
   // paleomap3d:6min-ready handler below once the worker finishes decoding.
   const resolutionBtn = document.getElementById("resolution-toggle");
   let resolutionMode = 0;
-  const RES_LABELS = ["1deg", "6min"];
+  const RES_LABELS = ["HD", "SD"];
   if (resolutionBtn) {
     resolutionBtn.addEventListener("click", () => {
       resolutionMode = resolutionMode === 0 ? 1 : 0;
       resolutionBtn.textContent = RES_LABELS[resolutionMode];
-      resolutionBtn.classList.toggle("active", resolutionMode === 1);
       window.dispatchEvent(new CustomEvent("paleomap3d:set-resolution", {
         detail: resolutionMode,
       }));
