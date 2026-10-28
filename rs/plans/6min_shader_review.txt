@@ -1,0 +1,257 @@
+6min_shader_review.txt: review and improvement opportunities
+=============================================================
+
+scope
+-----
+- review of instancing_6min_webgl2.wgsl and the Rust pipeline
+  backing it (instance_pipeline_6min_webgl2.rs, earth.rs, lib.rs).
+- catalogs what is working, what is duplicated, and where the next
+  wins are. each item is independent; none depend on another.
+- nothing here is broken. this is optimization and cleanup only.
+
+
+current state
+-------------
+the 6min shader is live and functional. it renders 6,485,401
+instanced cubes per frame with no per-instance vertex buffer.
+vertex stage derives (i, j) from instance_index, reads a 1801x1
+lat LUT (RGBA32F) for sin_lat/cos_lat/lon_scale, reads a 3601x1801
+R16Sint elevation texture, computes lon trig per vertex, builds
+a tangent frame analytically, and places scaled cubes on the sphere.
+
+fragment stage: directional sun + blue-tinted ambient + rim light.
+identical across all three instancing shaders.
+
+the Rust pipeline (instance_pipeline_6min_webgl2.rs) handles:
+- one-shot lat LUT texture creation (29 KB)
+- one-shot elevation texture allocation (13 MB)
+- per-map-change elevation re-upload via 256-aligned scratch buffer
+- bind group with lat LUT, active elevation, and sun uniform
+- draw_indexed with hardcoded 0..6_485_401 instances
+
+no bugs observed. tangent frame math verified correct. resource
+lifetime and upload logic are sound.
+
+
+1. deduplicate getColorFromElevation
+------------------------------------
+problem:
+  getColorFromElevation is copy-pasted in three files:
+    instancing.wgsl            (lines 112-140)
+    instancing_webgl2.wgsl     (lines 51-79)
+    instancing_6min_webgl2.wgsl (lines 44-72)
+
+  instancing.wgsl also has getColorFromElevationDark (lines 68-110)
+  which is dead code - never called.
+
+  any palette change requires editing three files. a missed file
+  produces a visible color mismatch between 1deg and 6min modes.
+
+approach:
+  Bevy's shader preprocessor supports #import for user modules.
+  factor the color function into a shared file:
+
+    assets/shaders/elevation_color.wgsl:
+      fn getColorFromElevation(elevation: f32) -> vec4<f32> { ... }
+
+  each instancing shader imports it:
+    #import "shaders/elevation_color.wgsl"::getColorFromElevation
+
+  delete the inline copies. delete getColorFromElevationDark.
+
+cost: low. purely mechanical move. no runtime change. one palette
+source of truth going forward.
+
+risk: Bevy's #import resolution for user shader modules needs to
+find the asset by its embedded path. verify with a compile cycle.
+
+
+2. lon LUT to eliminate per-vertex trig
+---------------------------------------
+problem:
+  every vertex invocation computes cos(lon) and sin(lon). with 24
+  vertices per cube and 6.5M cubes, that is ~312M trig ops/frame.
+  the lon values repeat across all 1801 latitude rows - only 3601
+  distinct values exist.
+
+approach:
+  add a second LUT texture, 3601x1 RG32F:
+    .r = cos_lon
+    .g = sin_lon
+
+  built once on the CPU alongside the lat LUT. ~29 KB GPU memory.
+
+  vertex shader change:
+    let lon_row = textureLoad(lon_lut, vec2<i32>(i32(j), 0), 0);
+    let cos_lon = lon_row.r;
+    let sin_lon = lon_row.g;
+
+  removes the two trig calls entirely. replaces them with one
+  textureLoad (same latency class as the existing lat LUT fetch).
+
+  bind group layout grows from 3 to 4 bindings:
+    binding 0: lat_lut       (unchanged)
+    binding 1: active_elev   (unchanged)
+    binding 2: sun_position  (unchanged)
+    binding 3: lon_lut       (new, 3601x1 RG32F)
+
+cost: low. ~29 KB additional GPU memory. one new texture creation
+in prepare_6min_resources. one new binding.
+
+risk: on desktop GPUs the trig ALUs are fast enough that the texture
+fetch may not be cheaper - it trades ALU for memory bandwidth. worth
+profiling before and after. on mobile/integrated GPUs the trig
+saving is more likely to help.
+
+decision: profile first. if frame time on a target mobile device
+shows vertex-bound behavior, implement. otherwise defer.
+
+
+3. hemisphere culling in vertex shader
+--------------------------------------
+problem:
+  NoFrustumCulling means all 6.5M cubes render every frame. at any
+  camera angle, roughly half the sphere is behind the horizon -
+  those cubes are clipped after rasterization, wasting vertex
+  processing and some rasterizer setup.
+
+approach:
+  in the vertex shader, after computing the instance's surface
+  normal (the `up` vector), dot it with the view direction. if the
+  dot product is below a threshold (instance faces away from camera),
+  emit a degenerate triangle by setting clip_position to (0,0,0,0):
+
+    let view_dir = normalize(camera_position - sphere_pos);
+    if dot(up, view_dir) < -0.1 {
+        out.clip_position = vec4<f32>(0.0, 0.0, 0.0, 0.0);
+        return out;
+    }
+
+  this requires camera_position as a uniform. Bevy's view bindings
+  (group 0) include it, but the current shader does not read it in
+  the vertex stage. adding the read is straightforward.
+
+  the -0.1 threshold keeps a margin so cubes on the horizon edge
+  (visible due to elevation) are not culled. tuning value.
+
+expected savings:
+  ~3.25M fewer cubes through the full vertex pipeline per frame.
+  vertex throughput halved. fill rate savings depend on how much
+  overdraw the back hemisphere contributes after clipping.
+
+cost: one dot product + branch per vertex. negligible compared to
+the trig + two textureLoads already there.
+
+risk: cubes at the edge have nonzero elevation; an aggressive
+threshold culls visible peaks on the horizon. conservative threshold
+(-0.1 to -0.2) avoids this. could also factor in elevation:
+
+    let max_visible_elev = 8848.0 * ELEV_SCALE; // Everest
+    if dot(up, view_dir) < -(max_visible_elev / SPHERE_RADIUS) { ... }
+
+decision: implement after profiling shows vertex or rasterizer
+pressure. straightforward change with no data-path impact.
+
+
+4. elevation re-upload cost on map change
+-----------------------------------------
+current behavior:
+  map change copies ~13 MB from Big6minData.bytes into a padded
+  scratch buffer (1801 row-by-row memcpys of 7202 B each), then
+  calls write_texture. this is synchronous on the render thread.
+
+  at interactive scrub speeds (holding arrow key), this fires every
+  frame the map changes. 13 MB/frame GPU upload is within budget
+  on desktop but may cause frame drops on lower-end hardware.
+
+approaches considered:
+
+  a) double-buffer: two elevation textures, upload to the inactive
+     one while the active one renders. swap on completion. avoids
+     stalling the draw if the upload takes long. adds 13 MB GPU.
+
+  b) async staging buffer: wgpu supports mapping a staging buffer
+     asynchronously. write to the staging buffer, then copy_buffer_
+     to_texture on the next frame. hides the CPU->GPU transfer
+     behind a frame of latency.
+
+  c) row-incremental upload: upload N rows per frame instead of
+     all 1801. spreads the cost across frames. visible as a partial
+     terrain update mid-transition - probably unacceptable.
+
+  d) do nothing. 13 MB synchronous upload is fast on all tested
+     hardware. map changes are user-triggered, not continuous.
+
+decision: (d) for now. revisit if profiling shows frame drops
+during map scrubbing on target hardware.
+
+
+5. dead code in instancing.wgsl
+-------------------------------
+getColorFromElevationDark (lines 68-110) is defined but never
+called. the vertex shader calls getColorFromElevation (line 199).
+
+action: delete getColorFromElevationDark. if it was intended as
+an alternative palette, preserve it in a comment or a git-reachable
+commit, not in the compiled shader. dead code in a shader is dead
+weight in the compiler - naga still parses and validates it.
+
+cost: trivial. one delete.
+
+
+6. fragment view_dir assumption
+-------------------------------
+the fragment shader computes view direction as:
+  let view_dir = normalize(-in.world_position);
+
+this assumes the camera is at the world origin. works because the
+globe is centered at origin and the camera orbits at a fixed
+distance. the rim light intensity depends on this being roughly
+correct.
+
+if the globe is ever repositioned (e.g., multi-globe view, or the
+globe moves to make room for UI), this breaks. the fix is to pass
+camera position and compute:
+  let view_dir = normalize(camera_position - in.world_position);
+
+decision: no change now. document the assumption. revisit if globe
+positioning changes.
+
+
+7. duplicate fragment shader body
+---------------------------------
+the fragment function is identical across:
+  instancing.wgsl            (lines 211-242)
+  instancing_webgl2.wgsl     (lines 141-165)
+  instancing_6min_webgl2.wgsl (lines 126-144)
+
+same ambient color, same sun color, same rim formula, same
+composition. same risk as the color function: a lighting tweak
+in one shader but not the others creates a visible mismatch.
+
+approach: factor into a shared module alongside the color function:
+
+  assets/shaders/globe_lighting.wgsl:
+    fn apply_globe_lighting(
+        base_color: vec4<f32>,
+        world_normal: vec3<f32>,
+        world_position: vec3<f32>,
+        sun_position: vec3<f32>,
+    ) -> vec4<f32> { ... }
+
+each shader's fragment stage becomes a two-line call.
+
+cost: low. same mechanism as item 1.
+
+
+priority ordering
+-----------------
+by effort-to-value ratio:
+
+  1. delete dead getColorFromElevationDark       (minutes, zero risk)
+  2. deduplicate getColorFromElevation            (small, high value)
+  3. deduplicate fragment lighting                (small, high value)
+  4. lon LUT                                      (small, profile first)
+  5. hemisphere culling                           (medium, profile first)
+  6. document fragment view_dir assumption         (minutes)
+  7. elevation re-upload optimization              (defer until needed)

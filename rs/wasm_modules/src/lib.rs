@@ -13,12 +13,13 @@ use wasm_bindgen::prelude::*;
 use bevy::{
     prelude::*,
     color::palettes::basic::SILVER,
-    render::view::NoFrustumCulling,
     time::{Timer, TimerMode},
 };
-use bevy_embedded_assets::{EmbeddedAssetPlugin, EmbeddedAssetReader, PluginMode};
+#[cfg(feature = "hd6min")]
+use bevy::render::view::NoFrustumCulling;
+use bevy_embedded_assets::{EmbeddedAssetPlugin, PluginMode};
 
-use std::path::PathBuf;
+#[cfg(feature = "hd6min")]
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
 
@@ -149,8 +150,12 @@ pub fn start_bevy() {
             earth::setup_instance_geometries,
         ).chain(),
         initial_setup,
-        kick_off_6min_decode,
     ).chain());
+
+    #[cfg(feature = "hd6min")]
+    app.add_systems(Startup, kick_off_6min_decode.after(initial_setup));
+    #[cfg(feature = "hd6min")]
+    app.add_systems(Update, poll_big6min_decoded);
 
     //web_sys::console::log_1(&"TEST 4".into());
     app.add_systems(PostStartup,
@@ -168,7 +173,6 @@ pub fn start_bevy() {
                     mapupdate::map_update_system,
                     mapupdate::update_map_text_display,
                 ).chain(),
-                poll_big6min_decoded,
                 poll_resolution_change,
             ),
         );
@@ -197,23 +201,16 @@ fn initial_setup(
 // brotli-decompress them off the main thread. fires once at boot. the
 // decoded bytes come back via the BIG6MIN_RAW Mutex (paleomap3d:big6min-decoded
 // JS->Rust event) and are picked up by poll_big6min_decoded below.
+// assets/hd6min/ sits outside the embedded root (assets/base, set in
+// .cargo/config.toml) so the default build drops the 123 MB file.
+#[cfg(feature = "hd6min")]
 fn kick_off_6min_decode() {
-    let embedded = EmbeddedAssetReader::preloaded();
-    match embedded.load_path_sync(&PathBuf::from("big6min.br")) {
-        Ok(reader) => {
-            web_sys::console::log_2(
-                &"paleomap3d: kicking off 6min decode, compressed bytes =".into(),
-                &JsValue::from(reader.0.len() as u32),
-            );
-            dom::notify_start_decode(reader.0);
-        }
-        Err(err) => {
-            web_sys::console::log_2(
-                &"paleomap3d: failed to load big6min.br".into(),
-                &JsValue::from_str(&format!("{:?}", err)),
-            );
-        }
-    }
+    static BIG6MIN_BR: &[u8] = include_bytes!("../assets/hd6min/big6min.br");
+    web_sys::console::log_2(
+        &"paleomap3d: kicking off 6min decode, compressed bytes =".into(),
+        &JsValue::from(BIG6MIN_BR.len() as u32),
+    );
+    dom::notify_start_decode(BIG6MIN_BR);
 }
 
 // update: every frame, take ownership of any decoded buffer the JS listener
@@ -222,6 +219,7 @@ fn kick_off_6min_decode() {
 // the lat LUT, spawn the 6min mesh entity, and tell hud.js to reveal the
 // toggle button. cheap no-op every other frame (lock + take of an empty
 // Option).
+#[cfg(feature = "hd6min")]
 fn poll_big6min_decoded(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,

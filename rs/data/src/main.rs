@@ -31,11 +31,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // cargo run [-- 6 | 1]  - no arg = both
     let arg = std::env::args().nth(1);
     match arg.as_deref() {
-        Some("6") => process("../../data_raw/deg06", "big6min")?,
-        Some("1") => process("../../data_raw/deg1",  "big1deg")?,
+        Some("6") => process("../../data_raw/deg06", "../wasm_modules/assets/hd6min/big6min")?,
+        Some("1") => process("../../data_raw/deg1",  "../wasm_modules/assets/base/big1deg")?,
         _ => {
-            process("../../data_raw/deg06", "big6min")?;
-            process("../../data_raw/deg1",  "big1deg")?;
+            process("../../data_raw/deg06", "../wasm_modules/assets/hd6min/big6min")?;
+            process("../../data_raw/deg1",  "../wasm_modules/assets/base/big1deg")?;
         }
     }
     Ok(())
@@ -180,7 +180,12 @@ fn compress_and_write(
              compressed_buffer.len() as f64 / 1048576.0,
              t0.elapsed().as_secs_f64());
 
-    let mut out_file = std::fs::File::create(format!("./{}.br", path.display())).unwrap();
+    let out_path = PathBuf::from(format!("{}.br", path.display()));
+    // assets/hd6min/ is gitignored, so it is absent on a fresh clone
+    if let Some(parent) = out_path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    let mut out_file = std::fs::File::create(&out_path).unwrap();
     std::io::Write::write_all(&mut out_file, &mut compressed_buffer).unwrap();
     println!("file out");
 

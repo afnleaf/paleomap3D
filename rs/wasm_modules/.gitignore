@@ -6,4 +6,4 @@ __assets/*.br
 __assets/*.bin
 
 # 117MB, over GitHub's 100MB push limit
-assets/big6min.br
+assets/hd6min/

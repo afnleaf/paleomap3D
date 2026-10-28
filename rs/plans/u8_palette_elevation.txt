@@ -1,0 +1,192 @@
+u8 palette encoding for elevation assets
+=========================================
+
+summary
+-------
+the source elevation data contains exactly 256 unique i16 values
+across all 109 maps, for both 6min and 1deg resolutions. every
+sample maps 1:1 to a u8 index. encoding as u8 indices with a
+512-byte palette header halves the raw (pre-brotli) size, which
+shrinks the compressed .br files and therefore the wasm binary.
+
+measured (big6min):
+  raw i16:  1,413,817,418 bytes (1348 MB)
+  raw u8:     706,909,221 bytes (674 MB + 512 byte palette)
+  current .br (i16, q11): 117.4 MB
+  expected .br (u8, q11): ~95-100 MB (estimated from q6 ratio)
+
+the 256 unique values span -11,000 to +10,500.
+
+
+file format
+-----------
+  bytes 0..1:     entry count as u16 LE (always 256 today, but
+                  the decoder reads this so the format works if
+                  the count ever changes)
+  bytes 2..513:   palette, 256 x i16 LE, sorted ascending
+  bytes 514..:    u8 indices, one per elevation sample, row-major,
+                  maps concatenated in chronological order (same
+                  layout as today minus the 2x bloat)
+
+the palette is sorted so index 0 is the lowest elevation. not
+required for correctness but useful for debugging.
+
+this format applies to both big6min and big1deg. if both files
+share the same 256 values, the palettes will be identical. if
+they differ, each file is self-describing.
+
+
+changes
+-------
+
+data/src/main.rs (ETL)
+
+  process() currently:
+    1. reads 109 .nc files, extracts i16 elevations
+    2. concatenates into one Vec<i16>
+    3. brotli-compresses the raw i16 LE bytes
+
+  change:
+    1. same
+    2. same
+    3. after concatenation, collect unique i16 values into a
+       sorted palette Vec<i16>. assert len <= 256 (hard error
+       if the data ever gains more unique values).
+    4. build a HashMap<i16, u8> from the palette
+    5. map every sample to its u8 index
+    6. write the file: u16 LE count + palette + u8 indices
+    7. brotli-compress as before
+
+  compress_and_write signature changes to accept &[u8] (the
+  already-encoded index stream with palette header) instead of
+  &[i16]. or: split into encode_palette() + compress_and_write().
+
+
+wasm_modules/src/earth.rs (1deg decode path)
+
+  load_and_parse_big1deg() currently:
+    1. loads big1deg.br from embedded assets
+    2. brotli decompresses to raw bytes
+    3. bytes_to_i16_vec: chunks_exact(2), from_le_bytes, widen i32
+
+  change step 3: after brotli decompress, read the palette header,
+  then map each subsequent u8 byte through the palette to produce
+  the i32 vec. bytes_to_i16_vec is replaced or extended.
+
+    fn decode_palettized(data: &[u8]) -> Vec<i32> {
+        let count = u16::from_le_bytes([data[0], data[1]]) as usize;
+        let palette: Vec<i16> = data[2..2 + count * 2]
+            .chunks_exact(2)
+            .map(|c| i16::from_le_bytes([c[0], c[1]]))
+            .collect();
+        data[2 + count * 2..]
+            .iter()
+            .map(|&idx| palette[idx as usize] as i32)
+            .collect()
+    }
+
+  AllMapData stays Vec<i32>. no downstream changes.
+
+
+wasm_modules/src/lib.rs (6min decode path)
+
+  brotli_decode_big6min() currently:
+    pre-allocates 109 * 1801 * 3601 * 2 bytes, brotli decompresses
+    into that. returns Vec<u8> of raw i16 LE bytes.
+
+  change: pre-allocate for the u8 size (109 * 1801 * 3601 + 514).
+  after brotli decompress, expand u8 indices back to i16 LE bytes
+  in-place or into a new buffer, so Big6minData.bytes remains the
+  raw LE i16 stream the render pipeline expects.
+
+    const N_SAMPLES: usize = 109 * 1801 * 3601;
+    const HEADER: usize = 2 + 256 * 2;
+    const COMPRESSED_EXPECTED: usize = N_SAMPLES + HEADER;
+    const EXPANDED: usize = N_SAMPLES * 2;
+
+    fn expand_palettized(data: &[u8]) -> Vec<u8> {
+        let count = u16::from_le_bytes([data[0], data[1]]) as usize;
+        let palette: Vec<[u8; 2]> = data[2..2 + count * 2]
+            .chunks_exact(2)
+            .map(|c| [c[0], c[1]])
+            .collect();
+        let mut out = Vec::with_capacity(EXPANDED);
+        for &idx in &data[HEADER..] {
+            out.extend_from_slice(&palette[idx as usize]);
+        }
+        out
+    }
+
+  brotli_decode_big6min decompresses, then calls expand_palettized,
+  returns the expanded i16 LE bytes. Big6minData, the render
+  pipeline, and hud.js are unchanged.
+
+
+wasm_modules/src/dom.rs
+
+  notify_start_decode: no change. it passes whatever bytes are
+  embedded, which are now smaller.
+
+
+hud.js
+
+  no change. the worker still receives compressed bytes, calls
+  brotli_decode_big6min, posts back the decoded buffer. the
+  decoded buffer is still i16 LE bytes after expansion.
+
+
+instance_pipeline_6min_webgl2.rs
+
+  no change. Big6minData.bytes is still flat i16 LE.
+
+
+instance_pipeline_webgpu.rs / instance_pipeline_webgl2.rs (1deg)
+
+  no change. AllMapData.buffer is still Vec<i32>.
+
+
+what is not changing
+--------------------
+- file names: big6min.br and big1deg.br stay the same.
+- .gitignore: big6min.br remains gitignored (still large).
+- all GPU-side code: shaders, texture formats, bind groups.
+- all JS code.
+- Big6minData and AllMapData resource types.
+- the worker decode architecture.
+
+
+verification
+------------
+1. cd data && cargo run --release
+   produces new big6min.br and big1deg.br with palette header.
+   check: new big6min.br < 117 MB.
+
+2. hexdump -C big6min.br.decoded | head
+   (after brotli decompress) first two bytes should be 0x00 0x01
+   (256 LE), followed by 512 bytes of sorted i16 LE palette.
+
+3. cp big6min.br ../wasm_modules/assets/
+   wasm-pack build wasm_modules --target no-modules && histos
+   paleomap3d.yaml
+
+4. reload, console log:
+     paleomap3d: 6min entity spawned, Big6minData inserted, bytes = ...
+   expected: 1413817418 (same as before, the expansion restores
+   full i16 size).
+
+5. toggle 6min, scrub all 109 maps. no visual difference.
+
+6. toggle 1deg, scrub all 109 maps. no visual difference.
+
+
+risks
+-----
+- if future NetCDF sources introduce a 257th unique value, the
+  ETL hard-errors. fix: widen to u16 indices (doubling the index
+  stream but still smaller than raw i16 since the palette stays
+  small). unlikely given the data is quantized to 256 levels.
+
+- brotli compressed size might not shrink as much as the raw
+  size suggests. brotli was already exploiting the limited
+  alphabet. worst case: no regression, the file just doesn't
+  shrink as much as hoped.

@@ -13,3 +13,7 @@ mtime-on-use = true
 
 [target.wasm32-unknown-unknown]
 rustflags = ["-C", "panic=abort"]
+
+# EmbeddedAssetPlugin embeds one folder; hd6min data is added by the hd6min feature instead
+[env]
+BEVY_ASSET_PATH = { value = "assets/base", relative = true }

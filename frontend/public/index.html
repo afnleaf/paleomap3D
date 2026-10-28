@@ -75,7 +75,7 @@
           </li>
           -->
           <li>
-            <a href="planet.html" target="_blank" rel="noopener noreferrer">test</a>
+            <a href="planet.html" id="planet-link" target="_blank" rel="noopener noreferrer">test</a>
           </li>
           <li>
             <a href="https://github.com/afnleaf/paleomap3D" target="_blank" rel="noopener noreferrer">repo</a>
@@ -108,4 +108,19 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/TrackballControls.js"></script>
 <script type="module" src="script.js"></script>
+<script>
+    // warm the HTTP cache so the large single-file build opens instantly from the link
+    window.addEventListener('load', () => {
+        const link = document.getElementById('planet-link');
+        const indicator = document.createElement('span');
+        link.appendChild(indicator);
+        const preload = () => {
+            indicator.textContent = ' ...';
+            fetch(link.href, { priority: 'low' })
+                .then(r => { indicator.textContent = r.ok ? ' ✓' : ' ✗'; })
+                .catch(() => { indicator.textContent = ' ✗'; });
+        };
+        (window.requestIdleCallback || setTimeout)(preload);
+    });
+</script>
 </html>

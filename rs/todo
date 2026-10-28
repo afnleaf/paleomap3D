@@ -1,2 +1,6 @@
+- [] hd mode button is a loading progress bar inside the pill
+- [] hd mode popup warning save to cache
 - [] hd too slow fix shaders and whole pipeline
 - [] file too large, must serve somehow?, upfront binary too large to work
+    - split binary into chunks and large object storage fetch, cache?
+    - redesign the pipeline to more efficiently compress the data
