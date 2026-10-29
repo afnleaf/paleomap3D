@@ -34,7 +34,7 @@ use bevy::{
 const ROTATION_EPSILON:     f32 = 0.000001;
 const SCROLL_LINE_SENS:     f32 = 0.01;
 const SCROLL_PIXEL_SENS:    f32 = 0.00025;
-const MOUSE_ROTATE_SCALE:   f32 = 0.003;
+const MOUSE_ROTATE_SCALE:   f32 = 0.001;
 const MOUSE_PAN_SCALE:      f32 = 0.01;
 const MOUSE_TWIST_SENS:     f32 = 0.005;
 const MOUSE_TILT_SENS:      f32 = 0.005;

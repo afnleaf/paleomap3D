@@ -841,6 +841,8 @@ self.onmessage = async (e) => {
   window.addEventListener("paleomap3d:start-decode", async e => {
     const compressed = e.detail;
     if (!compressed) return;
+    // start-decode only fires from builds with the hd6min cargo feature
+    if (resolutionBtn) resolutionBtn.hidden = false;
     if (decoderWorker) decoderWorker.terminate();
 
     let wasmBytes, shimSource;
